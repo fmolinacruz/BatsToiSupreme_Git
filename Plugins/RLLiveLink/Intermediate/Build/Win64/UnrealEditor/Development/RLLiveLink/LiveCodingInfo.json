@@ -1,0 +1,11 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.RLLiveLink.cpp.obj": [
+			"RLLiveLink.cpp.obj",
+			"RLLiveLinkCommands.cpp.obj",
+			"RLLiveLinkSource.cpp.obj",
+			"RLLiveLinkStyle.cpp.obj"
+		]
+	}
+}

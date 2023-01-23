@@ -1,0 +1,19 @@
+{
+    "Version": "1.1",
+    "Data": {
+        "Source": "e:\\unreal projects\\batstoisupreme_git\\plugins\\rllivelink\\intermediate\\build\\win64\\unrealeditor\\development\\rllivelinkeditor\\module.rllivelinkeditor.gen.cpp",
+        "ProvidedModule": "",
+        "PCH": "e:\\unreal projects\\batstoisupreme_git\\intermediate\\build\\win64\\batstoisupreme_realeditor\\development\\unrealed\\sharedpch.unrealed.shadowerrors.h.pch",
+        "Includes": [
+            "e:\\unreal projects\\batstoisupreme_git\\plugins\\rllivelink\\intermediate\\build\\win64\\unrealeditor\\development\\rllivelinkeditor\\definitions.rllivelinkeditor.h",
+            "e:\\unreal projects\\batstoisupreme_git\\plugins\\rllivelink\\intermediate\\build\\win64\\unrealeditor\\inc\\rllivelinkeditor\\rllivelinkeditor.init.gen.cpp",
+            "e:\\unreal projects\\batstoisupreme_git\\plugins\\rllivelink\\intermediate\\build\\win64\\unrealeditor\\inc\\rllivelinkeditor\\rllivelinksourcefactory.gen.cpp",
+            "e:\\unreal projects\\batstoisupreme_git\\plugins\\rllivelink\\source\\rllivelinkeditor\\private\\rllivelinksourcefactory.h",
+            "e:\\program files\\ue_5.0\\engine\\source\\runtime\\livelinkinterface\\public\\livelinksourcefactory.h",
+            "e:\\program files\\ue_5.0\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\livelinkinterface\\livelinksourcefactory.generated.h",
+            "e:\\unreal projects\\batstoisupreme_git\\plugins\\rllivelink\\intermediate\\build\\win64\\unrealeditor\\inc\\rllivelinkeditor\\rllivelinksourcefactory.generated.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

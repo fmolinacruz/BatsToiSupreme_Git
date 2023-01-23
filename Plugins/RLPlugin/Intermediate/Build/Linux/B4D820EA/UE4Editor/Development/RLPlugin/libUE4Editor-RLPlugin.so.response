@@ -1,0 +1,7 @@
+"E:/Unreal Projects/BatsToiSupreme_Tortoise/Plugins/RLPlugin/Intermediate/Build/Linux/B4D820EA/UE4Editor/Development/RLPlugin/Module.RLPlugin.cpp.o"
+"E:/Unreal Projects/BatsToiSupreme_Tortoise/Plugins/RLPlugin/Intermediate/Build/Linux/B4D820EA/UE4Editor/Development/RLPlugin/Module.RLPlugin.gen.cpp.o"
+ -soname="libUE4Editor-RLPlugin.so"
+ -rpath-link="E:\Unreal Projects\BatsToiSupreme_Tortoise\Plugins\RLPlugin\Binaries\Linux"
+ -L"E:/C_Drive/Program Files (x86)/UnrealEngine-4.27/Engine/Binaries/Linux"
+ --start-group
+ --end-group

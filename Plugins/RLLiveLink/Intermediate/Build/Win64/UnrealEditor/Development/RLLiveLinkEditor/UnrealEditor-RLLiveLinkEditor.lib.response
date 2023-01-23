@@ -1,0 +1,13 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UnrealEditor-RLLiveLinkEditor.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"E:\Unreal Projects\BatsToiSupreme_Git\Intermediate\Build\Win64\BatsToiSupreme_RealEditor\Development\UnrealEd\SharedPCH.UnrealEd.ShadowErrors.h.obj"
+"E:\Unreal Projects\BatsToiSupreme_Git\Plugins\RLLiveLink\Intermediate\Build\Win64\UnrealEditor\Development\RLLiveLinkEditor\Module.RLLiveLinkEditor.cpp.obj"
+"E:\Unreal Projects\BatsToiSupreme_Git\Plugins\RLLiveLink\Intermediate\Build\Win64\UnrealEditor\Development\RLLiveLinkEditor\Module.RLLiveLinkEditor.gen.cpp.obj"
+"E:\Unreal Projects\BatsToiSupreme_Git\Plugins\RLLiveLink\Intermediate\Build\Win64\UnrealEditor\Development\RLLiveLinkEditor\Default.rc2.res"
+/OUT:"E:\Unreal Projects\BatsToiSupreme_Git\Plugins\RLLiveLink\Intermediate\Build\Win64\UnrealEditor\Development\RLLiveLinkEditor\UnrealEditor-RLLiveLinkEditor.lib"
