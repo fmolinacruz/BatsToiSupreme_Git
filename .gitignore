@@ -71,7 +71,7 @@ Saved/*
 
 # Compiled source files for the engine to use
 Intermediate/*
-
+Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
@@ -89,6 +89,8 @@ Build/Android/res/*
 Build/Android/res/*/*
 !Build/Android/res/*/*.png
 # Ignore plugins binaries on deep subfolders
+Plugins/**/Binaries/*
+Plugins/**/Intermediate/*
 
 
 # End of https://www.toptal.com/developers/gitignore/api/unrealengine
