@@ -1,4 +1,4 @@
-// Copyright 2021 The Reallusion Authors. All Rights Reserved.
+// Copyright 2022 The Reallusion Authors. All Rights Reserved.
 
 #pragma once
 

@@ -1,4 +1,4 @@
-// Copyright 2021 The Reallusion Authors. All Rights Reserved.
+// Copyright 2022 The Reallusion Authors. All Rights Reserved.
 
 #include "RLLiveLink.h"
 #include "RLLiveLinkCommands.h"
@@ -40,6 +40,24 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 
+////for transfer scene
+///for timer
+#include "TimerManager.h"
+/// for Merging Actors
+#include "MeshMergeModule.h"
+#include "Misc/ScopedSlowTask.h"
+#include "Components/ShapeComponent.h"
+
+/// for Export FBX
+#include "Exporters/FbxExportOption.h"
+#include "Misc/FeedbackContext.h"
+#include "Exporters/Exporter.h"
+#include "AssetExportTask.h"
+#include "UObject/GCObjectScopeGuard.h"
+
+#include "SSkeletonWidget.h"
+#include "EditorAnimUtils.h"
+
 /// Runtime/AssetRegistry
 #include "AssetRegistryModule.h"
 #include "AssetToolsModule.h"
@@ -69,12 +87,18 @@
 #include "IImageWrapper.h" 
 #include "IImageWrapperModule.h"
 #include "Components/RectLightComponent.h"
+#include "CineCameraComponent.h"
 
 #define PLUGIN_NAME "LiveLink"
 #define INSTALL_PLUGIN_MESSAGE "Please Enable The Live Link plugin \n\rThe Live Link plugin can be enabled by opening the \"Plugins\" Window (Edit / Plugins) \n\rDo a search for \"Live Link\" and check the box to Enable it."
 #define LOCTEXT_NAMESPACE "FRLLiveLinkModule"
 #define RECV_BUFFER_SIZE 1024 * 1024
 #define DEFAULT_PARENT_ACTOR "iClone_Origin"
+
+// for Setup Wrinkle BP
+#define ExpSequence    FString( "ExpSequence" )
+#define ExpPoseAsset   FString( "ExpPoseAsset" )
+#define WrinkleAnimBP  FString( "WrinkleAnimBlueprint" )
 
 void FRLLiveLinkModule::StartupModule()
 {
@@ -139,6 +163,8 @@ void FRLLiveLinkModule::StartupModule()
 #if ( ENGINE_MAJOR_VERSION <= 4 && ENGINE_MINOR_VERSION >= 25 ) || ENGINE_MAJOR_VERSION >= 5
     m_strCineCameraBlueprint = "LiveLinkCineCameraBlueprint_v25";
 #endif
+
+    FRLLiveLinkModule::AddMenuEntryInRightClick();
 }
 
 void FRLLiveLinkModule::ShutdownModule()
@@ -293,6 +319,13 @@ void FRLLiveLinkModule::HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::T
             {
                 auto& spAvatarJsonValue = spJsonObject->Values[ "BuildAssets" ];
                 ProcessObjectData( spAvatarJsonValue, bPlaceAsset );
+
+                MoveMotionAssetPath( spAvatarJsonValue, false );
+
+                TSharedPtr<FJsonObject> spReturnJson = MakeShareable( new FJsonObject );
+                spReturnJson->SetBoolField( "FinishBuildAsset", true );
+
+                SendJsonToIC( spReturnJson );
             }
 
             if ( spJsonObject->Values.Contains( "CreateCamera" ) )
@@ -311,6 +344,8 @@ void FRLLiveLinkModule::HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::T
             {
                 auto& spPropJsonValue = spJsonObject->Values[ "CreateProp" ];
                 ProcessObjectData( spPropJsonValue, bPlaceAsset );
+
+                MoveMotionAssetPath( spPropJsonValue, true );
             }
 
             if ( spJsonObject->Values.Contains( "GetRequire" ) )
@@ -324,6 +359,34 @@ void FRLLiveLinkModule::HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::T
                 auto& spGetRequireJsonValue = spJsonObject->Values[ "CheckAndDeleteDuplicatedAsset" ];
                 m_kAssetTempData.Reset();
                 CheckAndDeleteDuplicatedAsset( spGetRequireJsonValue );
+            }
+
+            if ( spJsonObject->Values.Contains( "CheckSkeletonAssetExist" ) )
+            {
+                auto& spCheckSkeletonAssetExistJsonValue = spJsonObject->Values[ "CheckSkeletonAssetExist" ];
+                m_kAssetTempData.Reset();
+                CheckSkeletonAssetExist( spCheckSkeletonAssetExistJsonValue );
+            }
+            if ( spJsonObject->Values.Contains( "CheckAssetExist" ) )
+            {
+                auto& spCheckAssetExistJsonValue = spJsonObject->Values[ "CheckAssetExist" ];
+                m_kAssetTempData.Reset();
+                CheckAssetExist( spCheckAssetExistJsonValue );
+            }
+            if ( spJsonObject->Values.Contains( "CheckICLiveLinkVersion" ) )
+            {
+                auto& spCheckICVersionJsonValue = spJsonObject->Values[ "CheckICLiveLinkVersion" ];
+                CheckICVersion( spCheckICVersionJsonValue );
+            }
+            if ( spJsonObject->Values.Contains( "iCloneAPClose" ) )
+            {
+                if ( m_pConnectionSocket )
+                {
+                    m_pConnectionSocket->Close();
+                    m_pSocketSubsystem->DestroySocket( m_pConnectionSocket );
+                }
+                //reset socket ptr
+                m_pConnectionSocket = nullptr;
             }
         }, TStatId(), nullptr, ENamedThreads::GameThread );
     }
@@ -355,6 +418,18 @@ bool FRLLiveLinkModule::BuildBlueprint( const FString& strAssetFolder, const FSt
     FString strRootPath = strRootGamePath;
     strRootPath.RemoveFromStart( TEXT( "/Game/" ) );
     strRootPath = FPaths::ProjectContentDir() + strRootPath;
+
+    //Wrinkle setup
+    FString strWrinkleNameForCheck = "head_wm1_normal_head_wm1_browRaiseInner_L";
+    const auto pNameMapping = pSkeleton->GetSmartNameContainer( USkeleton::AnimCurveMappingName );
+    if ( pNameMapping )
+    {
+        const FCurveMetaData* pCurveData = pNameMapping->GetCurveMetaData( FName( strWrinkleNameForCheck ) );
+        if ( pCurveData && pCurveData->Type.bMaterial )
+        {
+            BuildWrinkleBlueprint( strRootGamePath, pSkeletalMesh );
+        }
+    }
 
     // 處理Live Link Bone blueprint
     IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -391,7 +466,7 @@ bool FRLLiveLinkModule::BuildBlueprint( const FString& strAssetFolder, const FSt
         TArray<TWeakObjectPtr<UObject>> kAssetsToRetarget;
         kAssetsToRetarget.Add( pWeekAnimBlueprint );
         EditorAnimUtils::RetargetAnimations( pAnimBlueprint->TargetSkeleton, pSkeletalMesh->Skeleton, kAssetsToRetarget, false, NULL, false );
-
+        
         FKismetEditorUtilities::CompileBlueprint( pAnimBlueprint );
         UPackage* const pAssetPackage = pAnimBlueprint->GetOutermost();
         pAssetPackage->SetDirtyFlag( true );
@@ -487,6 +562,11 @@ bool FRLLiveLinkModule::BuildBlueprint( const FString& strAssetFolder, const FSt
             }
         }
     }
+    //Rename Blueprint
+    UObject* pAnimBlueprintObject = Cast<UObject>( pAnimBlueprint );
+    UObject* pBlueprintObject = Cast<UObject>( pBlueprint );
+    RenameAsset( pAnimBlueprintObject, strAssetName + "_AnimationBlueprint" );
+    RenameAsset( pBlueprintObject, strAssetName + "_Blueprint" );
     return true;
 }
 
@@ -522,17 +602,32 @@ void FRLLiveLinkModule::ProcessObjectData( const TSharedPtr<FJsonValue>& spJsonV
                         BuildBlueprint( strAssetPath, strAssetName, bPlaceAsssetObject );
 
                         //Reset Avatar In Scene
-                        FString strMorphBlueprintPath = strAssetPath + "CCLiveLink_Blueprint.CCLiveLink_Blueprint";
+                        FString strMorphBlueprintPath = strAssetPath + strAssetName + "_Blueprint." + strAssetName + "_Blueprint";
                         UBlueprint* pBlueprint = Cast< UBlueprint >( StaticLoadObject( UBlueprint::StaticClass(), NULL, *( strMorphBlueprintPath ) ) );
+
                         if ( bNeedPutAssetBack && pBlueprint )
                         {
                             PutAssetBackToSceneAfterReplace( pBlueprint );
                         }
                     }
+
                 }
             }
         }
     }
+}
+
+void FRLLiveLinkModule::RenameAsset( UObject* pAssetObject, const FString& strNewAssetName )
+{
+    //Rename Asset
+    FAssetToolsModule& kAssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>( "AssetTools" );
+    TArray<FAssetRenameData> kAssetsAndNames;
+    const FString strPackagePath = FPackageName::GetLongPackagePath( pAssetObject->GetOutermost()->GetName() );
+    new( kAssetsAndNames ) FAssetRenameData();
+    kAssetsAndNames[ 0 ].NewName = strNewAssetName;
+    kAssetsAndNames[ 0 ].NewPackagePath = strPackagePath;
+    kAssetsAndNames[ 0 ].Asset = pAssetObject;
+    kAssetToolsModule.Get().RenameAssetsWithDialog( kAssetsAndNames );
 }
 
 void FRLLiveLinkModule::ProcessCameraData( const TSharedPtr<FJsonValue>& spJsonValue, bool bPlaceAsset )
@@ -561,6 +656,7 @@ void FRLLiveLinkModule::ProcessCameraData( const TSharedPtr<FJsonValue>& spJsonV
 
                     bool bPlaceAsssetObject = ( bNeedPutAssetBack ) ? false : bPlaceAsset;
                     UBlueprint* pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Camera", m_strCineCameraBlueprint, strCameraName, false );
+                    SetupCineCamera( pBlueprint );
                     if( bPlaceAsssetObject )
                     {
                         LoadToScene( pBlueprint );
@@ -767,6 +863,12 @@ void FRLLiveLinkModule::ProcessRequireFromIC( const TSharedPtr<FJsonValue>& spJs
                                  ( kPlugin->IsEnabled() ) ? true : false;
                 spReturnJson->SetBoolField( "CheckCCPlugin", bCheckCCPlugin );
             }
+            else if ( strCmd == "CheckUnrealLiveLinkVersion" )
+            {
+                auto kPlugin = IPluginManager::Get().FindPlugin( TEXT( "RLLiveLink" ) );
+                const FPluginDescriptor& Descriptor = kPlugin->GetDescriptor();
+                spReturnJson->SetNumberField( "CheckUnrealLiveLinkVersion", FCString::Atod( *Descriptor.VersionName ) );
+            }
         }
         FString strJson;
         if ( spReturnJson.IsValid() && spReturnJson->Values.Num() > 0 )
@@ -837,6 +939,122 @@ void FRLLiveLinkModule::CheckAndDeleteDuplicatedAsset( const TSharedPtr<FJsonVal
     }
 }
 
+void FRLLiveLinkModule::CheckSkeletonAssetExist( const TSharedPtr<FJsonValue>& spJsonValue )
+{
+    if ( spJsonValue )
+    {
+        TSharedPtr< FJsonObject > spAvatarsResult = MakeShareable( new FJsonObject );
+        TSharedPtr< FJsonObject > spPropResult = MakeShareable( new FJsonObject );
+        auto spGetArray = spJsonValue->AsArray();
+        for ( auto& spExportList : spGetArray )
+        {
+            auto kExportData = spExportList.Get()->AsObject()->Values;
+            FString strExportName = kExportData[ "Name" ]->AsString();
+            FString strExportType = kExportData[ "Type" ]->AsString();
+            
+            bool bExist = true;
+            FString strPath = "/RLContent/" + strExportName;
+            IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+            FString strSkeletonFilePath = FPaths::ProjectContentDir() + strPath + "/" + strExportName + "_Skeleton.uasset";
+            if ( !kPlatformFile.FileExists( *strSkeletonFilePath ) )
+            {
+                bExist = false;
+            }
+            if ( strExportType == "Avatar" )
+            {
+                spAvatarsResult->SetBoolField( strExportName, bExist );
+            }
+            else if ( strExportType == "Prop" )
+            {
+                spPropResult->SetBoolField( strExportName, bExist );
+            }
+        }
+
+        //SendMessageBack
+        TSharedPtr< FJsonObject > spReturnJson = MakeShareable( new FJsonObject );
+        TSharedPtr< FJsonObject > spCheckResult = MakeShareable( new FJsonObject );
+        spCheckResult->SetObjectField( "Avatar", spAvatarsResult );
+        spCheckResult->SetObjectField( "Prop", spPropResult );
+        spReturnJson->SetObjectField( "CheckSkeletonAssetExistDone", spCheckResult );
+
+        FString strJson;
+        if ( spReturnJson.IsValid() && spReturnJson->Values.Num() > 0 )
+        {
+            TSharedRef<TJsonWriter<TCHAR>> spJsonWriter = TJsonWriterFactory<>::Create( &strJson );
+            FJsonSerializer::Serialize( spReturnJson.ToSharedRef(), spJsonWriter );
+        }
+        TCHAR* pSerializedChar = strJson.GetCharArray().GetData();
+
+        FTCHARToUTF8 kConverted( pSerializedChar ); //string to utf8
+        int32 nSent = 0;
+        if ( m_pConnectionSocket )
+        {
+            m_pConnectionSocket->Send( ( uint8* )kConverted.Get(), kConverted.Length(), nSent );
+        }
+    }
+}
+
+void FRLLiveLinkModule::CheckAssetExist( const TSharedPtr< FJsonValue >& spJsonValue )
+{
+    if ( spJsonValue )
+    {
+        TSharedPtr< FJsonObject > spResult = MakeShareable( new FJsonObject );
+        auto spGetArray = spJsonValue->AsArray();
+        for ( auto& spExportList : spGetArray )
+        {
+            auto kExportData = spExportList.Get()->AsObject()->Values;
+            FString strAssetName = kExportData[ "Name" ]->AsString();
+            FString strAssetPath = kExportData[ "Path" ]->AsString();
+
+            bool bExist = true;
+            IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+            FString strSkeletonFilePath = FPaths::ProjectContentDir() + strAssetPath;
+            if ( !kPlatformFile.FileExists( *strSkeletonFilePath ) )
+            {
+                bExist = false;
+            }
+            spResult->SetBoolField( strAssetName, bExist );
+        }
+
+        //SendMessageBack
+        TSharedPtr< FJsonObject > spReturnJson = MakeShareable( new FJsonObject );
+        spReturnJson->SetObjectField( "CheckAssetExistDone", spResult );
+
+        FString strJson;
+        if ( spReturnJson.IsValid() && spReturnJson->Values.Num() > 0 )
+        {
+            TSharedRef<TJsonWriter<TCHAR>> spJsonWriter = TJsonWriterFactory<>::Create( &strJson );
+            FJsonSerializer::Serialize( spReturnJson.ToSharedRef(), spJsonWriter );
+        }
+        TCHAR* pSerializedChar = strJson.GetCharArray().GetData();
+
+        FTCHARToUTF8 kConverted( pSerializedChar ); //string to utf8
+        int32 nSent = 0;
+        if ( m_pConnectionSocket )
+        {
+            m_pConnectionSocket->Send( ( uint8* )kConverted.Get(), kConverted.Length(), nSent );
+        }
+    }
+}
+
+void FRLLiveLinkModule::CheckICVersion( const TSharedPtr< FJsonValue >& spJsonValue )
+{
+    if ( spJsonValue )
+    {
+
+        if ( spJsonValue->AsNumber() >= 100 )
+        {
+            TransferSceneToIC( m_iMergeMode );
+        }
+        else
+        {
+            FText strMsg = FText::FromString( "Please make sure iClone is running properly.\nOr the current version of iClone does not support this feature. \nPlease upgrade to iClone 8.1 or later then try again." );
+            FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+            return;
+        }
+        
+    }
+}
 //Add SubMenu-----------------------------------------------------------------------------------------------
 TSharedRef<SWidget> FRLLiveLinkModule::FillComboButton( TSharedPtr<class FUICommandList> spCommands )
 {
@@ -928,6 +1146,17 @@ TSharedRef<SWidget> FRLLiveLinkModule::FillComboButton( TSharedPtr<class FUIComm
     );
     kMenuBuilder.EndSection();
 
+    kMenuBuilder.BeginSection( "iClone Data Link", LOCTEXT( "iClone Data Link", "iClone Data Link" ) );
+    {
+        kMenuBuilder.AddSubMenu(
+            LOCTEXT( "Transfer to iClone", "Transfer to iClone" ),
+            LOCTEXT( "Transfer to iClone", "" ),
+            FNewMenuDelegate::CreateRaw( this, &FRLLiveLinkModule::FillTransferSceneMenu ),
+            false,
+            FSlateIcon()
+        );
+    }
+    kMenuBuilder.EndSection();
     //Help menu block
     kMenuBuilder.BeginSection( "HelpKeys", LOCTEXT( "KeysMenuHelp", "Learn" ) );
     FString strWebID00 = "ICLIVELINK_005";
@@ -961,6 +1190,73 @@ TSharedRef<SWidget> FRLLiveLinkModule::FillComboButton( TSharedPtr<class FUIComm
     kMenuBuilder.EndSection();
 
     return kMenuBuilder.MakeWidget();
+}
+
+//for outliner and viewport right click
+void FRLLiveLinkModule::AddMenuEntryInRightClick()
+{
+    FLevelEditorModule& kLevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>( TEXT( "LevelEditor" ) );
+    auto& kViewportExtenders = kLevelEditorModule.GetAllLevelViewportContextMenuExtenders();
+    kViewportExtenders.Add( FLevelEditorModule::FLevelViewportMenuExtender_SelectedActors::CreateRaw( this, &FRLLiveLinkModule::OutlinerMenuExtend ) );
+}
+
+TSharedRef<FExtender> FRLLiveLinkModule::OutlinerMenuExtend( const TSharedRef<FUICommandList> kCommandList, const TArray<AActor*> pActors )
+{
+    TSharedRef<FExtender> kExtender = MakeShared<FExtender>();
+    kExtender->AddMenuExtension(
+        "ActorAsset",
+        EExtensionHook::After,
+        kCommandList,
+        FMenuExtensionDelegate::CreateLambda( [this]( FMenuBuilder& kMenuBuilder )
+        {
+            kMenuBuilder.BeginSection( "iClone Data Link", LOCTEXT( "iClone Data Link", "iClone Data Link" ) );
+            {
+                kMenuBuilder.AddSubMenu(
+                    LOCTEXT( "Transfer to iClone", "Transfer to iClone" ),
+                    LOCTEXT( "Transfer to iClone", "" ),
+                    FNewMenuDelegate::CreateRaw( this, &FRLLiveLinkModule::FillTransferSceneMenu ),
+                    false,
+                    FSlateIcon()
+                );
+            }
+            kMenuBuilder.EndSection();
+        } )
+    );
+    return kExtender;
+}
+
+void FRLLiveLinkModule::FillTransferSceneMenu( FMenuBuilder& kMenuBuilder )
+{
+    kMenuBuilder.AddMenuEntry(
+        LOCTEXT( "Transfer to iClone", "Transfer to iClone" ),
+        LOCTEXT( "Transfer to iClone", "Transfer to iClone" ),
+        FSlateIcon(),
+        FUIAction( FExecuteAction::CreateRaw( this, &FRLLiveLinkModule::CheckICVersionBeforeTransferScene, ETransferMode::Batch ) )
+    );
+    kMenuBuilder.AddMenuEntry(
+        LOCTEXT( "Transfer to iClone (Merged)", "Transfer to iClone (Merged)" ),
+        LOCTEXT( "Transfer to iClone (Merged)", "Transfer to iClone (Merged)" ),
+        FSlateIcon(),
+        FUIAction( FExecuteAction::CreateRaw( this, &FRLLiveLinkModule::CheckICVersionBeforeTransferScene, ETransferMode::Merge ) )
+    );
+    kMenuBuilder.AddMenuEntry(
+        LOCTEXT( "Transfer to iClone (Simplified)", "Transfer to iClone (Simplified)" ),
+        LOCTEXT( "Transfer to iClone (Simplified)", "Transfer to iClone (Simplified)" ),
+        FSlateIcon(),
+        FUIAction( FExecuteAction::CreateRaw( this, &FRLLiveLinkModule::CheckICVersionBeforeTransferScene, ETransferMode::Simplify ) )
+    );
+    /*kMenuBuilder.AddMenuEntry(
+        LOCTEXT( "Transfer to iClone ( batch ( merge ) )", "Transfer to iClone ( batch ( merge ) )" ),
+        LOCTEXT( "Transfer to iClone ( batch ( merge ) )", "Transfer to iClone ( batch ( merge ) )" ),
+        FSlateIcon(),
+        FUIAction( FExecuteAction::CreateRaw( this, &FRLLiveLinkModule::CheckICVersionBeforeTransferScene, ETransferMode::BatchMerge ) )
+    );
+    kMenuBuilder.AddMenuEntry(
+        LOCTEXT( "Transfer to iClone ( batch ( simplify ) )", "Transfer to iClone ( batch ( simplify ) )" ),
+        LOCTEXT( "Transfer to iClone ( batch ( simplify ) )", "Transfer to iClone ( batch ( simplify ) )" ),
+        FSlateIcon(),
+        FUIAction( FExecuteAction::CreateRaw( this, &FRLLiveLinkModule::CheckICVersionBeforeTransferScene, ETransferMode::BatchSimplify ) )
+    );*/
 }
 
 //Menu Button Event----------------------------------------------------------------------------------
@@ -1046,6 +1342,993 @@ void FRLLiveLinkModule::LiveLinkHelpMenu( FString strWebID )
     FPlatformProcess::LaunchURL( *( "https://www.reallusion.com/linkcount/linkcount.aspx?lid=" + strWebID ), NULL, NULL );
 }
 
+void FRLLiveLinkModule::CheckICVersionBeforeTransferScene( const ETransferMode iMode )
+{
+    m_iMergeMode = iMode;
+
+    GEditor->GetTimerManager()->SetTimer(
+        m_kCountdownRecheckICVersionTimerHandle,
+        FTimerDelegate::CreateLambda( [this]()
+    {
+        FText strMsg = FText::FromString( "Please make sure iClone is running properly.\nOr the current version of iClone does not support this feature. \nPlease upgrade to iClone 8.1 or later then try again." );
+        FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+    } ),
+        1.0f,
+        false
+        );
+    TSharedPtr<FJsonObject> spReturnJson = MakeShareable( new FJsonObject );
+    spReturnJson->SetBoolField( "CheckICLiveLinkVersion", false );
+
+    SendJsonToIC( spReturnJson );
+}
+
+void FRLLiveLinkModule::TransferSceneToIC( ETransferMode iMode )
+{
+    GEditor->GetTimerManager()->ClearTimer( m_kCountdownRecheckICVersionTimerHandle );
+    
+    bool bExportFbxResult = false;
+    TArray<struct ExportFbxSetting> kExportFbxSettingList;
+
+    FDateTime Now = FDateTime::Now();
+    FString strCurrentTime = FString::Printf( TEXT( "%d_%d_%d_%d_%d_%d" ),
+                                              Now.GetYear(), Now.GetMonth(), Now.GetDay(), Now.GetHour(), Now.GetMinute(), Now.GetSecond() );
+    FString strExportDirectory = FDesktopPlatformModule::Get()->GetUserTempPath() + "UELiveLink/";
+
+    if ( iMode == ETransferMode::BatchMerge || iMode == ETransferMode::BatchSimplify )
+    {
+        TSet<UStaticMesh*> kStaticMeshList;
+        BatchTransferSceneToIClone( iMode, kStaticMeshList );
+
+        strExportDirectory = strExportDirectory + "Batch/" + strCurrentTime;
+        for ( auto pStaticMesh : kStaticMeshList )
+        {
+            struct ExportFbxSetting kExportFbxSetting;
+            kExportFbxSetting.pObjectToExport = pStaticMesh;
+            kExportFbxSetting.strSaveFilePath = strExportDirectory + "/" + pStaticMesh->GetName() + ".FBX";
+
+            kExportFbxSettingList.Add( kExportFbxSetting );
+        }
+#if ENGINE_MAJOR_VERSION > 4
+        if ( !kExportFbxSettingList.IsEmpty() )
+#else
+        if ( kExportFbxSettingList.Num() )
+#endif
+        {
+            bExportFbxResult = ExportFbx( kExportFbxSettingList );
+            DeletePackageInContentBrowser( FPackageName::GetLongPackagePath( kExportFbxSettingList[0].pObjectToExport->GetPathName() ) );
+        }
+    }
+    else if ( iMode == ETransferMode::Batch )
+    {
+        strExportDirectory = strExportDirectory + "Batch/" + strCurrentTime;
+        FString strExportObjectName = "UE_Actor";
+
+        USelection* pSelectedActors = GEditor->GetSelectedActors();
+
+        if ( pSelectedActors->CountSelections<AActor>() == 0 )
+        {
+            return;
+        }
+        else if ( pSelectedActors->CountSelections<AActor>() == 1 )
+        {
+#if ENGINE_MAJOR_VERSION > 4
+            strExportObjectName = pSelectedActors->GetTop<AActor>()->GetActorNameOrLabel();
+#else
+            strExportObjectName = pSelectedActors->GetTop<AActor>()->GetActorLabel().Len() != 0 ? pSelectedActors->GetTop<AActor>()->GetActorLabel() : pSelectedActors->GetTop<AActor>()->GetName();
+#endif
+        }
+        FString strSaveFilePath = strExportDirectory + "/" + strExportObjectName + ".FBX";
+
+        TSet<AActor*> kDeselectedActors;
+        if ( !DeselectNonStaticMeshActors( kDeselectedActors ) )
+        {
+            for ( auto pDeselectedActors : kDeselectedActors )
+            {
+                GEditor->GetSelectedActors()->Select( Cast<UObject>( pDeselectedActors ) );
+            }
+            return;
+        }
+
+        bExportFbxResult = ExportSelected( strSaveFilePath );
+
+        //在把原本deselect 掉的select回來
+        for ( auto pDeselectedActors : kDeselectedActors )
+        {
+            GEditor->GetSelectedActors()->Select( Cast<UObject>( pDeselectedActors ) );
+        }
+    }
+    else if ( iMode == ETransferMode::Merge || iMode == ETransferMode::Simplify )
+    {
+        FString strExportMeshMergePathToLoad = "";
+        if ( !RunMergeFromSelection( iMode, strExportMeshMergePathToLoad ) )
+        {
+            //FText strMsg = FText::FromString( "Fail to merge" );
+            //FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+            return;
+        }
+
+        //get UObject
+        UStaticMesh* pStaticMesh = Cast<UStaticMesh>( StaticLoadObject( UStaticMesh::StaticClass(), nullptr, *( strExportMeshMergePathToLoad ) ) );
+
+        //export fbx 
+        if ( !pStaticMesh )
+        {
+            return;
+        }
+
+        switch ( iMode )
+        {
+            case ETransferMode::Merge:
+                strExportDirectory = strExportDirectory + "Merged/" + strCurrentTime;
+                break;
+            case ETransferMode::Simplify:
+                strExportDirectory = strExportDirectory + "Simplified/" + strCurrentTime;
+                break;
+        }
+        struct ExportFbxSetting kExportFbxSetting;
+        kExportFbxSetting.pObjectToExport = pStaticMesh;
+        kExportFbxSetting.strSaveFilePath = strExportDirectory + "/" + pStaticMesh->GetName() + ".FBX";
+
+        kExportFbxSettingList.Add( kExportFbxSetting );
+        
+        bExportFbxResult = ExportFbx( kExportFbxSettingList );
+        //delete temp merged object in content browser
+        DeletePackageInContentBrowser( FPackageName::GetLongPackagePath( strExportMeshMergePathToLoad ) );
+    }
+    if ( bExportFbxResult )
+    {
+        TSharedPtr<FJsonObject> spReturnJson = MakeShareable( new FJsonObject );
+
+        spReturnJson->SetStringField( "DataLinkExportedFbxFilePath", strExportDirectory );
+        if ( iMode == ETransferMode::Batch )
+        {
+            spReturnJson->SetStringField( "DataLinkExportedFbxTargetCollectionName", "UE_Scene" );
+        }
+        else
+        {
+            spReturnJson->SetStringField( "DataLinkExportedFbxTargetCollectionName", "UE_Merged" );
+        }
+
+        SendJsonToIC( spReturnJson );
+        
+    }
+    else
+    {
+        FText strMsg = FText::FromString( "Fail to export" );
+        FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+    }
+}
+
+bool CheckActorComponentCanBeTransferToIC( UPrimitiveComponent* pPrimComponent )
+{
+    if ( !pPrimComponent->IsVisible() )
+    {
+        return false;
+    }
+
+    if ( UStaticMeshComponent* pStaticMeshComponent = Cast<UStaticMeshComponent>( pPrimComponent ) )
+    {
+        UStaticMesh* pStaticMesh = pStaticMeshComponent->GetStaticMesh();
+
+        if( pStaticMesh )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool FRLLiveLinkModule::DeselectNonStaticMeshActors( TSet<AActor*>& kDeselectedActors )
+{
+    USelection* pSelectedActors = GEditor->GetSelectedActors();
+
+    TSet<AActor*> pActors;
+
+    for ( FSelectionIterator pIter( *pSelectedActors ); pIter; ++pIter )
+    {
+        AActor* pActor = Cast<AActor>( *pIter );
+        if ( pActor )
+        {
+            pActors.Add( pActor );
+            // Add child actors & actors found under foundations
+
+#if ENGINE_MAJOR_VERSION >= 5
+            pActor->EditorGetUnderlyingActors( pActors );
+#else
+            EditorGetUnderlyingActors( pActor, pActors );
+#endif
+        }
+    }
+
+    for ( AActor* pActor : pActors )
+    {
+        check( pActor != nullptr );
+
+        TArray<UPrimitiveComponent*> pPrimComponents;
+        pActor->GetComponents<UPrimitiveComponent>( pPrimComponents );
+        bool bInclude = false;
+        for ( UPrimitiveComponent* pPrimComponent : pPrimComponents )
+        {
+            if( CheckActorComponentCanBeTransferToIC( pPrimComponent ) )
+            {
+                bInclude = true;
+                break;
+            }
+        }
+        if ( !bInclude )
+        {
+            pSelectedActors->Deselect( Cast<UObject>( pActor ) );
+            kDeselectedActors.Add( pActor );
+        }
+    }
+    int iAfterDeselection = pSelectedActors->CountSelections<AActor>();
+
+    if ( iAfterDeselection == 0 )
+    {
+        FText strMsg = FText::FromString( "The selected actor(s) do not have static mesh." );
+        FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+        return false;
+    }
+#if ENGINE_MAJOR_VERSION > 4
+    else if ( !kDeselectedActors.IsEmpty() )
+#else
+    else if ( kDeselectedActors.Num() )
+#endif
+    {
+        FString strListOfActorsName = "";
+        for ( AActor* pDeselectedActor : kDeselectedActors )
+        {
+#if ENGINE_MAJOR_VERSION > 4
+            strListOfActorsName = strListOfActorsName + pDeselectedActor->GetActorNameOrLabel() + "\n";
+#else
+            FString strActorName = pDeselectedActor->GetActorLabel().Len() != 0 ? pDeselectedActor->GetActorLabel() : pDeselectedActor->GetName();
+            strListOfActorsName = strListOfActorsName + strActorName + "\n";
+#endif
+        }
+        FText strMsg = FText::FromString( "Some actors do not have static mesh.\nPress Continue to skip these actors or Cancel to end the procedure.\n\r" + strListOfActorsName );
+        const EAppReturnType::Type eChoice = FMessageDialog::Open( EAppMsgType::OkCancel, strMsg );
+
+        if ( eChoice == EAppReturnType::Cancel )
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void FRLLiveLinkModule::SendJsonToIC( const TSharedPtr<FJsonObject>& spReturnJson )
+{
+    FString strJson;
+    if ( spReturnJson.IsValid() && spReturnJson->Values.Num() > 0 )
+    {
+        TSharedRef<TJsonWriter<TCHAR>> spJsonWriter = TJsonWriterFactory<>::Create( &strJson );
+        FJsonSerializer::Serialize( spReturnJson.ToSharedRef(), spJsonWriter );
+    }
+    TCHAR* pSerializedChar = strJson.GetCharArray().GetData();
+
+    FTCHARToUTF8 kConverted( pSerializedChar ); //string to utf8
+    int32 nSent = 0;
+
+    if ( m_pConnectionSocket )
+    {
+        m_pConnectionSocket->Send( ( uint8* )kConverted.Get(), kConverted.Length(), nSent );
+    }
+    else
+    {
+        GEditor->GetTimerManager()->ClearTimer( m_kCountdownRecheckICVersionTimerHandle );
+        FText strMsg = FText::FromString( "Please make sure iClone is running properly.\nOr the current version of iClone does not support this feature. \nPlease upgrade to iClone 8.1 or later then try again." );
+        FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+    }
+}
+//Export Fbx
+//修改自void FAssetFileContextMenu::ExecuteExport()
+bool FRLLiveLinkModule::ExportFbx( const struct ExportFbxSetting& kExportFbxSetting )
+{
+    TArray<struct ExportFbxSetting> kExportFbxSettings;
+    kExportFbxSettings.Add( kExportFbxSetting );
+
+    if ( kExportFbxSettings.Num( ) > 0 )
+    {
+        return ExportAssetsInternal( kExportFbxSettings );
+    }
+
+    return false;
+}
+
+bool FRLLiveLinkModule::ExportFbx( const TArray<struct ExportFbxSetting>& kExportFbxSettings )
+{
+    if ( kExportFbxSettings.Num() > 0 )
+    {
+        return ExportAssetsInternal( kExportFbxSettings );
+    }
+
+    return false;
+}
+//修改自void UAssetToolsImpl::ExportAssetsInternal
+bool FRLLiveLinkModule::ExportAssetsInternal( const TArray<struct ExportFbxSetting>& kExportFbxSettings, bool bPromptIndividualFilenames ) const//bPromptIndividualFilenames應該是要每個object個別指定位置用吧?
+{
+    if ( kExportFbxSettings.Num() == 0 )
+    {
+        return false;
+    }
+
+    GWarn->BeginSlowTask( NSLOCTEXT( "UnrealEd", "Exporting", "Exporting" ), true );
+
+    // Create an array of all available exporters.
+    TArray<UExporter*> kExporters;
+    ObjectTools::AssembleListOfExporters( kExporters );
+
+    //Array to control the batch mode and the show options for the exporters that will be use by the selected assets
+    TArray<UExporter*> pUsedExporters;
+
+    // Export the objects.
+    bool bAnyObjectMissingSourceData = false;
+    for ( int32 Index = 0; Index < kExportFbxSettings.Num(); Index++ )
+    {
+        GWarn->StatusUpdate( Index, kExportFbxSettings.Num(), FText::Format( NSLOCTEXT( "UnrealEd", "Exportingf", "Exporting ({0} of {1})" ), FText::AsNumber( Index ), FText::AsNumber( kExportFbxSettings.Num() ) ) );
+
+        UObject* pObjectToExport = kExportFbxSettings[ Index ].pObjectToExport;
+        if ( !pObjectToExport )
+        {
+            continue;
+        }
+
+        if ( pObjectToExport->GetOutermost()->HasAnyPackageFlags( PKG_DisallowExport ) )
+        {
+            continue;
+        }
+
+        // Find all the exporters that can export this type of object and construct an export file dialog.
+        TArray<FString> kPreferredExtensions;
+        //把可以用的exporter挑出來
+        // Iterate in reverse so the most relevant file formats are considered first.
+        for ( int32 iExporterIndex = kExporters.Num() - 1; iExporterIndex >= 0; --iExporterIndex )
+        {
+            UExporter* pExporter = kExporters[ iExporterIndex ];
+            if ( pExporter->SupportedClass )
+            {
+                const bool bObjectIsSupported = pExporter->SupportsObject( pObjectToExport );
+                if ( bObjectIsSupported )
+                {
+                    // Get a string representing of the exportable types.
+                    check( pExporter->FormatExtension.IsValidIndex( pExporter->PreferredFormatIndex ) );
+                    for ( int32 iFormatIndex = pExporter->FormatExtension.Num() - 1; iFormatIndex >= 0; --iFormatIndex )
+                    {
+                        const FString& strFormatExtension = pExporter->FormatExtension[ iFormatIndex ];
+
+                        if ( iFormatIndex == pExporter->PreferredFormatIndex )
+                        {
+                            kPreferredExtensions.Add( strFormatExtension );
+                        }
+                    }
+                }
+            }
+        }
+
+        // Skip this object if no exporter found for this resource type.
+        if ( kPreferredExtensions.Num() == 0 )
+        {
+            continue;
+        }
+        
+        // Create the path, then make sure the target file is not read-only.
+        if ( IFileManager::Get().FileExists( *kExportFbxSettings[ Index ].strSaveFilePath ) )
+        {
+            IFileManager::Get().Delete( *kExportFbxSettings[ Index ].strSaveFilePath );
+        }
+
+        const FString strObjectExportPath( FPaths::GetPath( kExportFbxSettings[ Index ].strSaveFilePath ) );
+        const bool bFileInSubdirectory = strObjectExportPath.Contains( TEXT( "/" ) );
+        if ( bFileInSubdirectory && ( !IFileManager::Get().MakeDirectory( *strObjectExportPath, true ) ) )
+        {
+            FMessageDialog::Open( EAppMsgType::Ok, FText::Format( NSLOCTEXT( "UnrealEd", "Error_FailedToMakeDirectory", "Failed to make directory {0}" ), FText::FromString( strObjectExportPath ) ) );
+
+            return false;
+        }
+        else if ( IFileManager::Get().IsReadOnly( *kExportFbxSettings[ Index ].strSaveFilePath ) )
+        {
+            FMessageDialog::Open( EAppMsgType::Ok, FText::Format( NSLOCTEXT( "UnrealEd", "Error_CouldntWriteToFile_F", "Couldn't write to file '{0}'. Maybe file is read-only?" ), FText::FromString( kExportFbxSettings[ Index ].strSaveFilePath ) ) );
+
+            return false;
+        }
+        else
+        {
+            //設定 FBX export setting
+            UFbxExportOption* kFbxExportOption = GetMutableDefault<UFbxExportOption>();
+            kFbxExportOption->LevelOfDetail = false;
+            kFbxExportOption->Collision = false;
+            kFbxExportOption->bExportMorphTargets = false;
+            kFbxExportOption->VertexColor = false;
+            kFbxExportOption->bExportLocalTime = false;
+            // We have a writeable file.  Now go through that list of exporters again and find the right exporter and use it.
+            TArray<UExporter*>	kValidExporters;
+
+            for ( int32 iExporterIndex = 0; iExporterIndex < kExporters.Num(); ++iExporterIndex )
+            {
+                UExporter* pExporter = kExporters[ iExporterIndex ];
+                if ( pExporter->SupportsObject( pObjectToExport ) )
+                {
+                    check( pExporter->FormatExtension.Num() == pExporter->FormatDescription.Num() );
+                    for ( int32 iFormatIndex = 0; iFormatIndex < pExporter->FormatExtension.Num(); ++iFormatIndex )
+                    {
+                        const FString& FormatExtension = pExporter->FormatExtension[ iFormatIndex ];
+                        if ( FCString::Stricmp( *FormatExtension, *FPaths::GetExtension( kExportFbxSettings[ Index ].strSaveFilePath ) ) == 0 ||
+                             FCString::Stricmp( *FormatExtension, TEXT( "*" ) ) == 0 )
+                        {
+                            kValidExporters.Add( pExporter );
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Handle the potential of multiple exporters being found
+            UExporter* pExporterToUse = NULL;
+            if ( kValidExporters.Num() == 1 )
+            {
+                pExporterToUse = kValidExporters[ 0 ];
+            }
+            else if ( kValidExporters.Num() > 1 )
+            {
+                // Set up the first one as default
+                pExporterToUse = kValidExporters[ 0 ];
+
+                // ...but search for a better match if available
+                for ( int32 iExporterIdx = 0; iExporterIdx < kValidExporters.Num(); iExporterIdx++ )
+                {
+                    if ( kValidExporters[ iExporterIdx ]->GetClass()->GetFName() == pObjectToExport->GetExporterName() )
+                    {
+                        pExporterToUse = kValidExporters[ iExporterIdx ];
+                        break;
+                    }
+                }
+            }
+
+            // If an exporter was found, use it.
+            if ( pExporterToUse )
+            {
+
+                if ( !pUsedExporters.Contains( pExporterToUse ) )
+                {
+                    pExporterToUse->SetBatchMode( kExportFbxSettings.Num() > 1 && !bPromptIndividualFilenames );
+                    pExporterToUse->SetCancelBatch( false );
+                    pExporterToUse->SetShowExportOption( true );
+                    pExporterToUse->AddToRoot();
+                    pUsedExporters.Add( pExporterToUse );
+                }
+
+                UAssetExportTask* pExportTask = NewObject<UAssetExportTask>();
+                FGCObjectScopeGuard ExportTaskGuard( pExportTask );
+                pExportTask->Object = pObjectToExport;
+                pExportTask->Exporter = pExporterToUse;
+                pExportTask->Filename = kExportFbxSettings[ Index ].strSaveFilePath;
+                pExportTask->bSelected = false;
+                pExportTask->bReplaceIdentical = true;
+                pExportTask->bPrompt = false;
+                pExportTask->bUseFileArchive = pObjectToExport->IsA( UPackage::StaticClass() );
+                pExportTask->bWriteEmptyFiles = false;
+                pExportTask->Options = kFbxExportOption;
+                pExportTask->bAutomated = true;
+                if ( !UExporter::RunAssetExportTask( pExportTask ) ) //when fail -> return false
+                {
+                    return false;
+                }
+
+                if ( pExporterToUse->GetBatchMode() && pExporterToUse->GetCancelBatch() )
+                {
+                    //Exit the export file loop when there is a cancel all
+                    break;
+                }
+
+            }
+        }
+    }
+
+    //Set back the default value for the all used exporters
+    for ( UExporter* pUsedExporter : pUsedExporters )
+    {
+        pUsedExporter->SetBatchMode( false );
+        pUsedExporter->SetCancelBatch( false );
+        pUsedExporter->SetShowExportOption( true );
+        pUsedExporter->RemoveFromRoot();
+    }
+    pUsedExporters.Empty();
+
+    if ( bAnyObjectMissingSourceData )
+    {
+        FMessageDialog::Open( EAppMsgType::Ok, NSLOCTEXT( "UnrealEd", "Exporter_Error_SourceDataUnavailable", "No source data available for some objects.  See the log for details." ) );
+    }
+
+    GWarn->EndSlowTask();
+
+    return true;
+}
+//修改自void FEditorFileUtils::Export(bool bExportSelectedActorsOnly)
+bool FRLLiveLinkModule::ExportSelected( const FString& strSaveFilePath )
+{
+    UWorld* World = GWorld;
+    if ( !strSaveFilePath.IsEmpty() )
+    {
+        const FString strObjectExportPath( FPaths::GetPath( strSaveFilePath ) );
+        const bool bFileInSubdirectory = strObjectExportPath.Contains( TEXT( "/" ) );
+        if ( bFileInSubdirectory && ( !IFileManager::Get().MakeDirectory( *strObjectExportPath, true ) ) )
+        {
+            FMessageDialog::Open( EAppMsgType::Ok, FText::Format( NSLOCTEXT( "UnrealEd", "Error_FailedToMakeDirectory", "Failed to make directory {0}" ), FText::FromString( strObjectExportPath ) ) );
+
+            return false;
+        }
+        else 
+        {
+            FString MapFileName = FPaths::GetCleanFilename( *strSaveFilePath );
+            const FText LocalizedExportingMap = FText::Format( NSLOCTEXT( "UnrealEd", "ExportingMap_F", "Exporting map: {0}..." ), FText::FromString( MapFileName ) );
+            GWarn->BeginSlowTask( LocalizedExportingMap, true );
+
+            UFbxExportOption* kFbxExportOption = GetMutableDefault<UFbxExportOption>();
+            kFbxExportOption->LevelOfDetail = false;
+            kFbxExportOption->Collision = false;
+            kFbxExportOption->bExportMorphTargets = false;
+            kFbxExportOption->VertexColor = false;
+            kFbxExportOption->bExportLocalTime = false;
+
+            UAssetExportTask* pExportTask = NewObject<UAssetExportTask>();
+            FGCObjectScopeGuard ExportTaskGuard( pExportTask );
+            pExportTask->Object = World;
+            pExportTask->Exporter = NULL;
+            pExportTask->Filename = strSaveFilePath;
+            pExportTask->bSelected = true;
+            pExportTask->bReplaceIdentical = true;
+            pExportTask->bPrompt = false;
+            pExportTask->bUseFileArchive = false;
+            pExportTask->bWriteEmptyFiles = false;
+            pExportTask->Options = kFbxExportOption;
+            pExportTask->bAutomated = true;
+
+            if ( !UExporter::RunAssetExportTask( pExportTask ) )
+            {
+                return false;
+            }
+
+            GWarn->EndSlowTask();
+            return true;
+        }
+    }
+    return false;
+}
+
+//merge actors
+bool FRLLiveLinkModule::RunMergeFromSelection( ETransferMode eMergeMode, FString& strPackageName )
+{
+    TArray<TSharedPtr<FMergeComponentData>> kSelectionDataList;
+    if ( !BuildMergeComponentDataFromSelection( kSelectionDataList ) ) 
+    {
+        return false; // if user press cancel
+    }
+
+    if ( kSelectionDataList.Num() == 0 || !HasAtLeastOneStaticMesh( kSelectionDataList ) )
+    {
+        FText strMsg = FText::FromString( "The selected actor(s) do not have static mesh." );
+        FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+        return false;
+    }
+
+    //FString strPackageName;
+    if ( GetPackageNameForMergeAction( GetDefaultPackageName(), strPackageName ) )
+    {
+        bool bResult = false;
+
+        switch ( eMergeMode ) 
+        {
+            case ETransferMode::Merge:
+                bResult = RunMerge( strPackageName, kSelectionDataList );
+                break;
+
+            case ETransferMode::Simplify:
+                bResult = RunSimplify( strPackageName, kSelectionDataList );
+                //因為最後外部在取object的時候只取static mesh，所以strPackageName會改成static mesh的path
+                strPackageName = FPackageName::GetLongPackagePath( strPackageName ) + TEXT( "/SM_" ) + FPackageName::GetShortName( strPackageName );
+                break;
+        }
+        return bResult;
+    }
+    else
+    {
+        return false;
+    }
+}
+bool FRLLiveLinkModule::RunSimplify( const FString& strPackageName, const TArray<TSharedPtr<FMergeComponentData>>& kSelectedComponents )//bReplaceSourceActors 在這裡永遠都是false
+{
+    TArray<AActor*> pActors;
+    TArray<ULevel*> pUniqueLevels;
+    TArray<UObject*> pAssetsToSync;
+
+    BuildActorsListFromMergeComponentsData( kSelectedComponents, pActors, nullptr );
+
+    if ( pActors.Num() )
+    {
+        // Get the module for the mesh merge utilities
+        const IMeshMergeUtilities& kMeshMergeUtilities = FModuleManager::Get().LoadModuleChecked<IMeshMergeModule>( "MeshMergeUtilities" ).GetUtilities();
+
+        GWarn->BeginSlowTask( LOCTEXT( "MeshProxy_CreatingProxy", "Creating Mesh Proxy" ), true );
+        GEditor->BeginTransaction( LOCTEXT( "MeshProxy_Create", "Creating Mesh Proxy" ) );
+
+        FVector kProxyLocation = FVector::ZeroVector;
+        TArray<UObject*> pNewAssetsToSync;
+
+        FCreateProxyDelegate kProxyDelegate;
+        kProxyDelegate.BindLambda(
+            [&pNewAssetsToSync]( const FGuid kGuid, TArray<UObject*>& kInAssetsToSync )
+        {
+            
+        } );
+
+        // Extracting static mesh components from the selected mesh components in the dialog
+        TArray<UStaticMeshComponent*> pStaticMeshComponentsToMerge;
+
+        for ( const TSharedPtr<FMergeComponentData>& pSelectedComponent : kSelectedComponents )
+        {
+            // Determine whether or not this component should be incorporated according the user settings
+            if ( pSelectedComponent->bShouldIncorporate && pSelectedComponent->PrimComponent.IsValid() )
+            {
+                if ( UStaticMeshComponent* pStaticMeshComponent = Cast<UStaticMeshComponent>( pSelectedComponent->PrimComponent.Get() ) )
+                    pStaticMeshComponentsToMerge.Add( pStaticMeshComponent );
+            }
+        }
+        pStaticMeshComponentsToMerge.RemoveAll( []( UStaticMeshComponent* pVal ) { return pVal->GetStaticMesh() == nullptr; } );
+#if ENGINE_MAJOR_VERSION > 4
+        if ( !pStaticMeshComponentsToMerge.IsEmpty() )
+#else
+        if ( pStaticMeshComponentsToMerge.Num() )
+#endif
+        {
+            FGuid kJobGuid = FGuid::NewGuid();
+            kMeshMergeUtilities.CreateProxyMesh( pStaticMeshComponentsToMerge, m_kMeshProxySetting, nullptr, strPackageName, kJobGuid, kProxyDelegate );
+        }
+
+        GEditor->EndTransaction();
+        GWarn->EndSlowTask();
+    }
+
+    return true;
+}
+
+void FRLLiveLinkModule::BuildActorsListFromMergeComponentsData( const TArray<TSharedPtr<FMergeComponentData>>& kInComponentsData, TArray<AActor*>& pOutActors, TArray<ULevel*>* pOutLevels /* = nullptr */ )
+{
+    for ( const TSharedPtr<FMergeComponentData>& pSelectedComponent : kInComponentsData )
+    {
+        if ( pSelectedComponent->PrimComponent.IsValid() )
+        {
+            AActor* pActor = pSelectedComponent->PrimComponent.Get()->GetOwner();
+            pOutActors.AddUnique( pActor );
+            if ( pOutLevels )
+                pOutLevels->AddUnique( pActor->GetLevel() );
+        }
+    }
+}
+
+bool FRLLiveLinkModule::RunMerge( const FString& strPackageName, const TArray<TSharedPtr<FMergeComponentData>>& kSelectedComponents )//bReplaceSourceActors 在這裡永遠都是false
+{
+    const IMeshMergeUtilities& kMeshUtilities = FModuleManager::Get().LoadModuleChecked<IMeshMergeModule>( "MeshMergeUtilities" ).GetUtilities();
+    TArray<ULevel*> kUniqueLevels;
+
+    m_kMeshMergeSettings.bPivotPointAtZero = true;
+
+    FVector kMergedActorLocation;
+    TArray<UObject*> pAssetsToSync;
+    // Merge...
+    {
+        FScopedSlowTask kSlowTask( 0, LOCTEXT( "MergingActorsSlowTask", "Merging actors..." ) );
+        kSlowTask.MakeDialog();
+
+        // Extracting static mesh components from the selected mesh components in the dialog
+        TArray<UPrimitiveComponent*> pComponentsToMerge;
+
+        for ( const TSharedPtr<FMergeComponentData>& pSelectedComponent : kSelectedComponents )
+        {
+            // Determine whether or not this component should be incorporated according the user settings
+            if ( pSelectedComponent->bShouldIncorporate && pSelectedComponent->PrimComponent.IsValid() )
+            {
+                pComponentsToMerge.Add( pSelectedComponent->PrimComponent.Get() );
+            }
+        }
+
+        if ( pComponentsToMerge.Num() )
+        {
+            UWorld* pWorld = pComponentsToMerge[ 0 ]->GetWorld();
+            checkf( pWorld != nullptr, TEXT( "Invalid World retrieved from Mesh components" ) );
+            const float fScreenAreaSize = TNumericLimits<float>::Max();
+
+            // If the merge destination package already exists, it is possible that the mesh is already used in a scene somewhere, or its materials or even just its textures.
+            // Static primitives uniform buffers could become invalid after the operation completes and lead to memory corruption. To avoid it, we force a global reregister.
+            if ( FindObject<UObject>( nullptr, *strPackageName ) )
+            {
+                FGlobalComponentReregisterContext GlobalReregister;
+                kMeshUtilities.MergeComponentsToStaticMesh( pComponentsToMerge, pWorld, m_kMeshMergeSettings, nullptr, nullptr, strPackageName, pAssetsToSync, kMergedActorLocation, fScreenAreaSize, true );
+            }
+            else
+            {
+                kMeshUtilities.MergeComponentsToStaticMesh( pComponentsToMerge, pWorld, m_kMeshMergeSettings, nullptr, nullptr, strPackageName, pAssetsToSync, kMergedActorLocation, fScreenAreaSize, true );
+            }
+        }
+    }
+    return true;
+}
+
+bool FRLLiveLinkModule::GetPackageNameForMergeAction( const FString& strDefaultPackageName, FString& strOutPackageName )
+{
+    if ( strOutPackageName != "" )
+    {
+        return true;
+    }
+    if ( strDefaultPackageName.Len() > 0 )
+    {
+        const FString strDefaultPath = FPackageName::GetLongPackagePath( strDefaultPackageName );
+        const FString strDefaultName = FPackageName::GetShortName( strDefaultPackageName );
+        //之後再看路徑要改哪裡，現在先用預設的
+        FString strSaveObjectPath = strDefaultPath + "/Temp/" + strDefaultName;
+        if ( !strSaveObjectPath.IsEmpty() && CreatePackage( *strSaveObjectPath ) )
+        {            
+            strOutPackageName = FPackageName::ObjectPathToPackageName( strSaveObjectPath );
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        strOutPackageName = strDefaultPackageName;
+        return true;
+    }
+}
+void FRLLiveLinkModule::EditorGetUnderlyingActors( AActor* pActor, TSet<AActor*>& kOutUnderlyingActors ) const
+{
+    TInlineComponentArray<UChildActorComponent*> pChildActorComponents;
+    pActor->GetComponents( pChildActorComponents );
+
+    kOutUnderlyingActors.Reserve( kOutUnderlyingActors.Num() + pChildActorComponents.Num() );
+
+    for ( UChildActorComponent* pChildActorComponent : pChildActorComponents )
+    {
+        if ( AActor* pChildActor = pChildActorComponent->GetChildActor() )
+        {
+            bool bAlreadySet = false;
+            kOutUnderlyingActors.Add( pChildActor, &bAlreadySet );
+            if ( !bAlreadySet )
+            {
+                FRLLiveLinkModule::EditorGetUnderlyingActors( pChildActor, kOutUnderlyingActors );
+            }
+        }
+    }
+}
+bool FRLLiveLinkModule::BuildMergeComponentDataFromSelection( TArray<TSharedPtr<FMergeComponentData>>& kOutComponentsData )
+{
+    kOutComponentsData.Empty();
+
+    // Retrieve selected actors
+    USelection* pSelectedActors = GEditor->GetSelectedActors();
+
+    TSet<AActor*> pActors;
+    TSet<AActor*> pNotIncludedActors;
+
+    for ( FSelectionIterator pIter( *pSelectedActors ); pIter; ++pIter )
+    {
+        AActor* pActor = Cast<AActor>( *pIter );
+        if ( pActor )
+        {
+            pActors.Add( pActor );
+            // Add child actors & actors found under foundations
+
+#if ENGINE_MAJOR_VERSION >= 5
+            pActor->EditorGetUnderlyingActors( pActors );
+#else
+            EditorGetUnderlyingActors( pActor, pActors );
+#endif
+        }
+    }
+
+    for ( AActor* pActor : pActors )
+    {
+        check( pActor != nullptr );
+
+        bool bNotStaticMesh = true;
+        TArray<UPrimitiveComponent*> pPrimComponents;
+        pActor->GetComponents<UPrimitiveComponent>( pPrimComponents );
+        for ( UPrimitiveComponent* pPrimComponent : pPrimComponents )
+        {
+            bool bInclude = false; // Should put into UI list
+            bool bShouldIncorporate = false; // Should default to part of merged mesh
+            bool bIsMesh = false;
+
+            if ( CheckActorComponentCanBeTransferToIC( pPrimComponent ) )
+            {
+                bShouldIncorporate = ( Cast<UStaticMeshComponent>( pPrimComponent )->GetStaticMesh() != nullptr );
+                bInclude = true;
+                bIsMesh = true;
+            }
+
+            if ( bInclude )
+            {
+                kOutComponentsData.Add( TSharedPtr<FMergeComponentData>( new FMergeComponentData( pPrimComponent ) ) );
+                TSharedPtr<FMergeComponentData>& pComponentData = kOutComponentsData.Last();
+                pComponentData->bShouldIncorporate = bShouldIncorporate;
+                bNotStaticMesh = false;
+            }
+        }
+        if ( bNotStaticMesh )
+        {
+            pNotIncludedActors.Add( pActor );
+        }
+    }
+#if ENGINE_MAJOR_VERSION > 4
+    if ( !pNotIncludedActors.IsEmpty() && pNotIncludedActors.Num() < pActors.Num() )
+#else
+    if ( pNotIncludedActors.Num() && pNotIncludedActors.Num() < pActors.Num() )
+#endif
+    {
+        
+        FString strListOfActorsName = "";
+        for ( AActor* pNotIncludedActor : pNotIncludedActors )
+        {
+#if ENGINE_MAJOR_VERSION > 4
+            strListOfActorsName = strListOfActorsName + pNotIncludedActor->GetActorNameOrLabel() + "\n";
+#else
+            FString strActorName = pNotIncludedActor->GetActorLabel().Len() != 0 ? pNotIncludedActor->GetActorLabel() : pNotIncludedActor->GetName();
+            strListOfActorsName = strListOfActorsName + strActorName + "\n";
+#endif
+        }
+        FText strMsg = FText::FromString( "Some actors do not have static mesh.\nPress Continue to skip these actors or Cancel to end the procedure.\n\r" + strListOfActorsName );
+        const EAppReturnType::Type eChoice = FMessageDialog::Open( EAppMsgType::OkCancel, strMsg );
+
+        if ( eChoice == EAppReturnType::Cancel )
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool FRLLiveLinkModule::HasAtLeastOneStaticMesh( const TArray<TSharedPtr<FMergeComponentData>>& kComponentsData )
+{
+    for ( const TSharedPtr<FMergeComponentData>& pComponentData : kComponentsData )
+    {
+        if ( !pComponentData->bShouldIncorporate )
+            continue;
+
+        const bool bIsMesh = ( Cast<UStaticMeshComponent>( pComponentData->PrimComponent.Get() ) != nullptr );
+
+        if ( bIsMesh )
+            return true;
+    }
+
+    return false;
+}
+
+FString FRLLiveLinkModule::GetDefaultPackageName() const
+{
+    FString strPackageName = FPackageName::FilenameToLongPackageName( FPaths::ProjectContentDir() + TEXT( "IC_MERGED" ) );
+
+    USelection* pSelectedActors = GEditor->GetSelectedActors();
+    // Iterate through selected actors and find first static mesh asset
+    // Use this static mesh path as destination package name for a merged mesh
+    for ( FSelectionIterator pIter( *pSelectedActors ); pIter; ++pIter )
+    {
+        AActor* pActor = Cast<AActor>( *pIter );
+        if ( pActor )
+        {
+#if ENGINE_MAJOR_VERSION > 4
+            FString strActorName = pActor->GetActorNameOrLabel();
+#else
+            FString strActorName = pActor->GetActorLabel().Len() != 0 ? pActor->GetActorLabel() : pActor->GetName();
+#endif
+            strPackageName = FString::Printf( TEXT( "%s_%s" ), *strPackageName, *strActorName );
+            break;
+        }
+    }
+
+    if ( strPackageName.IsEmpty() )
+    {
+        strPackageName = MakeUniqueObjectName( NULL, UPackage::StaticClass(), *strPackageName ).ToString();
+    }
+
+    return strPackageName;
+}
+
+bool FRLLiveLinkModule::CheckAssetExist( const FString& strAssetPath )
+{
+    FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( "AssetRegistry" );
+    FAssetData AssetData = kAssetRegistryModule.Get().GetAssetByObjectPath( *strAssetPath );
+
+    return AssetData.IsValid();
+}
+
+bool FRLLiveLinkModule::BatchTransferSceneToIClone( ETransferMode eMergeMode, TSet<UStaticMesh*>& kStaticMeshList )
+{
+    kStaticMeshList.Empty();
+
+    TArray<AActor*> kSelectedActors;
+    TArray<TSharedPtr<FMergeComponentData>> kSelectionDataList;
+    TArray<struct ExportFbxSetting> kExportFbxSettingList;
+    
+    if ( !BuildMergeComponentDataFromSelection( kSelectionDataList ) )
+    {
+        return false; // if user press cancel
+    }
+
+    if ( kSelectionDataList.Num() == 0 || !HasAtLeastOneStaticMesh( kSelectionDataList ) )
+    {
+        FText strMsg = FText::FromString( "The selected actor(s) do not have static mesh." );
+        FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+        return false;
+    }
+    
+    for ( auto pSelectionData : kSelectionDataList )
+    {
+        AActor* pActor = pSelectionData->PrimComponent.Get()->GetOwner();
+
+        FString strPackageBaseName = FPackageName::FilenameToLongPackageName( FPaths::ProjectContentDir() + TEXT( "Temp/" ) ) + pActor->GetName() ;
+        FString strPackageName = strPackageBaseName;
+        int iSerialNumber = 0;
+        
+        auto strCheckPackageName = [&eMergeMode, &strPackageName]() -> FString
+        {
+            if ( eMergeMode == ETransferMode::BatchSimplify )
+            {
+                return FPackageName::GetLongPackagePath( strPackageName ) + TEXT( "/SM_" ) + FPackageName::GetShortName( strPackageName );
+            }
+            else
+            {
+                return strPackageName;
+            }
+        };
+
+        while ( CheckAssetExist( strCheckPackageName() ) )
+        {
+            strPackageName = FString::Printf( TEXT( "%s_%d" ), *strPackageBaseName, iSerialNumber );
+            ++iSerialNumber;
+        }
+
+        if ( GetPackageNameForMergeAction( "", strPackageName ) )
+        {
+            TArray<TSharedPtr<FMergeComponentData>> kDataToMerge;
+            kDataToMerge.Add( pSelectionData );
+
+            bool bResult = false;
+            
+            switch ( eMergeMode )
+            {
+                case ETransferMode::BatchMerge:
+                    bResult = RunMerge( strPackageName, kDataToMerge );
+                    break;
+
+                case ETransferMode::BatchSimplify:
+                    bResult = RunSimplify( strPackageName, kDataToMerge );
+                    //因為最後外部在取object的時候只取static mesh，所以strPackageName會改成static mesh的path
+                    strPackageName = FPackageName::GetLongPackagePath( strPackageName ) + TEXT( "/SM_" ) + FPackageName::GetShortName( strPackageName );
+                    break;
+
+            }
+            
+            if (!bResult )
+            {
+                continue;
+            }
+        }
+
+        UStaticMesh* pStaticMesh = Cast<UStaticMesh>( StaticLoadObject( UStaticMesh::StaticClass(), nullptr, *( strPackageName ) ) );
+
+        if ( !pStaticMesh )
+        {
+            continue;
+        }
+        kStaticMeshList.Add( pStaticMesh );
+    }
+
+    return true;
+}
+
 void FRLLiveLinkModule::CreateCamera()
 {
     auto pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Camera", "LiveLinkCameraBlueprint", "Camera", true );
@@ -1060,6 +2343,7 @@ void FRLLiveLinkModule::CreateCineCamera()
     auto pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Camera", m_strCineCameraBlueprint, "Camera", true );
     if( pBlueprint )
     {
+        SetupCineCamera( pBlueprint );
         LoadToScene( pBlueprint );
     }
 }
@@ -1289,6 +2573,33 @@ void FRLLiveLinkModule::SetUpAllCharacterToBlueprint()
             }
         }
     }
+}
+
+bool FRLLiveLinkModule::SetupCineCamera( UBlueprint* pCameraBlueprint )
+{
+    AActor* pCameraActor = Cast<AActor>( pCameraBlueprint->GeneratedClass->ClassDefaultObject );
+    if ( pCameraActor )
+    {
+        UCineCameraComponent* pCineCameraComponent = pCameraActor->FindComponentByClass<UCineCameraComponent>();
+        if ( pCineCameraComponent )
+        {
+            pCineCameraComponent->PostProcessSettings.bOverride_AutoExposureMethod = true;
+            pCineCameraComponent->PostProcessSettings.AutoExposureMethod = EAutoExposureMethod::AEM_Manual;
+            pCineCameraComponent->PostProcessSettings.bOverride_AutoExposureBias = true;
+            pCineCameraComponent->PostProcessSettings.AutoExposureBias = 0.f;
+            pCineCameraComponent->PostProcessSettings.bOverride_AutoExposureApplyPhysicalCameraExposure = true;
+            pCineCameraComponent->PostProcessSettings.AutoExposureApplyPhysicalCameraExposure = 0;
+            FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified( pCameraBlueprint );
+            FKismetEditorUtilities::CompileBlueprint( pCameraBlueprint );
+            UPackage* const pAssetPackage = pCameraBlueprint->GetOutermost();
+            pAssetPackage->SetDirtyFlag( true );
+            TArray<UPackage*> kPackagesToSave;
+            kPackagesToSave.Add( pAssetPackage );
+            FEditorFileUtils::PromptForCheckoutAndSave( kPackagesToSave, false, /*bPromptToSave=*/ false );
+            return true;
+        }
+    }
+    return false;
 }
 
 //Get All Selected Actor
@@ -1625,6 +2936,338 @@ void FRLLiveLinkModule::SelectAndFocusActor( AActor* pActor, bool bFocus, bool b
     }
 }
 
+void FRLLiveLinkModule::MoveMotionAssetPath( const TSharedPtr<FJsonValue>& spJsonValue, bool bIsProp )
+{
+    if ( spJsonValue )
+    {
+        auto spBuildArray = spJsonValue->AsArray();
+        for ( auto& spAssetJsonValue : spBuildArray )
+        {
+            if ( auto spAssetObject = spAssetJsonValue->AsObject() )
+            {
+                auto kAssetMap = spAssetObject->Values;
+                FString strAssetName = kAssetMap[ "Name" ]->AsString();
+                FString strAssetPath = kAssetMap[ "Path" ]->AsString();
+                if ( !strAssetName.IsEmpty() )
+                {
+                    if ( bIsProp )
+                    {
+                        ProcessPropMotionNameAndPath( strAssetPath, strAssetName );
+                        ReAssignMotionSkeleton( strAssetPath );
+                    }
+                    else 
+                    {
+                        ProcessAvatarMotionNameAndPath( strAssetPath, strAssetName );
+                        ReAssignMotionSkeleton( strAssetPath );
+                    }
+                }
+            }
+        }
+    }
+}
+
+void FRLLiveLinkModule::ProcessAvatarMotionNameAndPath( const FString& strAssetPath, const FString& strAssetName )
+{
+    IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( TEXT( "AssetRegistry" ) );
+    FAssetToolsModule& kAssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>( "AssetTools" );
+    
+    FString strMotionFolderPath = strAssetPath + "Motion";
+    FPackageName::TryConvertLongPackageNameToFilename( strMotionFolderPath + "/", strMotionFolderPath );
+    if ( kPlatformFile.CreateDirectory( *strMotionFolderPath ) )
+    {
+        //取放在motion folder外的anim sequence
+        TArray<FAssetData> kObjectList;
+
+        FARFilter kFilter;
+        kFilter.PackagePaths.Add( *strAssetPath );
+        kFilter.bRecursivePaths = false;
+        kFilter.ClassNames.Add( "AnimSequence" );
+
+        kAssetRegistryModule.Get().GetAssets( kFilter, kObjectList );
+
+        if ( kPlatformFile.FileExists( *( strMotionFolderPath + strAssetName + "_0_Open_A_UE4.uasset" ) ) )
+        {
+            kPlatformFile.DeleteFile( *( strMotionFolderPath + strAssetName + "_0_Open_A_UE4.uasset" ) );
+
+            TArray<FAssetData> kDeleteObjectList;
+            kAssetRegistryModule.Get().GetAssetsByPackageName( FName( *( strAssetPath + "Motion/" + strAssetName + "_0_Open_A_UE4" ) ), kDeleteObjectList );
+            DeleteAssets( kDeleteObjectList );
+        }
+        else if ( kPlatformFile.FileExists( *( strMotionFolderPath + strAssetName + "_Anim.uasset" ) ) )
+        {
+            kPlatformFile.DeleteFile( *( strMotionFolderPath + strAssetName + "_Anim.uasset" ) );
+
+            TArray<FAssetData> kDeleteObjectList;
+            kAssetRegistryModule.Get().GetAssetsByPackageName( FName( *( strAssetPath + "Motion/" + strAssetName + "_Anim" ) ), kDeleteObjectList );
+            DeleteAssets( kDeleteObjectList );
+        }
+        if ( kObjectList.Num() <= 0 )
+        {
+            return;
+        }
+        /*
+        * 用在會有兩段motion一起進來要修正名字的情況
+        */
+        /*if ( kObjectList.Num() > 1 )
+        {
+
+            for ( auto& kObject : kObjectList )
+            {
+                FString strNewFileName = kObject.AssetName.ToString().Replace( *( strAssetName + "_Anim" ), *strAssetName );
+
+                TArray<FAssetRenameData> kAssetsAndNames;
+                UObject* pAssetObject = kObject.GetAsset();
+                
+                new( kAssetsAndNames ) FAssetRenameData();
+                kAssetsAndNames[ 0 ].NewName = strNewFileName;
+                kAssetsAndNames[ 0 ].NewPackagePath = strAssetPath + "Motion";
+                kAssetsAndNames[ 0 ].Asset = pAssetObject;
+                kAssetToolsModule.Get().RenameAssets( kAssetsAndNames );
+
+                FString strNewFilePath = strAssetPath + "Motion/" + strNewFileName;
+                FString strPath = kObject.PackageName.ToString();
+                MoveAsset( strPath, strNewFilePath );
+
+            }
+        }
+        else
+        {
+            FString strNewFileName = kObjectList[ 0 ].AssetName.ToString().Replace( *( strAssetName + "_Anim" ), *( strAssetName + "_0_Open_A_UE4" ) );
+
+            TArray<FAssetRenameData> kAssetsAndNames;
+            UObject* pAssetObject = kObjectList[ 0 ].GetAsset();
+            new( kAssetsAndNames ) FAssetRenameData();
+            kAssetsAndNames[ 0 ].NewName = strNewFileName;
+            kAssetsAndNames[ 0 ].NewPackagePath = strAssetPath + "Motion";
+            kAssetsAndNames[ 0 ].Asset = pAssetObject;
+            kAssetToolsModule.Get().RenameAssets( kAssetsAndNames );
+
+            FString strNewFilePath = strAssetPath + "Motion/" + strNewFileName;
+            FString strPath = kObjectList[ 0 ].PackageName.ToString();
+            MoveAsset( strPath, strNewFilePath );
+        }*/
+        for ( const auto& kObject : kObjectList )
+        {
+            FString strNewFilePath = strAssetPath + "Motion/" + kObject.AssetName.ToString();
+            FString strPath = kObject.PackageName.ToString();
+            MoveAsset( strPath, strNewFilePath );
+        }
+    }
+    
+}
+void FRLLiveLinkModule::ProcessPropMotionNameAndPath( const FString& strAssetPath, const FString& strAssetName )
+{
+    IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( TEXT( "AssetRegistry" ) );
+    FAssetToolsModule& kAssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>( "AssetTools" );
+
+    FString strMotionFolderPath = strAssetPath + "/Motion";
+    FPackageName::TryConvertLongPackageNameToFilename( strMotionFolderPath + "/", strMotionFolderPath );
+
+    if ( kPlatformFile.CreateDirectory( *strMotionFolderPath ) )
+    {
+        //取放在motion folder外的anim sequence
+        TArray<FAssetData> kObjectList;
+
+        FARFilter kFilter;
+        kFilter.PackagePaths.Add( *strAssetPath );
+        kFilter.bRecursivePaths = false;
+        kFilter.ClassNames.Add( "AnimSequence" );
+
+        kAssetRegistryModule.Get().GetAssets( kFilter, kObjectList );
+
+        for ( const auto& kObject : kObjectList )
+        {
+            /*FDateTime kNow = FDateTime::Now();
+            FString strNewFileName = FString::Printf( TEXT( "%s_%d_%d_%d_%d_%d_%d" ),
+                                                      *strAssetName, kNow.GetYear(), kNow.GetMonth(), kNow.GetDay(), kNow.GetHour(), kNow.GetMinute(), kNow.GetSecond() );
+
+            TArray<FAssetRenameData> kAssetsAndNames;
+            UObject* pAssetObject = kObjectList[ 0 ].GetAsset();
+            new( kAssetsAndNames ) FAssetRenameData();
+            kAssetsAndNames[ 0 ].NewName = strNewFileName;
+            kAssetsAndNames[ 0 ].NewPackagePath = strAssetPath + "Motion";
+            kAssetsAndNames[ 0 ].Asset = pAssetObject;
+            kAssetToolsModule.Get().RenameAssets( kAssetsAndNames );*/
+
+            FString strNewFilePath = strAssetPath + "/Motion/" + kObject.AssetName.ToString();
+            FString strPath = kObject.PackageName.ToString();
+            MoveAsset( strPath, strNewFilePath );
+        }
+    }
+    
+}
+void FRLLiveLinkModule::MoveAsset( const FString& strFromAssetPath, const FString& strToAssetPath )
+{
+    IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+    FString strCurrentFilePath = "";
+    FPackageName::TryConvertLongPackageNameToFilename( strFromAssetPath, strCurrentFilePath );//current
+    strCurrentFilePath = strCurrentFilePath + ".uasset";
+
+    FString strTargetFilePath = "";
+    FPackageName::TryConvertLongPackageNameToFilename( strToAssetPath, strTargetFilePath );//current
+    strTargetFilePath = strTargetFilePath + ".uasset";
+
+    kPlatformFile.MoveFile( *strTargetFilePath, *strCurrentFilePath );
+}
+void FRLLiveLinkModule::ReAssignMotionSkeleton( const FString& strCurrentPath )
+{
+    FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( TEXT( "AssetRegistry" ) );
+    
+    TArray<FAssetData> kAnimObjectList;
+    TArray<FAssetData> kSkeletonObjectList;
+
+    FARFilter kAnimFilter;
+    kAnimFilter.PackagePaths.Add( *strCurrentPath );
+    kAnimFilter.bRecursivePaths = true;
+    kAnimFilter.ClassNames.Add( "AnimSequence" );
+
+    kAssetRegistryModule.Get().GetAssets( kAnimFilter, kAnimObjectList );
+
+    FARFilter kSkeletonFilter;
+    kSkeletonFilter.PackagePaths.Add( *strCurrentPath );
+    kSkeletonFilter.bRecursivePaths = true;
+    kSkeletonFilter.ClassNames.Add( "Skeleton" );
+
+    kAssetRegistryModule.Get().GetAssets( kSkeletonFilter, kSkeletonObjectList );
+
+    if ( !kSkeletonObjectList.Num() )
+    {
+        return;
+    }
+
+    for ( auto kAnimObject : kAnimObjectList )
+    {
+        if ( UAnimationAsset* pAnimAsset = Cast<UAnimationAsset>( ( kAnimObject.GetAsset() ) ) )
+        {
+            if ( USkeleton* pSkeletonAsset = pAnimAsset->GetSkeleton() )
+            {
+                continue;
+            }
+#if ENGINE_MAJOR_VERSION <= 4
+            TArray<UObject*> kAssetsToRetarget;
+#else
+            TArray<TObjectPtr<UObject>> kAssetsToRetarget;
+#endif
+            kAssetsToRetarget.Add( pAnimAsset );
+            ReplaceMissingSkeleton( kAssetsToRetarget, kSkeletonObjectList[0].GetAsset() );
+        }
+    }
+}
+//修改自FReply SReplaceMissingSkeletonDialog::OnButtonClick(EAppReturnType::Type ButtonID)
+#if ENGINE_MAJOR_VERSION <= 4
+void FRLLiveLinkModule::ReplaceMissingSkeleton( const TArray<UObject*>& kAnimAssetsToRetarget, UObject* kSkeletonAsset ) const
+#else
+void FRLLiveLinkModule::ReplaceMissingSkeleton( const TArray<TObjectPtr<UObject>>& kAnimAssetsToRetarget, const TObjectPtr<UObject>& kSkeletonAsset ) const
+#endif
+{
+    // record anim assets that need skeleton replaced
+    TArray<TWeakObjectPtr<UObject>> kAnimsToFix;
+
+    for ( auto kAnimObject : kAnimAssetsToRetarget )
+    {
+        kAnimsToFix.Add( CastChecked< UObject >( kAnimObject ) );
+    }
+#if ENGINE_MAJOR_VERSION <= 4
+    if ( USkeleton* kReplacementSkeleton = Cast<USkeleton>( kSkeletonAsset ) )
+#else
+    if ( const TObjectPtr<USkeleton> kReplacementSkeleton = CastChecked<USkeleton>( kSkeletonAsset ) )
+#endif
+    {
+        constexpr bool bRetargetReferredAssets = true;
+        constexpr bool bConvertSpaces = false;
+        FAnimationRetargetContext kRetargetContext( kAnimsToFix, bRetargetReferredAssets, bConvertSpaces );
+        // since we are replacing a missing skeleton, we don't want to duplicate the asset
+        // setting this to null prevents assets from being duplicated
+        const FNameDuplicationRule* pNameRule = nullptr;
+
+        EditorAnimUtils::RetargetAnimations( nullptr, kReplacementSkeleton, kRetargetContext, bRetargetReferredAssets, pNameRule );
+    }
+}
+
+void FRLLiveLinkModule::GetObjectsFromPackage( const FARFilter& kFilter, TArray<FAssetData>& kObjectList, const FARFilter& kIgnoreObjectFilter )
+{
+    FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( TEXT( "AssetRegistry" ) );
+
+    kAssetRegistryModule.Get().GetAssets( kFilter, kObjectList );
+
+    if ( !kIgnoreObjectFilter.IsEmpty() )
+    {
+        TArray<FAssetData> kIgnoreObjectList;
+        kAssetRegistryModule.Get().GetAssets( kIgnoreObjectFilter, kIgnoreObjectList );
+
+        if ( kObjectList.Num() > 0 && kIgnoreObjectList.Num() > 0 )
+        {
+            for ( auto kIgnoreObject : kIgnoreObjectList )
+            {
+                kObjectList.Remove( kIgnoreObject );
+            }
+        }
+    }
+}
+
+bool FRLLiveLinkModule::DeleteAssets( const TArray<FAssetData>& kObjectList )
+{
+    if ( kObjectList.Num() <= 0)
+    {
+        return false;
+    }
+    UWorld* const pWorld = GEditor->GetEditorWorldContext().World();
+    TArray<UObject*> kAssetsToDelete;
+    for ( auto kObject : kObjectList )
+    {
+        UObject* pAsset = kObject.GetAsset();
+        if ( pAsset )
+        {
+            kAssetsToDelete.Add( pAsset );
+            //Save Avatar On Scene To Temp Data
+            UBlueprint* pBlueprintActor = Cast<UBlueprint>( pAsset );
+            if ( pBlueprintActor )
+            {
+                for ( TActorIterator<AActor> pActorItr( pWorld, pBlueprintActor->GeneratedClass.Get() ); pActorItr; ++pActorItr )
+                {
+                    bool bPilotTarget = false;
+                    FLevelEditorViewportClient* pLevelClient = GCurrentLevelEditingViewportClient;
+                    if ( AActor* pActiveLockActor = pLevelClient->GetActiveActorLock().Get() )
+                    {
+                        if ( pActiveLockActor->GetUniqueID() == pActorItr->GetUniqueID() )
+                        {
+                            bPilotTarget = true;
+                        }
+                    }
+                    // Before deleting an Actor, first check if it's selected Actor. 
+                    // If it's the selected state, you must cancel the selection first, otherwise the UE Menu will be disabled forever.
+                    if ( GEditor->GetSelectedActorCount() != 0 )
+                    {
+                        GEditor->SelectNone( false, true, false );
+                        GEditor->NoteSelectionChange();
+                    }
+
+                    CSceneTempData kData;
+                    kData.strAssetName = pActorItr->GetActorLabel();
+                    kData.kTransform = pActorItr->GetTransform();
+                    kData.pParentActor = pActorItr->GetAttachParentActor();
+                    kData.bPilotTarget = bPilotTarget;
+
+                    TArray<FString> kPathStringOut;
+                    FString strActorPath = pActorItr->GetClass()->GetPathName();
+                    strActorPath.ParseIntoArray( kPathStringOut, TEXT( "/" ), true );
+                    kData.strFolderName = kPathStringOut[ kPathStringOut.Num() - 2 ];
+                    // ex: strPath = RLConent/FolderName/obj.uasset 須扣除檔案本身名稱來取得Folder name
+                    m_kAssetTempData.Add( kData );
+                }
+            }
+
+            //Remove default clone asset
+            FAssetRegistryModule::AssetDeleted( pAsset );
+        }
+    }
+    ObjectTools::AddExtraObjectsToDelete( kAssetsToDelete );
+
+    return kAssetsToDelete.Num() == ObjectTools::ForceDeleteObjects( kAssetsToDelete, false );
+}
 bool FRLLiveLinkModule::DeleteFolder( const FString& strPath )
 {
     FString strFolderPath = strPath.Replace( TEXT( "/Game/" ), TEXT( "" ) );
@@ -1632,73 +3275,31 @@ bool FRLLiveLinkModule::DeleteFolder( const FString& strPath )
     IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     if ( kPlatformFile.DirectoryExists( *strTargetPath ) )
     {
-        UWorld* const pWorld = GEditor->GetEditorWorldContext().World();
         FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( TEXT( "AssetRegistry" ) );
 
-        //Get Asset Data
+        TArray<FString> kDeletePathList;
+        kDeletePathList.Add( strPath );
+        kAssetRegistryModule.Get().GetSubPaths( strPath, kDeletePathList, false );
+
+        TArray<FString> kIgnorePackagePathList;
+        kIgnorePackagePathList.Add( strPath + "/Motion" );
+  
         TArray<FAssetData> kObjectList;
+        //Get Asset Data
         FARFilter kFilter;
         kFilter.PackagePaths.Add( *strPath );
         kFilter.bRecursivePaths = true;
-        kAssetRegistryModule.Get().GetAssets( kFilter, kObjectList );
+
+        FARFilter kIgnoreObjectFilter;
+        kIgnoreObjectFilter.PackagePaths.Add( *( strPath + "/Motion" ) );
+        kIgnoreObjectFilter.bRecursivePaths = true;
+
+        GetObjectsFromPackage( kFilter, kObjectList, kIgnoreObjectFilter );
 
         if ( kObjectList.Num() > 0 )
         {
-            TArray<UObject*> kAssetsToDelete;
-            for ( auto kObject : kObjectList )
-            {
-                UObject* pAsset = kObject.GetAsset();
-                if ( pAsset )
-                {
-                    kAssetsToDelete.Add( pAsset );
-                    //Save Avatar On Scene To Temp Data
-                    UBlueprint* pBlueprintActor = Cast<UBlueprint>( pAsset );
-                    if ( pBlueprintActor )
-                    {
-                        for ( TActorIterator<AActor> pActorItr( pWorld, pBlueprintActor->GeneratedClass.Get() ); pActorItr; ++pActorItr )
-                        {
-                            bool bPilotTarget = false;
-                            FLevelEditorViewportClient* pLevelClient = GCurrentLevelEditingViewportClient;
-                            if( AActor* pActiveLockActor = pLevelClient->GetActiveActorLock().Get() )
-                            {
-                                if( pActiveLockActor->GetUniqueID() == pActorItr->GetUniqueID() )
-                                {
-                                    bPilotTarget = true;
-                                }
-                            }
-                            // Before deleting an Actor, first check if it's selected Actor. 
-                            // If it's the selected state, you must cancel the selection first, otherwise the UE Menu will be disabled forever.
-                            if( GEditor->GetSelectedActorCount() != 0 )
-                            {
-                                GEditor->SelectNone( false, true, false );
-                                GEditor->NoteSelectionChange();
-                            }
-
-                            CSceneTempData kData;
-                            kData.strAssetName = pActorItr->GetActorLabel();
-                            kData.kTransform = pActorItr->GetTransform();
-                            kData.pParentActor = pActorItr->GetAttachParentActor();
-                            kData.bPilotTarget = bPilotTarget;
-
-                            TArray<FString> kPathStringOut;
-                            FString strActorPath = pActorItr->GetClass()->GetPathName();
-                            strActorPath.ParseIntoArray( kPathStringOut, TEXT( "/" ), true );
-                            kData.strFolderName = kPathStringOut[ kPathStringOut.Num() - 2 ];
-                            // ex: strPath = RLConent/FolderName/obj.uasset 須扣除檔案本身名稱來取得Folder name
-                            m_kAssetTempData.Add( kData );
-                        }
-                    }
-
-                    //Remove default clone asset
-                    FAssetRegistryModule::AssetDeleted( pAsset );
-                }
-            }
-
-            ObjectTools::AddExtraObjectsToDelete( kAssetsToDelete );
-            const int32 nNumAssetsDeleted = ObjectTools::ForceDeleteObjects( kAssetsToDelete, false );
-
             //參考EditorScriptingUtils.cpp - DeleteEmptyDirectoryFromDisk()
-            if ( nNumAssetsDeleted == kAssetsToDelete.Num() )
+            if( DeleteAssets( kObjectList ) )
             {
                 struct FEmptyFolderVisitor: public IPlatformFile::FDirectoryVisitor
                 {
@@ -1719,22 +3320,51 @@ bool FRLLiveLinkModule::DeleteFolder( const FString& strPath )
                 };
 
                 FString strPathToDeleteOnDisk;
-                if ( FPackageName::TryConvertLongPackageNameToFilename( strPath, strPathToDeleteOnDisk ) )
-                {
-                    FEmptyFolderVisitor kEmptyFolderVisitor;
-                    IFileManager::Get().IterateDirectoryRecursively( *strPathToDeleteOnDisk, kEmptyFolderVisitor );
-                    if ( kEmptyFolderVisitor.bIsEmpty )
-                    {
-                        if ( IFileManager::Get().DeleteDirectory( *strPathToDeleteOnDisk, false, true ) )
-                        {
-                            kAssetRegistryModule.Get().RemovePath( strPath );
-                        }
 
+                for ( FString strDeletePath : kDeletePathList )
+                {
+                    if ( FPackageName::TryConvertLongPackageNameToFilename( strDeletePath, strPathToDeleteOnDisk ) )
+                    {
+                        FEmptyFolderVisitor kEmptyFolderVisitor;
+                        IFileManager::Get().IterateDirectoryRecursively( *strPathToDeleteOnDisk, kEmptyFolderVisitor );
+                        if ( kEmptyFolderVisitor.bIsEmpty )
+                        {
+                            if ( IFileManager::Get().DeleteDirectory( *strPathToDeleteOnDisk, false, true ) )
+                            {
+                                kAssetRegistryModule.Get().RemovePath( strDeletePath );
+                            }
+
+                        }
                     }
                 }
             }
             return true;
         }
+    }
+    return false;
+}
+
+bool FRLLiveLinkModule::DeletePackageInContentBrowser( const FString& strPath )
+{
+    FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( TEXT( "AssetRegistry" ) );
+
+    //Get Asset Data
+    TArray<FAssetData> kObjectList;
+
+    FARFilter kFilter;
+    kFilter.PackagePaths.Add( *strPath );
+    kFilter.bRecursivePaths = true;
+
+    kAssetRegistryModule.Get().GetAssets( kFilter, kObjectList );
+
+    if ( kObjectList.Num() > 0 )
+    {
+        if( DeleteAssets( kObjectList ) )
+        {
+            kAssetRegistryModule.Get().RemovePath( strPath );
+        }
+
+        return true;
     }
     return false;
 }
@@ -2044,6 +3674,196 @@ UTexture2D* FRLLiveLinkModule::RotateTexture2D( UTexture2D* pTexture )
         }
     }
     return pTexture;
+}
+
+bool FRLLiveLinkModule::BuildWrinkleBlueprint( const FString& strRootGamePath, USkeletalMesh* pMesh )
+{
+    if ( !pMesh )
+    {
+        return false;
+    }
+    USkeleton* pSkeleton = pMesh->Skeleton;
+    if ( !pSkeleton )
+    {
+        return false;
+    }
+    FString strRootPath = strRootGamePath + "/";
+    strRootPath.RemoveFromStart( TEXT( "/Game/" ) );
+    strRootPath = FPaths::ProjectContentDir() + strRootPath;
+    IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    if ( !kPlatformFile.DirectoryExists( *strRootPath ) )
+    {
+        kPlatformFile.CreateDirectory( *strRootPath );
+    }
+
+    //1. Copy ExpSequence, ExpPoseAsset, WrinkleAnimBp
+    auto strPluginPath = IPluginManager::Get().FindPlugin( TEXT( "RLLiveLink" ) )->GetBaseDir();
+    FString strExpSequencePath   = strPluginPath + "/Content/" + ExpSequence + ".rluasset";
+    FString strExpPosePath       = strPluginPath + "/Content/" + ExpPoseAsset + ".rluasset";
+    FString strWrinkleAnimBpPath = strPluginPath + "/Content/" + WrinkleAnimBP + ".rluasset";
+    // 1.1 先檢查Source檔案是否存在
+    if ( !kPlatformFile.FileExists( *strExpSequencePath )
+      || !kPlatformFile.FileExists( *strExpPosePath )
+      || !kPlatformFile.FileExists( *strWrinkleAnimBpPath ) )
+    {
+        UE_LOG( LogTemp, Error, TEXT( "BuildWrinkleBlueprint Source file not found." ) );
+        return false;
+    }
+    // 1.2 檢查Target Path是否已存在這些檔案
+    FString strTargetExpSequencePath = strRootPath + ExpSequence + ".uasset";
+    FString strTargetExpPosePath = strRootPath + ExpPoseAsset + ".uasset";
+    FString strTargetWrinkleAnimBpPath = strRootPath + WrinkleAnimBP + ".uasset";
+    if ( kPlatformFile.FileExists( *strTargetExpSequencePath )
+      || kPlatformFile.FileExists( *strTargetExpPosePath )
+      || kPlatformFile.FileExists( *strTargetWrinkleAnimBpPath ) )
+    {
+        UE_LOG( LogTemp, Error, TEXT( "BuildWrinkleBlueprint target file alrady exist." ) );
+        return false;
+    }
+    // 1.3 開始複製
+    if ( !kPlatformFile.CopyFile( *strTargetExpSequencePath,   *strExpSequencePath ) != 0
+      || !kPlatformFile.CopyFile( *strTargetExpPosePath,       *strExpPosePath ) != 0
+      || !kPlatformFile.CopyFile( *strTargetWrinkleAnimBpPath, *strWrinkleAnimBpPath ) != 0 )
+    {
+        UE_LOG( LogTemp, Error, TEXT( "BuildWrinkleBlueprint copy file failed." ) );
+        return false;
+    }
+
+    //2. re assign skeleton
+    TArray< TWeakObjectPtr< UObject > > kAssetsToRetarget;
+    auto fnAddRetargetSource = [&]( const FString& strAssetPath )->bool
+    {
+        auto pObject = StaticLoadObject( UAnimationAsset::StaticClass(),
+                                         NULL,
+                                         *strAssetPath,
+                                         NULL,
+                                         LOAD_DisableDependencyPreloading | LOAD_DisableCompileOnLoad );
+        if ( !pObject )
+        {
+            return false;
+        }
+        UAnimationAsset* pAnimAsset = Cast< UAnimationAsset >( pObject );
+        if ( pAnimAsset )
+        {
+            USkeleton* pSkeletonAsset = pAnimAsset->GetSkeleton();
+            if ( !pSkeletonAsset || pSkeletonAsset != pSkeleton )
+            {
+                kAssetsToRetarget.Add( pAnimAsset );
+                return true;
+            }
+        }
+        return false;
+    };
+    FString strExpSeqContentPath = strRootGamePath + ExpSequence + "." + ExpSequence;
+    FString strPoseAssetContentPath = strRootGamePath + ExpPoseAsset + "." + ExpPoseAsset;
+    fnAddRetargetSource( strExpSeqContentPath );
+    fnAddRetargetSource( strPoseAssetContentPath );
+    if ( kAssetsToRetarget.Num() != 0 )
+    {
+        FAnimationRetargetContext kRetargetContext( kAssetsToRetarget, true, false );
+        EditorAnimUtils::RetargetAnimations( nullptr, pSkeleton, kRetargetContext, true, nullptr );
+    }
+
+    //3. Change pose asset var
+    FString strAnimBlueprintPath = strRootGamePath + WrinkleAnimBP + "." + WrinkleAnimBP;
+    UAnimBlueprint* pAnimBlueprint = Cast< UAnimBlueprint >( StaticLoadObject( UAnimBlueprint::StaticClass(),
+                                                                               NULL,
+                                                                               *( strAnimBlueprintPath ),
+                                                                               NULL,
+                                                                               LOAD_DisableDependencyPreloading | LOAD_DisableCompileOnLoad ) );
+    if ( pAnimBlueprint )
+    {
+        // 3.1 retarget skeleton
+        ReAssignAnimationBlueprintSkeleton( pAnimBlueprint, pSkeleton );
+        for ( FBPVariableDescription& pVar : pAnimBlueprint->NewVariables )
+        {
+            if ( pVar.VarName == "Pose Asset" )
+            {
+                pVar.DefaultValue = strRootGamePath + ExpPoseAsset;
+                FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified( pAnimBlueprint );
+                //Compile
+                FKismetEditorUtilities::CompileBlueprint( pAnimBlueprint );
+                UPackage* const pAssetPackage = pAnimBlueprint->GetOutermost();
+                pAssetPackage->SetDirtyFlag( true );
+
+                //Save
+                TArray<UPackage*> kPackagesToSave;
+                kPackagesToSave.Add( pAssetPackage );
+                FEditorFileUtils::PromptForCheckoutAndSave( kPackagesToSave, false, /*bPromptToSave=*/ false );
+            }
+        }
+    }
+
+    //4. Rename assets
+    FString strAssetName = pMesh->GetName();
+    auto pExpSeqObject = StaticLoadObject( UAnimationAsset::StaticClass(),
+                                           NULL,
+                                           *strExpSeqContentPath,
+                                           NULL,
+                                           LOAD_DisableDependencyPreloading | LOAD_DisableCompileOnLoad );
+    if ( pExpSeqObject )
+    {
+        RenameAsset( pExpSeqObject, strAssetName + "_" + ExpSequence );
+    }
+    auto pPoseAssetObject = StaticLoadObject( UAnimationAsset::StaticClass(),
+                                              NULL,
+                                              *strPoseAssetContentPath,
+                                              NULL,
+                                              LOAD_DisableDependencyPreloading | LOAD_DisableCompileOnLoad );
+    if ( pPoseAssetObject )
+    {
+        RenameAsset( pPoseAssetObject, strAssetName + "_" + ExpPoseAsset );
+    }
+    if ( pAnimBlueprint )
+    {
+        RenameAsset( pAnimBlueprint, strAssetName + "_" + WrinkleAnimBP );
+    }
+
+    //5. Set PostProcessAnimBP
+    if ( pAnimBlueprint )
+    {
+        pMesh->SetPostProcessAnimBlueprint( TSubclassOf< UAnimInstance >( *pAnimBlueprint->GeneratedClass ) );
+        UPackage* const pAssetPackage = pMesh->GetOutermost();
+        pAssetPackage->SetDirtyFlag( true );
+
+        //Save
+        TArray<UPackage*> kPackagesToSave;
+        kPackagesToSave.Add( pAssetPackage );
+        FEditorFileUtils::PromptForCheckoutAndSave( kPackagesToSave, false, /*bPromptToSave=*/ false );
+    }
+    return true;
+}
+
+bool FRLLiveLinkModule::ReAssignAnimationBlueprintSkeleton( UAnimBlueprint* pAnimBlueprint, USkeleton* pSkeleton )
+{
+    if ( !pAnimBlueprint || !pSkeleton )
+    {
+        return false;
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified( pAnimBlueprint );
+    FAssetRegistryModule::AssetCreated( pAnimBlueprint );
+    pAnimBlueprint->MarkPackageDirty();
+
+    pAnimBlueprint->TargetSkeleton = pSkeleton;
+    pAnimBlueprint->SetPreviewMesh( pSkeleton->GetPreviewMesh(), true );
+    auto pMesh = pAnimBlueprint->GetPreviewMesh();
+    pAnimBlueprint->Modify( true );
+
+    //Compile
+    TWeakObjectPtr<UAnimBlueprint> pWeekAnimBlueprint = pAnimBlueprint;
+    TArray<TWeakObjectPtr<UObject>> kAssetsToRetarget;
+    kAssetsToRetarget.Add( pWeekAnimBlueprint );
+    EditorAnimUtils::RetargetAnimations( pAnimBlueprint->TargetSkeleton, pSkeleton, kAssetsToRetarget, false, NULL, false );
+
+    FKismetEditorUtilities::CompileBlueprint( pAnimBlueprint );
+    UPackage* const pAssetPackage = pAnimBlueprint->GetOutermost();
+    pAssetPackage->SetDirtyFlag( true );
+
+    //Save
+    TArray<UPackage*> kPackagesToSave;
+    kPackagesToSave.Add( pAssetPackage );
+    FEditorFileUtils::PromptForCheckoutAndSave( kPackagesToSave, false, /*bPromptToSave=*/ false );
+    return true;
 }
 
 #undef LOCTEXT_NAMESPACE

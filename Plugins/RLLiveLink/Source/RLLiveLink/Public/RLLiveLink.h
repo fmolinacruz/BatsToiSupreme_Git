@@ -1,4 +1,4 @@
-// Copyright 2021 The Reallusion Authors. All Rights Reserved.
+// Copyright 2022 The Reallusion Authors. All Rights Reserved.
 
 #pragma once
 #include "CoreMinimal.h"
@@ -20,11 +20,34 @@
 #include "Common/TcpListener.h"
 #include "HAL/ThreadSafeBool.h"
 
+#include "Engine/MeshMerging.h"
+
 class FJsonValue;
 class FToolBarBuilder;
 class FMenuBuilder;
 class UBlueprint;
 class UTexture2D;
+
+struct FMergeComponentData
+{
+    FMergeComponentData( UPrimitiveComponent* InPrimComponent )
+        : PrimComponent( InPrimComponent )
+        , bShouldIncorporate( true )
+    {
+    }
+
+    /** Component extracted from selected actors */
+    TWeakObjectPtr<UPrimitiveComponent> PrimComponent;
+    /** Flag determining whether or not this component should be incorporated into the merge */
+    bool bShouldIncorporate;
+};
+
+struct ExportFbxSetting 
+{
+    UObject* pObjectToExport;
+    FString strSaveFilePath;
+};
+
 class CSceneTempData
 {
     public:
@@ -33,6 +56,15 @@ class CSceneTempData
         AActor* pParentActor;
         FString strFolderName;
         bool bPilotTarget;
+};
+
+enum class ETransferMode : int
+{
+    Merge,
+    Simplify,
+    BatchMerge,
+    BatchSimplify,
+    Batch
 };
 class FRLLiveLinkModule : public IModuleInterface, public FRunnable
 {
@@ -61,6 +93,9 @@ private:
     void ProcessLightData( const TSharedPtr<FJsonValue>& spJsonValue, bool bPlaceAsset );
     void ProcessRequireFromIC( const TSharedPtr<FJsonValue>& spJsonValue );
     void CheckAndDeleteDuplicatedAsset( const TSharedPtr<FJsonValue>& spJsonValue );
+    void CheckSkeletonAssetExist( const TSharedPtr<FJsonValue>& spJsonValue );
+    void CheckAssetExist( const TSharedPtr<FJsonValue>& spJsonValue );
+    void CheckICVersion( const TSharedPtr< FJsonValue >& spJsonValue );
 
     void CreateEmptyNodeForiClone();
     void CreateCamera();
@@ -72,6 +107,7 @@ private:
     void SetUpAllCharacterToBlueprint();
     void SetUpAllCameraToBlueprint();
     void SetUpAllLightToBlueprint();
+    bool SetupCineCamera( UBlueprint* pCameraBlueprint );
     void LiveLinkHelpMenu( FString strWebID );
 
     void AddToolBar( FToolBarBuilder& kBuilder );
@@ -100,6 +136,54 @@ private:
     AActor* LoadToScene( UBlueprint* pBlueprint );
 
     UTexture2D* RotateTexture2D( UTexture2D* pTexture );
+
+    // wrinkle BP setup
+    bool BuildWrinkleBlueprint( const FString& strRootGamePath, USkeletalMesh* pMesh );
+    bool ReAssignAnimationBlueprintSkeleton( UAnimBlueprint* pAnimBlueprint, USkeleton* pSkeleton );
+
+    //Transfer Scene to IC
+    void TransferSceneToIC( ETransferMode iMode = ETransferMode::Merge );
+    void CheckICVersionBeforeTransferScene( const ETransferMode iMode );
+    bool BatchTransferSceneToIClone( ETransferMode iMergeMode, TSet<UStaticMesh*>& kStaticMeshList );
+    bool CheckAssetExist( const FString& strAssetPath );
+    bool RunMergeFromSelection( ETransferMode iMergeMode, FString& strPackageName );
+    bool RunSimplify( const FString& strPackageName, const TArray<TSharedPtr<FMergeComponentData>>& kSelectedComponents );
+    void BuildActorsListFromMergeComponentsData( const TArray<TSharedPtr<FMergeComponentData>>& InComponentsData, TArray<AActor*>& OutActors, TArray<ULevel*>* OutLevels /* = nullptr */ );
+    bool RunMerge( const FString& strPackageName, const TArray<TSharedPtr<FMergeComponentData>>& kSelectedComponents );
+    bool GetPackageNameForMergeAction( const FString& strDefaultPackageName, FString& strOutPackageName );
+    bool BuildMergeComponentDataFromSelection( TArray<TSharedPtr<FMergeComponentData>>& kOutComponentsData );
+    bool HasAtLeastOneStaticMesh( const TArray<TSharedPtr<FMergeComponentData>>& kComponentsData );
+    FString GetDefaultPackageName() const;
+    bool ExportFbx( const struct ExportFbxSetting& kExportFbxSetting );
+    bool ExportFbx( const TArray<struct ExportFbxSetting>& kExportFbxSettings );
+    bool ExportAssetsInternal( const TArray<struct ExportFbxSetting>& kExportFbxSettings, bool bPromptIndividualFilenames = true ) const;
+    bool ExportSelected( const FString& strSaveFilePath );
+    void EditorGetUnderlyingActors( AActor* pActor, TSet<AActor*>& kOutUnderlyingActors ) const;
+    bool DeletePackageInContentBrowser( const FString& strPath );
+
+    void SendJsonToIC( const TSharedPtr<FJsonObject>& spReturnJson );
+
+    //for outliner and viewport right click
+    void AddMenuEntryInRightClick();
+    TSharedRef<FExtender> OutlinerMenuExtend( const TSharedRef<FUICommandList> CommandList, const TArray<AActor*> Actors );
+    void FillTransferSceneMenu( FMenuBuilder& kMenuBuilder );
+
+    void GetObjectsFromPackage( const FARFilter& kFilter, TArray<FAssetData>& kObjectList, const FARFilter& kIgnoreObjectFilter );
+    bool DeleteAssets( const TArray<FAssetData>& kObjectList );
+
+    void ProcessAvatarMotionNameAndPath( const FString& strAssetPath, const FString& strAssetName );
+    void ProcessPropMotionNameAndPath( const FString& strAssetPath, const FString& strAssetName );
+    void MoveAsset( const FString& strFromAssetPath, const FString& strToAssetPath );
+    void MoveMotionAssetPath( const TSharedPtr<FJsonValue>& spJsonValue, bool bIsProp );
+    void ReAssignMotionSkeleton( const FString& strCurrentPath );
+
+#if ENGINE_MAJOR_VERSION <= 4
+    void ReplaceMissingSkeleton( const TArray<UObject*>& kAnimAssetsToRetarget, UObject* kSkeletonAsset ) const;
+#else
+    void ReplaceMissingSkeleton( const TArray<TObjectPtr<UObject>>& kAnimAssetsToRetarget, const TObjectPtr<UObject>& kSkeletonAsset ) const;
+#endif
+    bool DeselectNonStaticMeshActors( TSet<AActor*>& kDeselectedActors );
+    void RenameAsset( UObject* pAsset, const FString& strNewAssetName );
 private:
     FString m_strCurUProjectPath;
     FString m_strCurEngineCmdexePath;
@@ -130,4 +214,13 @@ private:
 
     // Save Asset Data In Scene
     TArray< CSceneTempData > m_kAssetTempData;
+
+    ////Transfer Scene to IC
+    FTimerHandle m_kCountdownRecheckICVersionTimerHandle;
+    ETransferMode m_iMergeMode = ETransferMode::Merge;
+    //merge actors
+    FMeshMergingSettings m_kMeshMergeSettings;
+    FMeshProxySettings m_kMeshProxySetting; // simplify
+    bool bReplaceSourceActors = false;
+
 };
