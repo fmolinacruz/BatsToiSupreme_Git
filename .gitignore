@@ -18,7 +18,9 @@
 # Compiled Dynamic libraries
 *.so
 *.dylib
+
 *.dll
+!UnrealEditor-RLPlugin.dll
 
 # Fortran module files
 *.mod
@@ -43,14 +45,17 @@
 *.sdf
 *.VC.db
 *.VC.opendb
+*.modules
 
 # Precompiled Assets
 SourceArt/**/*.png
 SourceArt/**/*.tga
 
 # Binary Files
+
 Binaries/*
 Plugins/*/Binaries/*
+!Plugins/RLPlugin/Binaries/*
 
 # Builds
 Build/*
@@ -88,8 +93,10 @@ Build/Android/res/*
 !Build/Android/res/*/
 Build/Android/res/*/*
 !Build/Android/res/*/*.png
+
 # Ignore plugins binaries on deep subfolders
 Plugins/**/Binaries/*
+!Plugins/RLPlugin/Binaries/*
 Plugins/**/Intermediate/*
 
 # Auto generated files / folder

@@ -7,7 +7,9 @@ public class BatsToiSupreme_RealEditorTarget : TargetRules
 {
 	public BatsToiSupreme_RealEditorTarget(TargetInfo Target) : base(Target)
 	{
-		Type = TargetType.Editor;
+        Name = "BatsToiSupreme_RealEditor";
+
+        Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		ExtraModuleNames.Add("BatsToiSupreme_Real");
 	}
