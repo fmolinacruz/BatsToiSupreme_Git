@@ -1,4 +1,4 @@
-// Copyright 2021 The Reallusion Authors. All Rights Reserved.
+// Copyright 2022 The Reallusion Authors. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -16,7 +16,8 @@ public class RLLiveLink : ModuleRules
                 "Sockets",
                 "Json",
                 "JsonUtilities",
-                "LiveLinkInterface"
+                "LiveLinkInterface",
+                "Engine"
             }
             );
 
@@ -40,8 +41,9 @@ public class RLLiveLink : ModuleRules
                 "RawMesh",
                 "BlueprintGraph",
                 "ApplicationCore",
-                "ImageWrapper"
+                "CinematicCamera"
             }
             );
+
     }
 }

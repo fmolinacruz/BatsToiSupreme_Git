@@ -92,5 +92,8 @@ Build/Android/res/*/*
 Plugins/**/Binaries/*
 Plugins/**/Intermediate/*
 
+# Auto generated files / folder
+.idea/
+.vsconfig
 
 # End of https://www.toptal.com/developers/gitignore/api/unrealengine

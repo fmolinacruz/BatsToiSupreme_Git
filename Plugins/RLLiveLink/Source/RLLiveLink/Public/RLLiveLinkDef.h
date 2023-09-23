@@ -1,4 +1,4 @@
-// Copyright 2021 The Reallusion Authors. All Rights Reserved.
+// Copyright 2022 The Reallusion Authors. All Rights Reserved.
 
 #pragma once
 
@@ -17,7 +17,7 @@ enum class ELightColor : int
     Blue
 };
 
-TMap<ELightColor, FName> LightColorMap =
+static TMap<ELightColor, FName> LightColorMap =
 {
     { ELightColor::Red,   "Red" },
     { ELightColor::Green, "Green" },
