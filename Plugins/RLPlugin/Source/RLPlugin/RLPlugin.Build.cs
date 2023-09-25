@@ -1,7 +1,5 @@
 // Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
-
 using UnrealBuildTool;
-
 public class RLPlugin : ModuleRules
 {
     public RLPlugin(ReadOnlyTargetRules Target) : base(Target)
@@ -13,23 +11,17 @@ public class RLPlugin : ModuleRules
                 // ... add public include paths required here ...
             }
             );
-
-
         PrivateIncludePaths.AddRange(
             new string[] {
                 // ... add other private include paths required here ...
             }
             );
-
-
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
                 "Core",
             }
             );
-
-
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
@@ -53,7 +45,8 @@ public class RLPlugin : ModuleRules
                 "Json",
                 "JsonUtilities",
                 "SkeletalMeshUtilitiesCommon",
-                "ClothingSystemRuntimeCommon"
+                "ClothingSystemRuntimeCommon",
+                "PropertyEditor"
             }
             );
         if( Target.Version.MajorVersion == 4 && Target.Version.MinorVersion <= 23 )

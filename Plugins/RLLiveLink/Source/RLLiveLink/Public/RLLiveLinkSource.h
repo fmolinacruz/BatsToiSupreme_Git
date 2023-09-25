@@ -1,4 +1,4 @@
-// Copyright 2021 The Reallusion Authors. All Rights Reserved.
+// Copyright 2022 The Reallusion Authors. All Rights Reserved.
 
 #pragma once
 #include "ILiveLinkSource.h"
@@ -118,6 +118,10 @@ private:
     // Buffer to receive socket data into
     TArray<uint8> m_kRecvBuffer;
 
+    // for time code
+    uint32 m_uFps = -1;
+    int m_nFrameIndex = -1;
+
     // frame counter for data
     int m_nFrameCounter;
 
@@ -141,6 +145,9 @@ private:
 
     // iClone 的Old Viseme名稱對應MorphTarget name ( CC 以前的角色 )
     TArray< FName > m_kOldVisemeNames;
+
+    // iClone 的Old Viseme名稱對應MorphTarget name ( CC 以前的角色 ) ex:IC8 Heidi
+    TArray< FName > m_kIC8OldVisemeNames;
 
     // iClone 的CC4 Viseme名稱對應MorphTarget name ( CC 以前的角色 )
     TArray< FName > m_kCC4VisemeNames;
