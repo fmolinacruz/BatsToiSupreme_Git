@@ -189,6 +189,23 @@
     "N_NG",
     "R"
   ],
+  "IC8OldViseme": [
+    "EE",
+    "Er",
+    "IH",
+    "Ah",
+    "Oh",
+    "W_OO",
+    "S_Z",
+    "Ch_J",
+    "F_V",
+    "TH",
+    "T_L_D_N",
+    "B_M_P",
+    "K_G_H_NG",
+    "AE",
+    "R"
+  ],
   "CC4Viseme": [
     "V_Open",
     "V_Explosive",

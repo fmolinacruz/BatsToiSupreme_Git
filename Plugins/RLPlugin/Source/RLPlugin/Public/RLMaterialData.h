@@ -2,6 +2,7 @@
 #include "RLTextureData.h"
 #include "RLPhysicClothData.h"
 #include "RLShaderData.h"
+#include "RLWrinkleData.h"
 
 enum class ENodeType
 {
@@ -24,6 +25,9 @@ public:
     void SetScatter( TSharedPtr< RLScatter > spScatter ) { m_spScatter = spScatter; }
     RLScatter* GetScatter() { return m_spScatter ? m_spScatter.Get() : nullptr; }
 
+    void SetWrinkleData( TSharedPtr< RLWrinkleData > spWrinkleData ) { m_spWrinkleData = spWrinkleData; }
+    RLWrinkleData* GetWrinkleData() { return m_spWrinkleData ? m_spWrinkleData.Get() : nullptr; }
+
     bool m_bIsPbr = false;
     ENodeType m_eNodeType = ENodeType::None;
     bool m_bTwoSide = false;
@@ -41,4 +45,5 @@ public:
 private:
     TSharedPtr< RLShaderData > m_spShaderData;
     TSharedPtr< RLScatter > m_spScatter;
+    TSharedPtr< RLWrinkleData > m_spWrinkleData;
 };
