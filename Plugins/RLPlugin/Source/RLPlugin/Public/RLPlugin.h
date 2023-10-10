@@ -4,7 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
+
+#if ( ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 1 )
+#include "AssetRegistry/AssetRegistryModule.h"
+#else
 #include "AssetRegistryModule.h"
+#endif
+
 #include "ObjectTools.h"
 #include "PackageTools.h"
 #include "CCImportUI.h"
@@ -53,6 +59,14 @@ enum class EShaderType
     TRA,
 };
 
+enum class EWrinkleType 
+{
+    BaseColor,
+    Normal,
+    Roughness,
+    Flow
+};
+
 class FRLPluginModule : public IModuleInterface
 {
 public:
@@ -72,6 +86,12 @@ public:
 private:
     void AddToolbarExtension( FToolBarBuilder& kBuilder );
     void AddMenuExtension( FMenuBuilder& kBuilder );
+    // Apply CC Textures for Meta Human
+    TSharedRef< FExtender > CreateContentBrowserAssetSelectionMenu( const TArray< FAssetData >& kSelectedAssets );
+    void ApplyCCTexturesToMH( FString strAssetPath );
+    bool IsMetaHumanBP( UBlueprint* pBlueprint );
+    USkeletalMeshComponent* GetMetaHumanSkeletalMeshByPart( UBlueprint* pBlueprint, const FName& strPart );
+    UTexture* LoadTexture( const FString& strTexturePath, bool bsRGB = false );
     void CheckWorldGridMaterial(FString &strFbxName, FString &rootGamePath, FString ccMaterialFolderGamePath, UStaticMesh *pMesh, bool isMaterialInstance);
     bool CheckShaderTypeChange(FString &strfbxName, FString shaderType, USkeletalMesh *mesh, UMaterial* material, UMaterialInterface* MaterialInterface, RLMaterialData* pMaterialData, int slotID, FString &rootGamePath, bool isMaterialInstance, FString strBoneType );
     void DeleteTextureFile( const FString& strDeleteFloderPath, const FString& strCheckFolderPath );
@@ -99,36 +119,47 @@ private:
     void AssignMaterialInstanceJson( UMaterialInstanceConstant*& pInstUMaterialInterface, 
                                      const FString& strMaterialName,
                                      RLMaterialData* pMaterialData,
-                                     TArray <FString> & texturesPathList,
-                                     UMaterial* material,
-                                     UMaterialInterface* MaterialInterface,
-                                     FString texturesFilesGamePath,
-                                     FString texturesFilesGamePathFbm,
-                                     FString ccMaterialFolderGamePath,
+                                     const TArray <FString>& kTexturesPathList,
+                                     UMaterial* pMaterial,
+                                     UMaterialInterface* pMaterialInterface,
+                                     const FString& strTexturesFilesGamePath,
+                                     const FString& strTexturesFilesGamePathFbm,
+                                     const FString& strCCMaterialFolderGamePath,
                                      const FString& strSubsurfaceProfilePath,
-                                     FString boneType,
-                                     FString shaderType );
+                                     const FString& strBoneType,
+                                     const FString& strShaderType,
+                                     USkeleton* pSkeleton );
 
-    void AssignGeneralSss( RLMaterialData* pMaterialData, TArray<FString> &kTexturesPathList, FString strTexturesFilesGamePathFbm, const FString& strMaterialName, FString texturesFilesGamePath, bool bIsHQSkin, const FString& strSubsurfaceProfilePath, FString strTexturePathToLoad, UMaterialInstanceConstant*& pInstUMaterialInterface, UMaterial* pMaterial, UMaterialInterface* pMaterialInterface, FString strCCMaterialFolderGamePath );
+    void AssignGeneralSss( RLMaterialData* pMaterialData, 
+                           const TArray< FString >& kTexturesPathList, 
+                           const FString& strTexturesFilesGamePathFbm,
+                           const FString& strMaterialName, 
+                           const FString& strTexturesFilesGamePath,
+                           const bool bIsHQSkin,
+                           const FString& strSubsurfaceProfilePath,
+                           UMaterialInstanceConstant*& pInstUMaterialInterface, 
+                           UMaterial* pMaterial, 
+                           UMaterialInterface* pMaterialInterface, 
+                           const FString& strCCMaterialFolderGamePath );
 
     void PhysicIniPaser( FString iniPath );
     FString GetTexturePath( RLMaterialData *pMaterialData, const FString& strKey, const FString& strTexturesFolderPath, const FString& strMaterialName );
     void SetTextureParameter( RLMaterialData *pMaterialData, const FString& strKey, UMaterialInstanceConstant* pMaterialInstance );
 
     void UpdateStaticParameter( UMaterialInstanceConstant* pMaterialInstance, const FString& strParameter, bool bEnable, bool bMarkChanged );
-    void SetMultiUvIndex( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance );
-    void SetBaseColor( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString strTexturesFilesGamePathsFbm[2], FString strMaterialName );
-    void SetNormal( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString strTexturesFilesGamePathsFbm[2], FString strMaterialName );
-    void SetSpecular( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString strTexturesFilesGamePathsFbm[2], FString strMaterialName, bool bIsPBR );
-    void SetOpacity( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString strTexturesFilesGamePathsFbm[2], FString strMaterialName );
+    void SetMultiUvIndex( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance );
+    void SetBaseColor( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName, const bool bSetWrinkle );
+    void SetNormal( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName, const bool bSetWrinkle );
+    void SetSpecular( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName, const bool bIsPBR );
+    void SetOpacity( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName );
     void SetOpacityAdv( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance );
-    void SetGlow( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString strTexturesFilesGamePaths[2], FString strMaterialName );
-    void SetBlend( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString kTexturesFilesGamePaths[2], FString strMaterialName );
-    void SetBlendToHairDepthMap( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString kTexturesFilesGamePaths[2], FString strMaterialName );
-    void SetDisplacement( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString strTexturesFilesGamePaths[2], FString strMaterialName );
-    void SetAO( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, TArray<FString> kTexturesPathList, FString strTexturesFilesGamePaths[2], FString strMaterialName );
-    void SetRoughness( RLMaterialData *kMaterialData, UMaterialInstanceConstant* kMaterialInstance, TArray<FString> texturesPathList, FString texturesFilesGamePaths[2], FString materialName, bool isPBR );
-    void SetMetallic( RLMaterialData *kMaterialData, UMaterialInstanceConstant* kMaterialInstance, TArray<FString> texturesPathList, FString texturesFilesGamePaths[2], FString materialName, bool isPBR );
+    void SetGlow( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName );
+    void SetBlend( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName );
+    void SetBlendToHairDepthMap( RLMaterialData *pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName );
+    void SetDisplacement( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName );
+    void SetAO( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName );
+    void SetRoughness( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName, const bool bIsPBR, const bool bSetWrinkle );
+    void SetMetallic( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, const FString& strMaterialName, const bool bIsPBR );
     void CreateCollisionShape(FName strBoneName, FVector kBoundMin, FVector kBoundMax, FVector kScale, FVector kOffset, UBodySetup* pBodySetup, int nShapeType, int nBoundAxis);
     void CreateCollisionShapeFromData( RLPhysicsCollisionShapeData* pCollisionShapeData, UBodySetup* pBodySetup, const FTransform* kBoneParentWorldTransform );
     void CreateConstraint(FName strBoneName, int nBoneID, USkeletalMesh* pMesh, UPhysicsAsset* pPhysicsAsset);
@@ -157,8 +188,20 @@ private:
                                 const FString& strBoneType,
                                 TMap< FString, RLMaterialData >& kMaterialMap );
 
+    void ParseJsonWrinkleData( TSharedPtr< RLMaterialData > spMaterialData, TSharedPtr<FJsonObject> spJsonObject );
+    void SetWrinkleTexture( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance, const EWrinkleType& eType,
+                            const TArray< FString >& kTexturesPathList, const TArray< FString >& kTexturesFilesGamePaths, 
+                            const FString& strMaterialName, const FString& strDefaultTexturePath );
+    bool SetWrinkleWeights( RLMaterialData* pMaterialData, UMaterialInstanceConstant* pMaterialInstance );
+    void SetWrinkleAnimCurves( RLMaterialData* pMaterialData, USkeleton* pSkeleton );
+    bool BuildWrinkleBlueprint( const FString& strRootGamePath, USkeleton* pSkeleton );
+    bool ReAssignSequenceSkeleton( const TArray<FAssetData>& kAssetsToRetarget, USkeleton* pSkeleton );
+    bool ReAssignAnimationBlueprintSkeleton( UAnimBlueprint* pAnimBlueprint, USkeleton* pSkeleton );
+    void RenameAsset( UObject* pAssetObject, const FString& strNewAssetName );
+
     TSharedPtr< class FUICommandList > m_kPluginCommands;
     static URig* m_pEngineHumanoidRig;
     bool m_bIsMaterialInstance = true;
+    FString m_strContentBrowserSelectAsset = "";
     //FString const MATERIAL_FLODER_NAME = "RL_Materials";
 };

@@ -1,15 +1,18 @@
-// Copyright 2021 The Reallusion Authors. All Rights Reserved.
+// Copyright 2022 The Reallusion Authors. All Rights Reserved.
 
 #include "RLLiveLinkSource.h"
-#include "RLLiveLinkDef.h"
 #include "ILiveLinkClient.h"
 #include "Interfaces/IPluginManager.h"
+#include "RLLiveLinkDef.h"
+#include "Runtime/Core/Public/Async/ParallelFor.h"
 
 #if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION >= 5
 #include "Roles/LiveLinkAnimationRole.h"
 #include "Roles/LiveLinkAnimationTypes.h"
 #include "Roles/LiveLinkBasicTypes.h"
 #include "Roles/LiveLinkBasicTypes.h"
+#include "Misc/FileHelper.h"
+#include "Async/Async.h"
 #endif
 
 #define LOCTEXT_NAMESPACE "RLLiveLinkSource"
@@ -26,6 +29,7 @@
 #define RLJawMoveZ 11
 #define RL_NEW_CSUTOM_BEGIN 24
 #define IC8_VERSION_CODE 800
+
 int BytesToInt( unsigned char* pBytes, int nLength )
 {
     int nValue = 0;
@@ -162,6 +166,13 @@ bool FRLLiveLinkSource::InitVisemeNames( const TSharedPtr<FJsonObject>& kJsonRoo
         m_kOldVisemeNames.Add( strExpName );
     }
 
+    kJsonRoot->TryGetArrayField( TEXT( "IC8OldViseme" ), pVisemeNameArray );
+    for ( auto kName : *pVisemeNameArray )
+    {
+        FName strExpName = *kName->AsString();
+        m_kIC8OldVisemeNames.Add( strExpName );
+    }
+
     kJsonRoot->TryGetArrayField( TEXT( "CC4Viseme" ), pVisemeNameArray );
     for ( auto kName : *pVisemeNameArray )
     {
@@ -286,6 +297,7 @@ uint32 FRLLiveLinkSource::Run()
                 }
             }
         }
+        FPlatformProcess::Sleep( 0.001f );
     }
     return 0;
 }
@@ -311,6 +323,18 @@ void FRLLiveLinkSource::HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::T
         {
             nProductVersion = spJsonObject->GetIntegerField( "ProductVersion" );
             spJsonObject->RemoveField( "ProductVersion" );
+        }
+        m_uFps = 0;
+        if ( spJsonObject->HasField( "FPS" ) )
+        {
+            m_uFps = spJsonObject->GetIntegerField( "FPS" );
+            spJsonObject->RemoveField( "FPS" );
+        }
+        m_nFrameIndex = -1;
+        if ( spJsonObject->HasField( "CurrentFrame" ) )
+        {
+            m_nFrameIndex = spJsonObject->GetIntegerField( "CurrentFrame" );
+            spJsonObject->RemoveField( "CurrentFrame" );
         }
         for ( TPair<FString, TSharedPtr<FJsonValue>>& kJsonField : spJsonObject->Values )
         {
@@ -430,16 +454,17 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION >= 5
     auto kAllSubjects = m_pClient->GetSubjects( true,  false );
     FLiveLinkSkeletonStaticData* pSkeletonData = nullptr;
+    FLiveLinkSubjectFrameData kFrameData;
     for( auto kSubject : kAllSubjects )
     {
         if( kSubject.SubjectName == kSubjectName )
         {
             auto kRole = m_pClient->GetSubjectRole( kSubject );
-            FLiveLinkSubjectFrameData kFrameData;
             if( m_pClient->EvaluateFrame_AnyThread( kSubjectName, kRole, kFrameData ) )
             {
                 pSkeletonData = kFrameData.StaticData.Cast<FLiveLinkSkeletonStaticData>();
             }
+            break;
         }
     }
     if( pSkeletonData && pBoneArray )
@@ -470,8 +495,7 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
             kBoneNames.SetNumUninitialized( pBoneArray->Num() );
             TArray<int32> kBoneParents;
             kBoneParents.SetNumUninitialized( pBoneArray->Num() );
-
-            for ( int nBoneIdx = 0; nBoneIdx < pBoneArray->Num(); ++nBoneIdx )
+            ParallelFor( pBoneArray->Num(), [&]( int32 nBoneIdx )
             {
                 const TSharedPtr<FJsonValue>& spBone = ( *pBoneArray )[ nBoneIdx ];
                 const TSharedPtr<FJsonObject> spBoneObject = spBone->AsObject();
@@ -486,8 +510,7 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
                     }
                     else
                     {
-
-                        kBoneNames[ nBoneIdx ] = FName( *( strBoneName.ToLower() ) );
+                        kBoneNames[ nBoneIdx ] = FName( *(strBoneName.ToLower()) );
                     }
 
                     // Bone 有在Mapping 目標內才處理Parent Index
@@ -514,7 +537,7 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
                 {
                     return; // Invalid Json Format
                 }
-            }
+            } );
 
             kSubjectRefSkeleton.SetBoneNames( kBoneNames );
             kSubjectRefSkeleton.SetBoneParents( kBoneParents );
@@ -536,21 +559,20 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
     if ( pBoneArray )// 有Body的資料才處理 Bone 的Trasnform
     {
         kTransforms.SetNumUninitialized( pBoneArray->Num() );
-
-        for ( int nBoneIdx = 0; nBoneIdx < pBoneArray->Num(); ++nBoneIdx )
+        ParallelFor( pBoneArray->Num(), [&]( int32 nBoneIdx )
         {
-            const TSharedPtr<FJsonValue>& Bone = ( *pBoneArray )[ nBoneIdx ];
+            const TSharedPtr<FJsonValue>& Bone = (*pBoneArray)[ nBoneIdx ];
             const TSharedPtr<FJsonObject> BoneObject = Bone->AsObject();
 
             const TArray<TSharedPtr<FJsonValue>>* LocationArray = nullptr;
             FVector BoneLocation;
 
             if ( BoneObject->TryGetArrayField( TEXT( "Location" ), LocationArray )
-                && LocationArray->Num() == 3 ) // X, Y, Z
+                 && LocationArray->Num() == 3 ) // X, Y, Z
             {
-                double X = ( *LocationArray )[ 0 ]->AsNumber();
-                double Y = ( *LocationArray )[ 1 ]->AsNumber();
-                double Z = ( *LocationArray )[ 2 ]->AsNumber();
+                double X = (*LocationArray)[ 0 ]->AsNumber();
+                double Y = (*LocationArray)[ 1 ]->AsNumber();
+                double Z = (*LocationArray)[ 2 ]->AsNumber();
                 BoneLocation = FVector( X, -Y, Z );
             }
             else
@@ -562,12 +584,12 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
             const TArray<TSharedPtr<FJsonValue>>* RotationArray = nullptr;
             FQuat BoneQuat;
             if ( BoneObject->TryGetArrayField( TEXT( "Rotation" ), RotationArray )
-                && RotationArray->Num() == 4 ) // X, Y, Z, W
+                 && RotationArray->Num() == 4 ) // X, Y, Z, W
             {
-                double X = ( *RotationArray )[ 0 ]->AsNumber();
-                double Y = ( *RotationArray )[ 1 ]->AsNumber();
-                double Z = ( *RotationArray )[ 2 ]->AsNumber();
-                double W = ( *RotationArray )[ 3 ]->AsNumber();
+                double X = (*RotationArray)[ 0 ]->AsNumber();
+                double Y = (*RotationArray)[ 1 ]->AsNumber();
+                double Z = (*RotationArray)[ 2 ]->AsNumber();
+                double W = (*RotationArray)[ 3 ]->AsNumber();
                 FQuat kTempQuat = FQuat( X, Y, Z, W );
                 FVector kVec = kTempQuat.Euler();
                 FVector kLeftVec = FVector( -kVec.X, kVec.Y, -kVec.Z );
@@ -580,7 +602,7 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
             }
             auto kRTS = FTransform( BoneQuat, BoneLocation );
             kTransforms[ nBoneIdx ] = kRTS;
-        }
+        } );
     }
 
     TArray< FName > kExpNames;
@@ -593,10 +615,11 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
             const TArray<TSharedPtr<FJsonValue>>* pExpData = nullptr;
             if ( pExpWeightRoot->TryGetArrayField( TEXT( "iClone_regular_data" ), pExpData ) )
             {
-                for ( int i = 0; i < pExpData->Num(); ++i )
+                kCurveElements.SetNumUninitialized( pExpData->Num() );
+                ParallelFor( pExpData->Num(), [&]( int32 i )
                 {
                     const FName& strExpName = m_kExpressionNames[ i ];
-                    double fWeight = ( *pExpData )[ i ]->AsNumber();
+                    double fWeight = (*pExpData)[ i ]->AsNumber();
 #if ENGINE_MINOR_VERSION > 23 || ENGINE_MAJOR_VERSION >= 5
                     FLiveLinkCurveElement kNewElement( strExpName, fWeight );
 #else
@@ -604,8 +627,8 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
                     kNewElement.CurveName = strExpName;
                     kNewElement.CurveValue = fWeight;
 #endif
-                    kCurveElements.Add( kNewElement );
-                }
+                    kCurveElements[ i ] = kNewElement;
+                } );
                 // Check blink weight
                 float fLBlinkWeight    = kCurveElements[ LEFT_BLINK ].CurveValue;
                 float fRBlinkWeight    = kCurveElements[ RIGHT_BLINK ].CurveValue;
@@ -813,17 +836,59 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
 #endif
                 kCurveElements.Add( kCC4VisemeElement );
             }
-            
+
             // Old Viseme
+            if ( nProductVersion >= IC8_VERSION_CODE )
+            {
 #if ENGINE_MINOR_VERSION > 23 || ENGINE_MAJOR_VERSION >= 5
-            FLiveLinkCurveElement kOldVisemeElement( m_kOldVisemeNames[ i - 1 ], fWeight );
+                FLiveLinkCurveElement kOldVisemeElement( m_kIC8OldVisemeNames[ i - 1 ], fWeight );
 #else
-            FLiveLinkCurveElement kOldVisemeElement;
-            kOldVisemeElement.CurveName = m_kOldVisemeNames[ i - 1 ];
-            kOldVisemeElement.CurveValue = fWeight;
+                FLiveLinkCurveElement kOldVisemeElement;
+                kOldVisemeElement.CurveName = m_kIC8OldVisemeNames[ i - 1 ];
+                kOldVisemeElement.CurveValue = fWeight;
 #endif
-            kCurveElements.Add( kOldVisemeElement );
+                kCurveElements.Add( kOldVisemeElement );
+            }
+            else
+            {
+#if ENGINE_MINOR_VERSION > 23 || ENGINE_MAJOR_VERSION >= 5
+                FLiveLinkCurveElement kOldVisemeElement( m_kOldVisemeNames[ i - 1 ], fWeight );
+#else
+                FLiveLinkCurveElement kOldVisemeElement;
+                kOldVisemeElement.CurveName = m_kOldVisemeNames[ i - 1 ];
+                kOldVisemeElement.CurveValue = fWeight;
+#endif
+                kCurveElements.Add( kOldVisemeElement );
+            }
         }
+    }
+    const TArray<TSharedPtr<FJsonValue>>* pMorphArray = nullptr;
+    spDataRoot->TryGetArrayField( TEXT( "MorphData" ), pMorphArray );
+    if ( pMorphArray )
+    {
+        for ( int i = 0; i < pMorphArray->Num(); ++i )
+        {
+            const TSharedPtr<FJsonValue>& spMorph = (*pMorphArray)[ i ];
+            const TSharedPtr<FJsonObject> spMorphObject = spMorph->AsObject();
+
+            FString strMorphName;
+            double fWeight;
+            bool bResult = spMorphObject->TryGetStringField( TEXT( "MorphName" ), strMorphName );
+            bResult |= spMorphObject->TryGetNumberField( TEXT( "Weight" ), fWeight );
+            if ( bResult )
+            {
+                FLiveLinkCurveElement kNewElement( FName( *strMorphName ), fWeight );
+                kCurveElements.Add( kNewElement );
+            }
+        }
+    }
+
+    // Set time if time information is available.
+    if ( m_nFrameIndex != -1 )
+    {
+        FLiveLinkWorldTime kWorldTime = FLiveLinkWorldTime( FPlatformTime::Seconds() );
+        kSubjectFrame.WorldTime = kWorldTime;
+        kSubjectFrame.MetaData.SceneTime = FQualifiedFrameTime( FFrameTime( m_nFrameIndex ), FFrameRate( m_uFps, 1 ) );
     }
     m_pClient->PushSubjectData( m_kSourceGuid, kSubjectName, kSubjectFrame );
 }
@@ -855,11 +920,12 @@ void FRLLiveLinkSource::ProcessPropData( const TSharedPtr<FJsonObject>& spDataRo
                     {
                         pSkeletonData = kFrameData.StaticData.Cast<FLiveLinkSkeletonStaticData>();
                     }
+                    break;
                 }
             }
             if( pSkeletonData && pBoneArray )
             {
-                if( pSkeletonData->BoneNames.Num() != pBoneArray->Num() )
+                if( pSkeletonData->BoneNames.Num() != pBoneArray->Num() + 1 ) // live link 1.4 virtual root added.
                 {
                     bCreateSubject = true;
                 }
@@ -911,12 +977,12 @@ void FRLLiveLinkSource::ProcessPropData( const TSharedPtr<FJsonObject>& spDataRo
                                 if( m_kBoneMap.Contains( strBoneParentName ) )
                                 {
                                     FString strUnrealName = m_kBoneMap[ strBoneParentName ];
-                                    kBoneParents[ nBoneIdx ] = kBoneNames.IndexOfByKey( FName( *strUnrealName ) );
+                                    kBoneParents[ nBoneIdx ] = kBoneNames.IndexOfByKey( FName( *strUnrealName ) ) + 1; // 因為會插入一個Root
                                 }
                                 else
                                 {
                                     // 代表此Bone 的Parent 不在Mapping 範圍
-                                    kBoneParents[ nBoneIdx ] = nBoneIdx;
+                                    kBoneParents[ nBoneIdx ] = nBoneIdx + 1; // 因為會插入一個Root
                                 }
                             }
                             else
@@ -929,7 +995,11 @@ void FRLLiveLinkSource::ProcessPropData( const TSharedPtr<FJsonObject>& spDataRo
                             return; // Invalid Json Format
                         }
                     }
+                    FName kRootName = kBoneNames[ 0 ];
                     kBoneNames[ 0 ] = FName( *( kBoneNames[ 0 ].ToString() + TEXT( "_ue_root" ) ) );
+                    // 插入原本的Root bone
+                    kBoneNames.Insert( kRootName, 1 );
+                    kBoneParents.Insert( 0, 1 );
                     kSubjectRefSkeleton.SetBoneNames( kBoneNames );
                     kSubjectRefSkeleton.SetBoneParents( kBoneParents );
                 }
@@ -941,7 +1011,7 @@ void FRLLiveLinkSource::ProcessPropData( const TSharedPtr<FJsonObject>& spDataRo
             FLiveLinkFrameData kSubjectFrame;
             TArray<FLiveLinkCurveElement>& kCurveElements = kSubjectFrame.CurveElements;
             TArray<FTransform>& kTransforms = kSubjectFrame.Transforms;
-
+            
             if( pBoneArray )// 有Body的資料才處理 Bone 的Trasnform
             {
                 kTransforms.SetNumUninitialized( pBoneArray->Num() );
@@ -990,6 +1060,37 @@ void FRLLiveLinkSource::ProcessPropData( const TSharedPtr<FJsonObject>& spDataRo
                     auto kRTS = FTransform( BoneQuat, BoneLocation );
                     kTransforms[ nBoneIdx ] = kRTS;
                 }
+                // 確保原本的Root Bone是Identity, 因為Transform會到Actor上
+                kTransforms.Insert( FTransform::Identity, 1 );
+            }
+
+            const TArray<TSharedPtr<FJsonValue>>* pMorphArray = nullptr;
+            spProp->TryGetArrayField( TEXT( "MorphData" ), pMorphArray );
+            if ( pMorphArray )
+            {
+                for ( int i = 0; i < pMorphArray->Num(); ++i )
+                {
+                    const TSharedPtr<FJsonValue>& spMorph = (*pMorphArray)[ i ];
+                    const TSharedPtr<FJsonObject> spMorphObject = spMorph->AsObject();
+
+                    FString strMorphName;
+                    double fWeight;
+                    bool bResult = spMorphObject->TryGetStringField( TEXT( "MorphName" ), strMorphName );
+                    bResult |= spMorphObject->TryGetNumberField( TEXT( "Weight" ), fWeight );
+                    if ( bResult )
+                    {
+                        FLiveLinkCurveElement kNewElement( FName( *strMorphName ), fWeight );
+                        kCurveElements.Add( kNewElement );
+                    }
+                }
+            }
+            
+            // Set time if time information is available.
+            if ( m_nFrameIndex != -1 )
+            {
+                FLiveLinkWorldTime kWorldTime = FLiveLinkWorldTime( FPlatformTime::Seconds() );
+                kSubjectFrame.WorldTime = kWorldTime;
+                kSubjectFrame.MetaData.SceneTime = FQualifiedFrameTime( FFrameTime( m_nFrameIndex ), FFrameRate( m_uFps, 1 ) );
             }
             m_pClient->PushSubjectData( m_kSourceGuid, strPropName, kSubjectFrame );
         }
@@ -1061,6 +1162,7 @@ void FRLLiveLinkSource::ProcessCameraData( const TSharedPtr<FJsonObject>& spData
 
             //Set DOF
             bool bEnable = spCamera->GetBoolField( TEXT( "Enable" ) );
+            bool bFirstLink = false;//spCamera->GetBoolField( TEXT( "FirstLink" ) );
             float fFocus = spCamera->GetNumberField( TEXT( "Focus" ) );
             float fRange = spCamera->GetNumberField( TEXT( "Range" ) );
             float fNearTransitionRegion = spCamera->GetNumberField( TEXT( "NearTransitionRegion" ) );
@@ -1071,6 +1173,7 @@ void FRLLiveLinkSource::ProcessCameraData( const TSharedPtr<FJsonObject>& spData
             float fCenterColorWeight = spCamera->GetNumberField( TEXT( "CenterColorWeight" ) );
             float fEdgeDecayPower = spCamera->GetNumberField( TEXT( "EdgeDecayPower" ) );
             kCameraMap.Add( "Enable", FString::SanitizeFloat( bEnable ) );
+            kCameraMap.Add( "FirstLink", FString::SanitizeFloat( bFirstLink ) );
             kCameraMap.Add( "Focus", FString::SanitizeFloat( fFocus ) );
             kCameraMap.Add( "Range", FString::SanitizeFloat( fRange * 2.f ) );
             kCameraMap.Add( "NearTransitionRegion", FString::SanitizeFloat( fNearTransitionRegion * 2.f ) );
@@ -1111,6 +1214,14 @@ void FRLLiveLinkSource::ProcessCameraData( const TSharedPtr<FJsonObject>& spData
             FLiveLinkFrameData kCameraFrameData;
             kCameraFrameData.Transforms.Add( kCameraTransform );
             kCameraFrameData.MetaData.StringMetaData = kCameraMap;
+
+            // Set time if time information is available.
+            if ( m_nFrameIndex != -1 )
+            {
+                FLiveLinkWorldTime kWorldTime = FLiveLinkWorldTime( FPlatformTime::Seconds() );
+                kCameraFrameData.WorldTime = kWorldTime;
+                kCameraFrameData.MetaData.SceneTime = FQualifiedFrameTime( FFrameTime( m_nFrameIndex ), FFrameRate( m_uFps, 1 ) );
+            }
             m_pClient->PushSubjectData( m_kSourceGuid, kCameraName, kCameraFrameData );
         }
     }
@@ -1274,6 +1385,15 @@ void FRLLiveLinkSource::ProcessLightData( const TSharedPtr<FJsonObject>& spDataR
             kLightFrameData.Transforms.Add( kLightTransform );
             kLightFrameData.MetaData.StringMetaData = kLightMap;
             kLightFrameData.CurveElements = kLightColor;
+
+            // Set time if time information is available.
+            if ( m_nFrameIndex != -1 )
+            {
+                FLiveLinkWorldTime kWorldTime = FLiveLinkWorldTime( FPlatformTime::Seconds() );
+                kLightFrameData.WorldTime = kWorldTime;
+                kLightFrameData.MetaData.SceneTime = FQualifiedFrameTime( FFrameTime( m_nFrameIndex ), FFrameRate( m_uFps, 1 ) );
+            }
+
             m_pClient->PushSubjectData( m_kSourceGuid, kLightName, kLightFrameData );
         }
     }
