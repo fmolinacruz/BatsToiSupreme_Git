@@ -46,7 +46,6 @@
 *.VC.db
 *.VC.opendb
 *.modules
-*.temp
 
 # Precompiled Assets
 SourceArt/**/*.png
