@@ -18,16 +18,20 @@ void ABTGameState::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	// The replicated property shouldn't be changed on the Client side, so we add this check to
-	// make sure we had the authority to change it.
+	/**
+	 * The replicated property shouldn't be changed on the Client side, so we add this check to
+	 * make sure we had the authority to change it.
+	 */
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		ServerFPS = GAverageFPS;
 	}
 }
 
-// NOTE(Nghia Lam): This function is required whenever we have a property that needs replication.
-// In this case that property is ServerFPS.
+/**
+ * NOTE(Nghia Lam): This function is required whenever we have a property that needs replication.
+ * In this case that property is ServerFPS.
+ */
 void ABTGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

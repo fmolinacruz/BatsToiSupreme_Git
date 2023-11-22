@@ -1,0 +1,59 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "CommonInputTypeEnum.h"
+#include "Components/ActorComponent.h"
+#include "BTPlayerInput.generated.h"
+
+class UInputAction;
+class ABTPlayerCharacter;
+class UPlayerMappableInputConfig;
+
+USTRUCT()
+struct FMappableConfig
+{
+	GENERATED_BODY()
+
+	FMappableConfig() = default;
+
+	UPROPERTY(EditAnywhere)
+	TSoftObjectPtr<UPlayerMappableInputConfig> Config;
+
+	/**
+	 * The type of config that this is. Useful for filtering out configs by the current input device
+	 * for things like the settings screen, or if you only want to apply this config when a certain
+	 * input type is being used.
+	 */
+	UPROPERTY(EditAnywhere)
+	ECommonInputType Type = ECommonInputType::Count;
+
+	/**
+	 * If true, then this input config will be activated when it's associated Game Feature is activated.
+	 * This is normally the desirable behavior
+	 */
+	UPROPERTY(EditAnywhere)
+	bool bShouldActivateAutomatically = true;
+};
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+class BATSTOISUPREME_REAL_API UBTPlayerInput : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:
+	UBTPlayerInput();
+
+	void InitializeInputComponent(UInputComponent* PlayerInputComponent);
+
+protected:
+	virtual void BeginPlay() override;
+
+	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput")
+	TArray<FMappableConfig> DefaultInputConfigs;
+
+private:
+	UPROPERTY(VisibleAnywhere, Category = "Player")
+	TObjectPtr<ABTPlayerCharacter> PlayerCharacter;
+};
