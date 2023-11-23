@@ -6,15 +6,22 @@
 #include "GameFramework/Character.h"
 #include "BTBaseCharacter.generated.h"
 
+class UBTCharacterMovement;
+
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTBaseCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	ABTBaseCharacter();
+	ABTBaseCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Component")
+	UBTCharacterMovement* GetBTMovementComponent() const { return BTMovementComponent; }
+	
 protected:
 	virtual void BeginPlay() override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Component")
+	TObjectPtr<UBTCharacterMovement> BTMovementComponent;
 };
