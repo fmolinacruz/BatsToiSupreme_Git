@@ -14,13 +14,14 @@ public class BatsToiSupreme_Real : ModuleRules
 			"CoreOnline",
 			"CoreUObject", 
 			"Engine", 
-			"EnhancedInput",
 			"InputCore", 
-			"HeadMountedDisplay"
+			"HeadMountedDisplay", 
+			"GASCompanion"
 		});
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"CommonInput",
+			"EnhancedInput"
 		});
 		
 		// Uncomment if you are using Slate UI

@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/PlayerState.h"
+#include "ModularGameplayActors/GSCModularPlayerState.h"
 #include "BTPlayerState.generated.h"
 
 UCLASS()
-class BATSTOISUPREME_REAL_API ABTPlayerState : public APlayerState
+class BATSTOISUPREME_REAL_API ABTPlayerState : public AGSCModularPlayerState
 {
 	GENERATED_BODY()
 };

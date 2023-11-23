@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/PlayerController.h"
+#include "ModularGameplayActors/GSCModularPlayerController.h"
 #include "BTPlayerController.generated.h"
 
 class ABTPlayerCharacter;
 
 UCLASS()
-class BATSTOISUPREME_REAL_API ABTPlayerController : public APlayerController
+class BATSTOISUPREME_REAL_API ABTPlayerController : public AGSCModularPlayerController
 {
 	GENERATED_BODY()
 

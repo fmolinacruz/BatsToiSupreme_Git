@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "ModularGameplayActors/GSCModularCharacter.h"
 #include "BTBaseCharacter.generated.h"
 
 class UBTCharacterMovement;
 
 UCLASS()
-class BATSTOISUPREME_REAL_API ABTBaseCharacter : public ACharacter
+class BATSTOISUPREME_REAL_API ABTBaseCharacter : public AGSCModularCharacter
 {
 	GENERATED_BODY()
 
