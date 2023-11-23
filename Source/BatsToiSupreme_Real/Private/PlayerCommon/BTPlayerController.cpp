@@ -4,6 +4,7 @@
 
 #include "Characters/BTPlayerCharacter.h"
 #include "PlayerCommon/BTPlayerInput.h"
+#include "Utilities/BTLogging.h"
 
 ABTPlayerController::ABTPlayerController()
 {
@@ -20,6 +21,6 @@ void ABTPlayerController::OnPossess(APawn* InPawn)
 	}
 	else
 	{
-		// TODO(Nghia Lam): Logging
+		BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter!");
 	}
 }
