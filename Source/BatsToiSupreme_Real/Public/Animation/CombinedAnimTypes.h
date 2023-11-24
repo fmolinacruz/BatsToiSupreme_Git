@@ -14,6 +14,13 @@ enum class ERelativePosition : uint8
 	ESyncBone UMETA(DisplayName = "Get references from the sync bone"),
 };
 
+UENUM(BlueprintType)
+enum class ERelativeDirection : uint8
+{
+	ELeft UMETA(DisplayName = "Left Direction"),
+	ERight UMETA(DisplayName = "Right Direction"),
+};
+
 USTRUCT(BlueprintType)
 struct FCombinedAnimsAttacker : public FTableRowBase
 {
@@ -27,6 +34,10 @@ public:
 	/* The montage to be played on attacker */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
 	class UAnimMontage* AttackerAnimMontage;
+
+	/* The direction of the anim to be played */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
 
 	/* The receiver will be move to this position when the animation start */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
@@ -46,6 +57,10 @@ public:
 	/* The montage to be played on receiver */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
 	class UAnimMontage* ReceiverAnimMontage;
+	
+	/* The direction of the anim to be played */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
 };
 
 USTRUCT(BlueprintType)
