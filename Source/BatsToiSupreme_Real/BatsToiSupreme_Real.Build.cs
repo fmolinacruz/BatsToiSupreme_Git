@@ -21,7 +21,9 @@ public class BatsToiSupreme_Real : ModuleRules
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"CommonInput",
-			"EnhancedInput"
+			"EnhancedInput",
+			"GameplayTasks",
+			"GameplayTags",
 		});
 		
 		// Uncomment if you are using Slate UI
