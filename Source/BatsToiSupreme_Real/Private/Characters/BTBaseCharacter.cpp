@@ -7,7 +7,7 @@
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBTCharacterMovement>(CharacterMovementComponentName))
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	BTMovementComponent = CastChecked<UBTCharacterMovement>(GetMovementComponent());
 }
@@ -15,4 +15,9 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 void ABTBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void ABTBaseCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
 }

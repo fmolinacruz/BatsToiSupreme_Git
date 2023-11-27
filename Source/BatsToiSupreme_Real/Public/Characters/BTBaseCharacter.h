@@ -21,7 +21,11 @@ public:
 	
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Component")
 	TObjectPtr<UBTCharacterMovement> BTMovementComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Enemy")
+	TObjectPtr<ABTBaseCharacter> BTEnemy;
 };
