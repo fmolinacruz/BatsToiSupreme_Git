@@ -26,21 +26,20 @@ struct FCombinedAnimsAttacker : public FTableRowBase
 {
 	GENERATED_BODY()
 
-public:
 	/* The tag of this combined anim */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	FGameplayTag AnimTag;
 
 	/* The montage to be played on attacker */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	class UAnimMontage* AttackerAnimMontage;
 
 	/* The direction of the anim to be played */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
 
 	/* The receiver will be move to this position when the animation start */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	ERelativePosition ReceiverForcePosition = ERelativePosition::EAny;
 };
 
@@ -49,17 +48,16 @@ struct FCombinedAnimsReceiver : public FTableRowBase
 {
 	GENERATED_BODY()
 
-public:
 	/* The tag of this combined anim */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	FGameplayTag AnimTag;
 
 	/* The montage to be played on receiver */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	class UAnimMontage* ReceiverAnimMontage;
 	
 	/* The direction of the anim to be played */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Combined Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
 };
 
@@ -68,7 +66,6 @@ struct FCombinedAnim
 {
 	GENERATED_BODY()
 
-public:
 	FCombinedAnim() {};
 
 	FCombinedAnim(const FCombinedAnimsAttacker& InAttackerConfig, const FGameplayTag& InTag, ACharacter* InCharacterRef)
