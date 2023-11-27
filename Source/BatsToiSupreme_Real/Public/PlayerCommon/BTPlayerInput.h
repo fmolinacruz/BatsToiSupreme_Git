@@ -7,6 +7,8 @@
 #include "Components/ActorComponent.h"
 #include "BTPlayerInput.generated.h"
 
+struct FInputActionValue;
+
 class UInputAction;
 class ABTPlayerCharacter;
 class UPlayerMappableInputConfig;
@@ -46,12 +48,16 @@ public:
 	UBTPlayerInput();
 
 	void InitializeInputComponent(UInputComponent* PlayerInputComponent);
+	void RequestMove(const FInputActionValue& Value);
 
 protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput")
 	TArray<FMappableConfig> DefaultInputConfigs;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* MoveInputAction;
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Player")

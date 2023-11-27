@@ -15,6 +15,9 @@ class BATSTOISUPREME_REAL_API ABTBaseCharacter : public AGSCModularCharacter
 
 public:
 	ABTBaseCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Actions")
+	void MoveCharacter(const FVector2D& MovementVector); 
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Component")
 	UBTCharacterMovement* GetBTMovementComponent() const { return BTMovementComponent; }
@@ -28,4 +31,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Enemy")
 	TObjectPtr<ABTBaseCharacter> BTEnemy;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter")
+	bool bIsTurningRight;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter")
+	bool bIsTurningLeft;
+	
+private:
+	void RotateTowardEnemy(float DeltaSeconds);
 };

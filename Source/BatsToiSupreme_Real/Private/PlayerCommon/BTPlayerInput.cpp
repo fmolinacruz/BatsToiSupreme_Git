@@ -2,6 +2,7 @@
 
 #include "PlayerCommon/BTPlayerInput.h"
 
+#include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "PlayerMappableInputConfig.h"
 #include "Characters/BTPlayerCharacter.h"
@@ -33,7 +34,7 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 	check(Subsystem);
-	
+
 	// Register any default input configs
 	for (const FMappableConfig& InputConfig : DefaultInputConfigs)
 	{
@@ -46,5 +47,15 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 		}
 	}
 
-	// TODO(Nghia Lam): Bind Actions
+	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestMove);
+}
+
+void UBTPlayerInput::RequestMove(const FInputActionValue& Value)
+{
+	const FVector2D MovementVector = Value.Get<FVector2D>();
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->MoveCharacter(MovementVector);
+	}
 }
