@@ -11,6 +11,6 @@ public class BatsToiSupreme_RealEditorTarget : TargetRules
 
         Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.Add("BatsToiSupreme_Real");
+		ExtraModuleNames.AddRange(new[] { "BatsToiSupreme_Real", "BatsToiSupreme_RealEditor" });
 	}
 }
