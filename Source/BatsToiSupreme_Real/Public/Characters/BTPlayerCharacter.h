@@ -14,7 +14,7 @@ class BATSTOISUPREME_REAL_API ABTPlayerCharacter : public ABTBaseCharacter
 	GENERATED_BODY()
 
 public:
-	ABTPlayerCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	ABTPlayerCharacter();
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Component")
 	UBTPlayerInput* GetBTInputComponent() const { return BTInputComponent; }

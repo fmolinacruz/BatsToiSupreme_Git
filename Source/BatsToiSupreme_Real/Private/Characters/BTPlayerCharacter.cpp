@@ -4,8 +4,7 @@
 
 #include "PlayerCommon/BTPlayerInput.h"
 
-ABTPlayerCharacter::ABTPlayerCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+ABTPlayerCharacter::ABTPlayerCharacter()
 {
 	BTInputComponent = CreateDefaultSubobject<UBTPlayerInput>(TEXT("Player Input"));
 }

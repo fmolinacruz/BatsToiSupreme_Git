@@ -12,5 +12,5 @@ class BATSTOISUPREME_REAL_API UBTCharacterMovement : public UCharacterMovementCo
 	GENERATED_BODY()
 
 public:
-	UBTCharacterMovement();
+	UBTCharacterMovement(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 };

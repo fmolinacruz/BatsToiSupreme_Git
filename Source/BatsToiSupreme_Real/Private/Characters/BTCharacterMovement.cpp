@@ -2,7 +2,8 @@
 
 #include "Characters/BTCharacterMovement.h"
 
-UBTCharacterMovement::UBTCharacterMovement()
+UBTCharacterMovement::UBTCharacterMovement(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	PrimaryComponentTick.bCanEverTick = false;
 

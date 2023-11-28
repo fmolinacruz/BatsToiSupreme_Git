@@ -9,7 +9,7 @@
 class UBTCharacterMovement;
 
 UCLASS()
-class BATSTOISUPREME_REAL_API ABTBaseCharacter : public AGSCModularCharacter
+class BATSTOISUPREME_REAL_API ABTBaseCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -18,16 +18,10 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Actions")
 	void MoveCharacter(const FVector2D& MovementVector); 
-
-	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Component")
-	UBTCharacterMovement* GetBTMovementComponent() const { return BTMovementComponent; }
 	
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Component")
-	TObjectPtr<UBTCharacterMovement> BTMovementComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Enemy")
 	TObjectPtr<ABTBaseCharacter> BTEnemy;

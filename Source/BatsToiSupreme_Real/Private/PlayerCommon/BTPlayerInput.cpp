@@ -48,7 +48,7 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 	}
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
-	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestMove);
+	//EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestMove);
 }
 
 void UBTPlayerInput::RequestMove(const FInputActionValue& Value)
