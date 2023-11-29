@@ -2,6 +2,7 @@
 
 #include "Characters/BTBaseCharacter.h"
 
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Utilities/BTLogging.h"
 
@@ -9,6 +10,10 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Basic setup
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -55,10 +60,10 @@ void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 
 	const FVector StartLocation = GetActorLocation();
 	const FVector TargetLocation = BTEnemy->GetActorLocation();
-
-	const FRotator TargetRotation = FRotationMatrix::MakeFromX(TargetLocation - StartLocation).Rotator();
-	const FQuat TargetQuatRotation = FQuat(TargetRotation);
-	AddActorLocalRotation(TargetQuatRotation);
+	
+	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, AutoTurningRate);
+	SetActorRotation(NewRotation);
 
 	const bool IsStandingStillSelf = GetVelocity().Size() == 0;
 	const bool IsStandingStillEnemy = BTEnemy->GetVelocity().Size() == 0;
