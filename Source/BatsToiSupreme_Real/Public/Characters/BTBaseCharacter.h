@@ -33,11 +33,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Enemy")
 	TObjectPtr<ABTBaseCharacter> BTEnemy;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	bool bIsTurningRight;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	bool bIsTurningLeft;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
+	float AutoTurningRate = 50.0f;
 	
 private:
 	void RotateTowardEnemy(float DeltaSeconds);
