@@ -17,7 +17,7 @@ void ABTPlayerController::OnPossess(APawn* InPawn)
 	PlayerCharacter = Cast<ABTPlayerCharacter>(GetCharacter());
 	if (PlayerCharacter)
 	{
-		//PlayerCharacter->GetBTInputComponent()->InitializeInputComponent(InputComponent);
+		PlayerCharacter->GetBTInputComponent()->InitializeInputComponent(InputComponent);
 	}
 	else
 	{

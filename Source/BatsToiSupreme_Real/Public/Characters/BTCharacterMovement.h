@@ -3,14 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "BTCharacterMovement.generated.h"
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class BATSTOISUPREME_REAL_API UBTCharacterMovement : public UCharacterMovementComponent
+UINTERFACE(BlueprintType)
+class UBTCharacterMovement : public UInterface
 {
 	GENERATED_BODY()
+};
 
+class IBTCharacterMovement
+{
+	GENERATED_BODY()
+	
 public:
-	UBTCharacterMovement(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	virtual const FVector GetMovementVelocity() = 0;
 };

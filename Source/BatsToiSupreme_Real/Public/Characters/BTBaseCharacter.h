@@ -3,21 +3,28 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BTCharacterMovement.h"
 #include "ModularGameplayActors/GSCModularCharacter.h"
 #include "BTBaseCharacter.generated.h"
 
 class UBTCharacterMovement;
 
 UCLASS()
-class BATSTOISUPREME_REAL_API ABTBaseCharacter : public ACharacter
+class BATSTOISUPREME_REAL_API ABTBaseCharacter : public AGSCModularCharacter, public IBTCharacterMovement
 {
 	GENERATED_BODY()
 
 public:
 	ABTBaseCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	
-	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Actions")
-	void MoveCharacter(const FVector2D& MovementVector); 
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
+	void AddMovementBuffer(const FVector2D& MovementVector);
+	
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
+	void RefreshMovementBuffer();
+
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
+	virtual const FVector GetMovementVelocity() override;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -34,4 +41,7 @@ protected:
 	
 private:
 	void RotateTowardEnemy(float DeltaSeconds);
+
+	float MovementBufferX;
+	float MovementBufferY;
 };
