@@ -19,12 +19,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void PostInitProperties() override;
 	
 	// The actual FSM
-	UPROPERTY(EditDefaultsOnly, Category = ASM)
+	UPROPERTY(EditDefaultsOnly, Category = BTSM)
 	TObjectPtr<UBTStateMachine> FSM;
 
 	// Sets if this FSM should tick
-	UPROPERTY(EditDefaultsOnly, Category = ASM)
+	UPROPERTY(EditDefaultsOnly, Category = BTSM)
 	bool bCanFSMTick = false;
 };

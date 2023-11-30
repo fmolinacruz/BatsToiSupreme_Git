@@ -6,6 +6,9 @@
 #include "UObject/Object.h"
 #include "BTGraphEdge.generated.h"
 
+class UBTGraph;
+class UBTGraphNode;
+
 UCLASS()
 class BATSTOISUPREME_REAL_API UBTGraphEdge : public UObject
 {
@@ -14,4 +17,14 @@ class BATSTOISUPREME_REAL_API UBTGraphEdge : public UObject
 public:
 	UBTGraphEdge();
 	virtual ~UBTGraphEdge() override;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UBTGraph|Edge")
+	TObjectPtr<UBTGraphNode> StartNode;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "UBTGraph|Edge")
+	TObjectPtr<UBTGraphNode> EndNode;
+
+protected:
+	UPROPERTY()
+	TObjectPtr<UBTGraph> Graph;
 };
