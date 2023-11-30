@@ -9,6 +9,7 @@
 #include "BTAnimationComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombinedAnimationStarted, const FGameplayTag&, animTag);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombinedAnimationEnded, const FGameplayTag&, animTag);
 
 struct FCombinedAnimsData;
@@ -67,16 +68,32 @@ protected:
 	virtual void OnCombinedAnimStarted(const FGameplayTag& AnimTag);
 	virtual void OnCombinedAnimEnded(const FGameplayTag& AnimTag);
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = CAS)
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Batstoi|Animation Component")
 	FName WarpSyncPoint = "CombinedAnim";
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = CAS)
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Batstoi|Animation Component")
 	bool bShowWarpDebug = false;
 
-	UPROPERTY(EditDefaultsOnly, Category = CAS)
-	TObjectPtr<UDataTable> AnimsConfig;
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|Animation Component")
+	TObjectPtr<UDataTable> AnimsConfigDatabase;
 
 private:
+	UFUNCTION(NetMulticast, Reliable, WithValidation, Category = CAS)
+	void MulticastPlayAnimMontage(class UAnimMontage* AnimMontage, class ACharacter* Character);
+	
+	UFUNCTION(NetMulticast, Reliable, WithValidation, Category = "Batstoi|Animation Component")
+	void DispatchAnimStart(const FGameplayTag& AnimTag);
+	
+	UFUNCTION(NetMulticast, Reliable, WithValidation, Category = "Batstoi|Animation Component")
+	void DispatchAnimEnded(const FGameplayTag& AnimTag);
+
+	UFUNCTION(BlueprintCallable)
+	void HandleMontageFinished(UAnimMontage* InMontage, bool bIsInterrupted);
+
+	FCombinedAnimsData* GetCombinedAnimData(const FGameplayTag& AnimTag) const;
+	void StartAnimOnAttacker();
+	void StartAnimOnReceiver();
+
 	UPROPERTY(Replicated)
 	FCombinedAnim CurrentAnim;
 
