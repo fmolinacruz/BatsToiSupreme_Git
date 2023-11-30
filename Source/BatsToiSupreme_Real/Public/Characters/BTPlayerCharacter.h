@@ -20,6 +20,8 @@ public:
 	UBTPlayerInput* GetBTInputComponent() const { return BTInputComponent; }
 
 protected:
+	virtual void Tick(float DeltaSeconds) override;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Component")
 	TObjectPtr<UBTPlayerInput> BTInputComponent;
 };

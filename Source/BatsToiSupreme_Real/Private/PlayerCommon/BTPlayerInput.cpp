@@ -48,14 +48,23 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 	}
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
-	//EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestMove);
+	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestStartMovement);
+	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Completed, this, &UBTPlayerInput::RequestCancelMovement);
 }
 
-void UBTPlayerInput::RequestMove(const FInputActionValue& Value)
+void UBTPlayerInput::RequestStartMovement(const FInputActionValue& Value)
 {
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->MoveCharacter(MovementVector);
+		PlayerCharacter->AddMovementBuffer(MovementVector);
 	}
+}
+
+void UBTPlayerInput::RequestCancelMovement(const FInputActionValue& Value)
+{
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->RefreshMovementBuffer();
+	}	
 }

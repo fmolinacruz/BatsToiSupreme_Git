@@ -2,12 +2,18 @@
 
 #include "Characters/BTBaseCharacter.h"
 
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Utilities/BTLogging.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Basic setup
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -21,13 +27,27 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 	RotateTowardEnemy(DeltaSeconds);
 }
 
-void ABTBaseCharacter::MoveCharacter(const FVector2D& MovementVector)
+void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
 {
-	// Quick movement code.
-	// TODO: Revise this code
-	BTLOG_WARNING("Movement here: %s !!", *MovementVector.ToString());
-	// AddMovementInput(FRotationMatrix(FRotator::ZeroRotator).GetUnitAxis(EAxis::X), MovementVector.X);
-	// AddMovementInput(FRotationMatrix(FRotator::ZeroRotator).GetUnitAxis(EAxis::Y), -MovementVector.Y);
+	MovementBufferX = MovementVector.X;
+	MovementBufferY = MovementVector.Y;
+}
+
+void ABTBaseCharacter::RefreshMovementBuffer()
+{
+	MovementBufferX = 0;
+	MovementBufferY = 0;
+}
+
+const FVector ABTBaseCharacter::GetMovementVelocity()
+{
+	const FRotator GameViewRotator(0, 0, GetControlRotation().Yaw);
+	const FVector ForwardVector = MovementBufferY * UKismetMathLibrary::GetForwardVector(GameViewRotator);
+	const FVector RightVector = MovementBufferX * UKismetMathLibrary::GetRightVector(GameViewRotator);
+	
+	FVector CombineVector = ForwardVector + RightVector;
+	CombineVector.Normalize(0.001);
+	return CombineVector;
 }
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
@@ -40,10 +60,10 @@ void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 
 	const FVector StartLocation = GetActorLocation();
 	const FVector TargetLocation = BTEnemy->GetActorLocation();
-
-	const FRotator TargetRotation = FRotationMatrix::MakeFromX(TargetLocation - StartLocation).Rotator();
-	const FQuat TargetQuatRotation = FQuat(TargetRotation);
-	AddActorLocalRotation(TargetQuatRotation);
+	
+	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, AutoTurningRate);
+	SetActorRotation(NewRotation);
 
 	const bool IsStandingStillSelf = GetVelocity().Size() == 0;
 	const bool IsStandingStillEnemy = BTEnemy->GetVelocity().Size() == 0;

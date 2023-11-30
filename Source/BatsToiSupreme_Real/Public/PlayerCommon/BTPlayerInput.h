@@ -48,7 +48,10 @@ public:
 	UBTPlayerInput();
 
 	void InitializeInputComponent(UInputComponent* PlayerInputComponent);
-	void RequestMove(const FInputActionValue& Value);
+
+	// Actions
+	void RequestStartMovement(const FInputActionValue& Value);
+	void RequestCancelMovement(const FInputActionValue& Value);
 
 protected:
 	virtual void BeginPlay() override;
