@@ -3,11 +3,13 @@
 #include "StateMachine/BTStateMachine.h"
 
 #include "StateMachine/BTStateMachineNode.h"
+#include "StateMachine/BTStateMachineTransition.h"
 #include "Utilities/BTLogging.h"
 
 UBTStateMachine::UBTStateMachine()
 {
 	NodeType = UBTStateMachineNode::StaticClass();
+	EdgeType = UBTStateMachineTransition::StaticClass();
 	bHasStarted = false;
 }
 
