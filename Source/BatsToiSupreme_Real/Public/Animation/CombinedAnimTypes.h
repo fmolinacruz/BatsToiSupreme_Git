@@ -22,7 +22,7 @@ enum class ERelativeDirection : uint8
 };
 
 USTRUCT(BlueprintType)
-struct FCombinedAnimsAttacker : public FTableRowBase
+struct FCombinedAnimsData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -34,6 +34,10 @@ struct FCombinedAnimsAttacker : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	class UAnimMontage* AttackerAnimMontage;
 
+	/* The montage to be played on receiver */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	class UAnimMontage* ReceiverAnimMontage;
+
 	/* The direction of the anim to be played */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
@@ -44,39 +48,21 @@ struct FCombinedAnimsAttacker : public FTableRowBase
 };
 
 USTRUCT(BlueprintType)
-struct FCombinedAnimsReceiver : public FTableRowBase
-{
-	GENERATED_BODY()
-
-	/* The tag of this combined anim */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	FGameplayTag AnimTag;
-
-	/* The montage to be played on receiver */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	class UAnimMontage* ReceiverAnimMontage;
-	
-	/* The direction of the anim to be played */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
-};
-
-USTRUCT(BlueprintType)
 struct FCombinedAnim
 {
 	GENERATED_BODY()
 
 	FCombinedAnim() {};
 
-	FCombinedAnim(const FCombinedAnimsAttacker& InAttackerConfig, const FGameplayTag& InTag, ACharacter* InCharacterRef)
+	FCombinedAnim(const FCombinedAnimsData& InAnimData, const FGameplayTag& InTag, ACharacter* InCharacterRef)
 	{
-		AttackerAnimConfig = InAttackerConfig;
+		AnimData = InAnimData;
 		AnimTag = InTag;
 		ReceiverCharacterRef = InCharacterRef;
 	}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Batstoi|Combined Animation")
-	FCombinedAnimsAttacker AttackerAnimConfig;
+	FCombinedAnimsData AnimData;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Batstoi|Combined Animation")
 	FGameplayTag AnimTag;

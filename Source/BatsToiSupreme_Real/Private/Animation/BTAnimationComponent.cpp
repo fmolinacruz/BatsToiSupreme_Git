@@ -41,7 +41,7 @@ bool UBTAnimationComponent::CanPlayCombinedAnimWithCharacter(ACharacter* OtherCh
 	return false;
 }
 
-bool UBTAnimationComponent::EvaluateCombinedAnim(const FCombinedAnimsAttacker& AnimConfig, const ACharacter* OtherChar) const
+bool UBTAnimationComponent::EvaluateCombinedAnim(const FCombinedAnimsData& AnimConfig, const ACharacter* OtherChar) const
 {
 	return false;
 }
