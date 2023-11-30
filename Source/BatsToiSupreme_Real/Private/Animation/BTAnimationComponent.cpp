@@ -164,4 +164,16 @@ void UBTAnimationComponent::StartAnimOnReceiver()
 	{
 		return;
 	}
+	
+	const UBTAnimationComponent* ReceiverAnimComponent = CurrentAnim.ReceiverCharacterRef->FindComponentByClass<UBTAnimationComponent>();
+	if (!ReceiverAnimComponent)
+	{
+		BTLOG_ERROR("This ReceiverCharacter wasn't setup with a UBTAnimationComponent correctly!");
+		return;
+	}
+
+	if (CurrentAnim.AnimData.ReceiverAnimMontage)
+	{
+		MulticastPlayAnimMontage(CurrentAnim.AnimData.ReceiverAnimMontage, CurrentAnim.ReceiverCharacterRef);
+	}
 }
