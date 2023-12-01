@@ -10,15 +10,15 @@
 UENUM(BlueprintType)
 enum class ERelativePosition : uint8
 {
-	EAny UMETA(DisplayName = "Any position"),
-	ESyncBone UMETA(DisplayName = "Get references from the sync bone"),
+	Any UMETA(DisplayName = "Any position"),
+	SyncBone UMETA(DisplayName = "Get references from the sync bone"),
 };
 
 UENUM(BlueprintType)
 enum class ERelativeDirection : uint8
 {
-	ELeft UMETA(DisplayName = "Left Direction"),
-	ERight UMETA(DisplayName = "Right Direction"),
+	Left UMETA(DisplayName = "Left Direction"),
+	Right UMETA(DisplayName = "Right Direction"),
 };
 
 USTRUCT(BlueprintType)
@@ -40,11 +40,11 @@ struct FCombinedAnimsData : public FTableRowBase
 
 	/* The direction of the anim to be played */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
+	ERelativeDirection AnimDirection = ERelativeDirection::Left;
 
 	/* The receiver will be move to this position when the animation start */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	ERelativePosition ReceiverForcePosition = ERelativePosition::EAny;
+	ERelativePosition ReceiverForcePosition = ERelativePosition::Any;
 };
 
 USTRUCT(BlueprintType)
