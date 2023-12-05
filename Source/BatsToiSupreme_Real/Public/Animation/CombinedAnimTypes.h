@@ -10,19 +10,19 @@
 UENUM(BlueprintType)
 enum class ERelativePosition : uint8
 {
-	EAny UMETA(DisplayName = "Any position"),
-	ESyncBone UMETA(DisplayName = "Get references from the sync bone"),
+	Any UMETA(DisplayName = "Any position"),
+	SyncBone UMETA(DisplayName = "Get references from the sync bone"),
 };
 
 UENUM(BlueprintType)
 enum class ERelativeDirection : uint8
 {
-	ELeft UMETA(DisplayName = "Left Direction"),
-	ERight UMETA(DisplayName = "Right Direction"),
+	Left UMETA(DisplayName = "Left Direction"),
+	Right UMETA(DisplayName = "Right Direction"),
 };
 
 USTRUCT(BlueprintType)
-struct FCombinedAnimsAttacker : public FTableRowBase
+struct FCombinedAnimsData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -34,31 +34,17 @@ struct FCombinedAnimsAttacker : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	class UAnimMontage* AttackerAnimMontage;
 
-	/* The direction of the anim to be played */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
-
-	/* The receiver will be move to this position when the animation start */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	ERelativePosition ReceiverForcePosition = ERelativePosition::EAny;
-};
-
-USTRUCT(BlueprintType)
-struct FCombinedAnimsReceiver : public FTableRowBase
-{
-	GENERATED_BODY()
-
-	/* The tag of this combined anim */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	FGameplayTag AnimTag;
-
 	/* The montage to be played on receiver */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	class UAnimMontage* ReceiverAnimMontage;
-	
+
 	/* The direction of the anim to be played */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	ERelativeDirection AnimDirection = ERelativeDirection::ELeft;
+	ERelativeDirection AnimDirection = ERelativeDirection::Left;
+
+	/* The receiver will be move to this position when the animation start */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	ERelativePosition ReceiverForcePosition = ERelativePosition::Any;
 };
 
 USTRUCT(BlueprintType)
@@ -68,15 +54,15 @@ struct FCombinedAnim
 
 	FCombinedAnim() {};
 
-	FCombinedAnim(const FCombinedAnimsAttacker& InAttackerConfig, const FGameplayTag& InTag, ACharacter* InCharacterRef)
+	FCombinedAnim(const FCombinedAnimsData& InAnimData, const FGameplayTag& InTag, ACharacter* InCharacterRef)
 	{
-		AttackerAnimConfig = InAttackerConfig;
+		AnimData = InAnimData;
 		AnimTag = InTag;
 		ReceiverCharacterRef = InCharacterRef;
 	}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Batstoi|Combined Animation")
-	FCombinedAnimsAttacker AttackerAnimConfig;
+	FCombinedAnimsData AnimData;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Batstoi|Combined Animation")
 	FGameplayTag AnimTag;
