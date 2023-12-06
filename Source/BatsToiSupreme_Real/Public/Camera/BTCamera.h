@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "BTCamera.generated.h"
+#include <Characters/BTPlayerCharacter.h>
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTCamera : public AActor
@@ -14,6 +15,9 @@ class BATSTOISUPREME_REAL_API ABTCamera : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ABTCamera();
+
+	//Game Started
+	void GameStarted(TArray<ABTPlayerCharacter*> ActivePlayers);
 
 protected:
 	// Called when the game starts or when spawned

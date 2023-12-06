@@ -17,6 +17,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Batstoi")
 	float GetServerFPS() const { return ServerFPS; }
 
+	void InitializePlayer();
+
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 	

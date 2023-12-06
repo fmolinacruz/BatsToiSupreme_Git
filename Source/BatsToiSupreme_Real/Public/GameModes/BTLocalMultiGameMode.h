@@ -9,6 +9,7 @@
 #include <Menu/Menu.h>
 #include <Characters/BTPlayerCharacter.h>
 #include <Camera/BTCamera.h>
+#include <GameFramework/PlayerStart.h>
 
 /**
  * 
@@ -22,9 +23,13 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	void GetPlayerStartPoints(AActor* Actor);
 	void GetPlayerStartPoints();
 	void SpawnInputReceivers();
+	int NameToInt(AActor* PlayerStart);
+	void GameStarted();
+	void RemoveUnusedCameras();
+	void CreateLocalPlayerDebug(int ControllerId);
+
 
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	TSubclassOf<AActor> BP_Camera;
@@ -39,5 +44,5 @@ protected:
 	TArray<ABTPlayerCharacter*> Players;
 	int MinPlayers;
 	bool bIsInGame;
-	ABTCamera CameraRef;
+	ABTCamera* CameraRef;
 };

@@ -11,6 +11,10 @@ ABTCamera::ABTCamera()
 
 }
 
+void ABTCamera::GameStarted(TArray<ABTPlayerCharacter*> ActivePlayers)
+{
+}
+
 // Called when the game starts or when spawned
 void ABTCamera::BeginPlay()
 {
