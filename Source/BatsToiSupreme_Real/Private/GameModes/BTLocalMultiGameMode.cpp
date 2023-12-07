@@ -61,6 +61,47 @@ void ABTLocalMultiGameMode::GetPlayerStartPoints()
 
 void ABTLocalMultiGameMode::SpawnInputReceivers()
 {
+	for (AActor* PlayerStart : PlayerStartArray)
+	{
+		if (PlayerStart && !PlayerStart->IsPendingKill())
+		{
+			int index = NameToInt(PlayerStart);
+		}
+	}
+
+	UWorld* World = GetWorld();
+	int32 Index = 0;
+	for (AActor* PlayerStart : PlayerStartArray)
+	{
+
+		if (NameToInt(PlayerStart) == Index)
+		{
+			CreateLocalPlayerDebug(Index);
+
+			if (World != nullptr)
+			{
+				// Spawn the actor
+				FActorSpawnParameters SpawnParams;
+				//SpawnParams.PlayerIn
+				//TODO: missing Player Index param
+				AInputReceive* SpawnedActor = World->SpawnActor<AInputReceive>(AInputReceive::StaticClass(), PlayerStart->GetActorTransform(), SpawnParams);
+				if (SpawnedActor)
+				{
+					PlayerInputReceiverArray.Add(SpawnedActor);
+
+					APlayerController* PlayerController = UGameplayStatics::GetPlayerController(World, Index);
+					PlayerController->Possess(SpawnedActor);
+
+					//Player Index 0
+					APlayerController* PlayerController0 = UGameplayStatics::GetPlayerController(World, 0);
+					PlayerController0->SetViewTargetWithBlend(CameraRef);
+				}
+			}
+			
+		}
+		// Increment the index counter
+		Index++;
+	}
 }
 
 int ABTLocalMultiGameMode::NameToInt(AActor* Player)
@@ -126,4 +167,12 @@ void ABTLocalMultiGameMode::RemoveUnusedCameras()
 
 void ABTLocalMultiGameMode::CreateLocalPlayerDebug(int ControllerId)
 {
+	if (ControllerId != 0)
+	{
+		UWorld* World = GetWorld();
+		if (World != nullptr)
+		{
+			APlayerController* PlayerController = UGameplayStatics::CreatePlayer(World, ControllerId, true);
+		}
+	}
 }
