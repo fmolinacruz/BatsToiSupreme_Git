@@ -29,25 +29,25 @@ void ABTLocalMultiGameMode::BeginPlay()
 	GetPlayerStartPoints();
 
 	//Create WBP Menu Widget
-	UMenu* MenuWidgetRef = CreateWidget<UMenu>(this, UMenu::StaticClass());
+	//MenuWidgetRef = CreateWidget<UMenu>(this, UMenu::StaticClass());
 
-	//Add to Viewport
-	if (MenuWidgetRef)
-	{
-		// Add the widget to the viewport
-		MenuWidgetRef->AddToViewport(1);
-	}
-	else
-	{
-		// Handle the case where widget creation failed
-		UE_LOG(LogTemp, Error, TEXT("Widget creation failed"));
-	}
+	////Add to Viewport
+	//if (MenuWidgetRef)
+	//{
+	//	// Add the widget to the viewport
+	//	MenuWidgetRef->AddToViewport(1);
+	//}
+	//else
+	//{
+	//	// Handle the case where widget creation failed
+	//	UE_LOG(LogTemp, Error, TEXT("Widget creation failed"));
+	//}
 
-	//Delay until next tick
-	FTimerDelegate TimerDelegate;
-	TimerDelegate.BindUFunction(this, FName("SpawnInputReceivers"));
-	// Set up a timer to call the delegate on the next tick
-	GetWorld()->GetTimerManager().SetTimerForNextTick(TimerDelegate);
+	////Delay until next tick
+	//FTimerDelegate TimerDelegate;
+	//TimerDelegate.BindUFunction(this, FName("SpawnInputReceivers"));
+	//// Set up a timer to call the delegate on the next tick
+	//GetWorld()->GetTimerManager().SetTimerForNextTick(TimerDelegate);
 	//Completed
 }
 
@@ -61,20 +61,20 @@ void ABTLocalMultiGameMode::GetPlayerStartPoints()
 
 void ABTLocalMultiGameMode::SpawnInputReceivers()
 {
-	for (AActor* PlayerStart : PlayerStartArray)
+	/*for (AActor* Actor : PlayerStartArray)
 	{
-		if (PlayerStart && !PlayerStart->IsPendingKill())
+		if (Actor && !Actor->IsPendingKill())
 		{
-			int index = NameToInt(PlayerStart);
+			int index = NameToInt(Actor);
 		}
-	}
+	}*/
 
 	UWorld* World = GetWorld();
 	int32 Index = 0;
-	for (AActor* PlayerStart : PlayerStartArray)
+	for (AActor* Actor : PlayerStartArray)
 	{
 
-		if (NameToInt(PlayerStart) == Index)
+		if (NameToInt(Actor) == Index)
 		{
 			CreateLocalPlayerDebug(Index);
 
@@ -84,7 +84,7 @@ void ABTLocalMultiGameMode::SpawnInputReceivers()
 				FActorSpawnParameters SpawnParams;
 				//SpawnParams.PlayerIn
 				//TODO: missing Player Index param
-				AInputReceive* SpawnedActor = World->SpawnActor<AInputReceive>(AInputReceive::StaticClass(), PlayerStart->GetActorTransform(), SpawnParams);
+				AInputReceive* SpawnedActor = World->SpawnActor<AInputReceive>(AInputReceive::StaticClass(), Actor->GetActorTransform(), SpawnParams);
 				if (SpawnedActor)
 				{
 					PlayerInputReceiverArray.Add(SpawnedActor);
@@ -129,12 +129,12 @@ void ABTLocalMultiGameMode::GameStarted()
 	CameraRef->GameStarted(Players);
 
 	// Get the game state
-	AGameStateBase* GameState = UGameplayStatics::GetGameState(GetWorld());
+	AGameStateBase* State = UGameplayStatics::GetGameState(GetWorld());
 
 	// Check if the game state is valid before using it
-	if (GameState != nullptr)
+	if (State != nullptr)
 	{
-		ABTGameState* BtGameState = Cast<ABTGameState>(GameState);
+		ABTGameState* BtGameState = Cast<ABTGameState>(State);
 		if (BtGameState != nullptr)
 		{
 			bIsInGame = true;

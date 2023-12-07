@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "BTCamera.generated.h"
 #include <Characters/BTPlayerCharacter.h>
+#include "BTCamera.generated.h"
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTCamera : public AActor

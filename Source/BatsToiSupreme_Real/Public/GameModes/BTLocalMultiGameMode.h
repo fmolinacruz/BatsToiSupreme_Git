@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameModes/BTGameModeBase.h"
-#include "BTLocalMultiGameMode.generated.h"
 #include "Input/InputReceive.h"
 #include <Menu/Menu.h>
 #include <Characters/BTPlayerCharacter.h>
 #include <Camera/BTCamera.h>
 #include <GameFramework/PlayerStart.h>
+#include "BTLocalMultiGameMode.generated.h"
 
 /**
  * 
@@ -33,9 +33,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	TSubclassOf<AActor> BP_Camera;
-
-	UPROPERTY(EditAnywhere, Category = "Player Start")
-	TSubclassOf<AActor> PlayerStart;
 
 	TArray<AActor*> PlayerStartArray;
 	TArray<AInputReceive*> PlayerInputReceiverArray;
