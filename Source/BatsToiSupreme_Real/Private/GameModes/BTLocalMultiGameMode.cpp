@@ -16,7 +16,7 @@ void ABTLocalMultiGameMode::BeginPlay()
 	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode BeginPlay"));
 	// SetSkipAssigningGamepadToPlayer1
 	UGameMapsSettings* GameMapsSettings = UGameMapsSettings::GetGameMapsSettings();
-	if (GameMapsSettings)
+	if (GameMapsSettings != nullptr)
 	{
 		GameMapsSettings->SetSkipAssigningGamepadToPlayer1(true);
 	}

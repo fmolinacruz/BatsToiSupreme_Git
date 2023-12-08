@@ -18,7 +18,4 @@ public:
 	// Constructor
 	UMenu(const FObjectInitializer& ObjectInitializer);
 
-	// Override functions from UUserWidget
-	virtual void NativeConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 };

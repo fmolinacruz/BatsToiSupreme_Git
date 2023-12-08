@@ -16,8 +16,10 @@ public class BatsToiSupreme_Real : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"HeadMountedDisplay", 
-			"GASCompanion"
-		});
+			"GASCompanion",
+			"UMG",
+            "UGameMapsSettings"
+        });
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"CommonInput",
