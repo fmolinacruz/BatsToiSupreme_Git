@@ -7,11 +7,19 @@
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraActor.h"
 #include <GameModes/BTGameState.h>
+#include "Menu/Menu.h"
 
 // Called when the game starts
 void ABTLocalMultiGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	World = GetWorld();
+	if (World == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BTLocalMultiGameMode BeginPlay World NULL"));
+		return;
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode BeginPlay"));
 	// SetSkipAssigningGamepadToPlayer1
@@ -23,31 +31,31 @@ void ABTLocalMultiGameMode::BeginPlay()
 
 	//Get All Actors Of Class
 	TArray<AActor*> OutActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_Camera, OutActors);
+	UGameplayStatics::GetAllActorsOfClass(World, BP_Camera, OutActors);
 
 	//Get Player Start Points
 	GetPlayerStartPoints();
 
 	//Create WBP Menu Widget
-	//MenuWidgetRef = CreateWidget<UMenu>(this, UMenu::StaticClass());
 
+	MenuWidgetRef = CreateWidget<UMenu>(World, UMenu::StaticClass());
 	////Add to Viewport
-	//if (MenuWidgetRef)
-	//{
-	//	// Add the widget to the viewport
-	//	MenuWidgetRef->AddToViewport(1);
-	//}
-	//else
-	//{
-	//	// Handle the case where widget creation failed
-	//	UE_LOG(LogTemp, Error, TEXT("Widget creation failed"));
-	//}
+	if (MenuWidgetRef) 
+	{
+		// Add the widget to the viewport
+		MenuWidgetRef->AddToViewport(1);
+	}
+	else
+	{
+		// Handle the case where widget creation failed
+		UE_LOG(LogTemp, Error, TEXT("Widget creation failed"));
+	}
 
 	////Delay until next tick
-	//FTimerDelegate TimerDelegate;
-	//TimerDelegate.BindUFunction(this, FName("SpawnInputReceivers"));
-	//// Set up a timer to call the delegate on the next tick
-	//GetWorld()->GetTimerManager().SetTimerForNextTick(TimerDelegate);
+	FTimerDelegate TimerDelegate;
+	TimerDelegate.BindUFunction(this, FName("SpawnInputReceivers"));
+	// Set up a timer to call the delegate on the next tick
+	GetWorld()->GetTimerManager().SetTimerForNextTick(TimerDelegate);
 	//Completed
 }
 
@@ -56,7 +64,7 @@ void ABTLocalMultiGameMode::GetPlayerStartPoints()
 	UClass* PlayerStartClass = APlayerStart::StaticClass();
 
 	// Get all player start points in the world and store them in the array
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), PlayerStartClass, PlayerStartArray);
+	UGameplayStatics::GetAllActorsOfClass(World, PlayerStartClass, PlayerStartArray);
 }
 
 void ABTLocalMultiGameMode::SpawnInputReceivers()
@@ -69,7 +77,6 @@ void ABTLocalMultiGameMode::SpawnInputReceivers()
 		}
 	}*/
 
-	UWorld* World = GetWorld();
 	int32 Index = 0;
 	for (AActor* Actor : PlayerStartArray)
 	{
@@ -129,7 +136,7 @@ void ABTLocalMultiGameMode::GameStarted()
 	CameraRef->GameStarted(Players);
 
 	// Get the game state
-	AGameStateBase* State = UGameplayStatics::GetGameState(GetWorld());
+	AGameStateBase* State = UGameplayStatics::GetGameState(World);
 
 	// Check if the game state is valid before using it
 	if (State != nullptr)
@@ -151,7 +158,7 @@ void ABTLocalMultiGameMode::RemoveUnusedCameras()
 	TArray<AActor*> CameraActorArray;
 
 	// Get all camera actors in the world and store them in the array
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), CameraActorClass, CameraActorArray);
+	UGameplayStatics::GetAllActorsOfClass(World, CameraActorClass, CameraActorArray);
 
 	for (AActor* CameraActor : CameraActorArray)
 	{
@@ -169,7 +176,6 @@ void ABTLocalMultiGameMode::CreateLocalPlayerDebug(int ControllerId)
 {
 	if (ControllerId != 0)
 	{
-		UWorld* World = GetWorld();
 		if (World != nullptr)
 		{
 			APlayerController* PlayerController = UGameplayStatics::CreatePlayer(World, ControllerId, true);

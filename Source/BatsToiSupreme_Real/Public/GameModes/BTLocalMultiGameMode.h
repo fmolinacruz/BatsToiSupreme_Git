@@ -21,6 +21,7 @@ class BATSTOISUPREME_REAL_API ABTLocalMultiGameMode : public ABTGameModeBase
 	
 protected:
 	// Called when the game starts
+	UFUNCTION(BlueprintCallable, Category = "Utilities")
 	virtual void BeginPlay() override;
 
 	void GetPlayerStartPoints();
@@ -42,4 +43,5 @@ protected:
 	int MinPlayers;
 	bool bIsInGame;
 	ABTCamera* CameraRef;
+	UWorld* World;
 };
