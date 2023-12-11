@@ -18,7 +18,7 @@ public class BatsToiSupreme_Real : ModuleRules
 			"HeadMountedDisplay", 
 			"GASCompanion",
 			"UMG",
-            "UGameMapsSettings"
+            "EngineSettings"
         });
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {
