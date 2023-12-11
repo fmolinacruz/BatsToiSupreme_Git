@@ -2,7 +2,7 @@
 
 #include "StateMachine/BTStateMachineComponent.h"
 
-#include "StateMachine/BTStateMachine.h"
+#include "Utilities/BTLogging.h"
 
 UBTStateMachineComponent::UBTStateMachineComponent()
 {
@@ -29,4 +29,38 @@ void UBTStateMachineComponent::PostInitProperties()
 	Super::PostInitProperties();
 	SetComponentTickEnabled(bCanFSMTick);
 	SetIsReplicatedByDefault(true);
+}
+
+void UBTStateMachineComponent::SyncedStartFSM_Implementation()
+{
+	StartFSM();
+}
+
+void UBTStateMachineComponent::SyncedStopFSM_Implementation()
+{
+	StopFSM();
+}
+
+void UBTStateMachineComponent::StartFSM() const
+{
+	if (FSM)
+	{
+		FSM->StartFSM(GetOwner());
+	}
+	else
+	{
+		BTLOG_ERROR("[UBTStateMachineComponent] - StartFSM: Invalid state machine reference!");
+	}
+}
+
+void UBTStateMachineComponent::StopFSM() const
+{
+	if (FSM)
+	{
+		FSM->StopFSM();
+	}
+	else
+	{
+		BTLOG_ERROR("[UBTStateMachineComponent] - StopFSM: Invalid state machine reference!");
+	}
 }
