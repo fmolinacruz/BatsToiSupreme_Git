@@ -46,7 +46,7 @@ private:
 	TObjectPtr<AActor> StateMachineOwner;
 
 	UPROPERTY(VisibleAnywhere, Category = BTSM)
-	TObjectPtr<UBTStateMachineNode> CurrentState;
+	TObjectPtr<UBTStateMachineNode> CurrentNode;
 
 	bool bHasStarted = false;
 };

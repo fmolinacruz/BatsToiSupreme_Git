@@ -57,4 +57,5 @@ void UBTGraph::ClearGraph()
 	}
 
 	AllNodes.Empty();
+	RootNodes.Empty();
 }

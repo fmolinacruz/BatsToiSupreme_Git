@@ -20,7 +20,7 @@ void UBTStateMachine::StartFSM(AActor* InOwner)
 		BTLOG_WARNING("StateMachine Owner cannot be null!");
 		return;
 	}
-	
+
 	StateMachineOwner = InOwner;
 	if (IsActive())
 	{
@@ -46,7 +46,7 @@ void UBTStateMachine::StopFSM()
 
 void UBTStateMachine::DispatchTick(float DeltaTime)
 {
-	if (CurrentState)
+	if (CurrentNode)
 	{
 		// TODO: Dispatch Tick for each state.
 	}
@@ -54,17 +54,26 @@ void UBTStateMachine::DispatchTick(float DeltaTime)
 
 bool UBTStateMachine::ActivateNode(UBTGraphNode* Node)
 {
-	CurrentState = Cast<UBTStateMachineNode>(Node);
-	if (!CurrentState)
+	CurrentNode = Cast<UBTStateMachineNode>(Node);
+	if (!CurrentNode)
 	{
 		BTLOG_ERROR("This StateMachine graph didn't have the correct node type!");
 		return false;
 	}
-	
+
 	return Super::ActivateNode(Node);
 }
 
 void UBTStateMachine::Internal_Start()
 {
-	// TODO: Start the state machine.
+	for (UBTGraphNode* Root : RootNodes)
+	{
+		UBTStateMachineNode* StateNode = Cast<UBTStateMachineNode>(Root);
+		if (StateNode && StateNode->GetNodeType() == EStateMachineNodeType::Start)
+		{
+			ActivateNode(StateNode);
+			bHasStarted = true;
+			return;
+		}
+	}
 }
