@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Graph/BTGraph.h"
+#include "Utilities/Graph/BTGraph.h"
 #include "BTStateMachine.generated.h"
 
 class UBTStateMachineNode;

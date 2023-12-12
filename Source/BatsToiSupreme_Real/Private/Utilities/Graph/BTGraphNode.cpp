@@ -1,9 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "StateMachine/Graph/BTGraphNode.h"
+#include "Utilities/Graph/BTGraphNode.h"
 
-#include "StateMachine/Graph/BTGraph.h"
-#include "StateMachine/Graph/BTGraphEdge.h"
+#include "Utilities/Graph/BTGraph.h"
+#include "Utilities/Graph/BTGraphEdge.h"
 
 UBTGraphNode::UBTGraphNode() {}
 

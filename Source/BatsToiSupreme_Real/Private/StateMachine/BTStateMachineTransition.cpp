@@ -2,7 +2,7 @@
 
 #include "StateMachine/BTStateMachineTransition.h"
 
-#include "StateMachine/Graph/BTGraphCondition.h"
+#include "Utilities/Graph/BTGraphCondition.h"
 
 bool UBTStateMachineTransition::VerifyTransitionConditions()
 {
