@@ -5,24 +5,26 @@
 #include "CoreMinimal.h"
 #include "GameModes/BTGameModeBase.h"
 #include "Input/InputReceive.h"
-#include <Menu/Menu.h>
 #include <Characters/BTPlayerCharacter.h>
 #include <Camera/BTCamera.h>
 #include <GameFramework/PlayerStart.h>
-#include "BTLocalMultiGameMode.generated.h"
+#include <Menu/LocalCharacterSelectMenu.h>
 
+#include "BTLocalMultiGameMode.generated.h"
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class BATSTOISUPREME_REAL_API ABTLocalMultiGameMode : public ABTGameModeBase
 {
 	GENERATED_BODY()
-	
-protected:
+
+public:
 	// Called when the game starts
 	UFUNCTION(BlueprintCallable, Category = "Utilities")
 	virtual void BeginPlay() override;
+	
+protected:
 
 	void GetPlayerStartPoints();
 	void SpawnInputReceivers();
@@ -31,17 +33,18 @@ protected:
 	void RemoveUnusedCameras();
 	void CreateLocalPlayerDebug(int ControllerId);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Menu")
+	ULocalCharacterSelectMenu* LocalCharacterSelectMenu;
 
-	UPROPERTY(EditAnywhere, Category = "Camera")
-	TSubclassOf<AActor> BP_Camera;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	ABTCamera* CameraRef;
 
 	TArray<AActor*> PlayerStartArray;
 	TArray<AInputReceive*> PlayerInputReceiverArray;
 	TArray<APlayerController*> PlayerControllerArray;
-	UMenu* MenuWidgetRef;
 	TArray<ABTPlayerCharacter*> Players;
+	ULocalCharacterSelectMenu* MenuWidgetRef;
 	int MinPlayers;
 	bool bIsInGame;
-	ABTCamera* CameraRef;
 	UWorld* World;
 };

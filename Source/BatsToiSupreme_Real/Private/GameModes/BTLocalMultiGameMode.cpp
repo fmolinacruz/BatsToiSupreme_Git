@@ -7,12 +7,21 @@
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraActor.h"
 #include <GameModes/BTGameState.h>
-#include "Menu/Menu.h"
 
 // Called when the game starts
 void ABTLocalMultiGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	if (LocalCharacterSelectMenu == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("LocalCharacterSelectMenu NULL"));
+	}
+	if (CameraRef == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("CameraRef NULL"));
+	}
+
 
 	World = GetWorld();
 	if (World == nullptr)
@@ -28,17 +37,23 @@ void ABTLocalMultiGameMode::BeginPlay()
 	{
 		GameMapsSettings->SetSkipAssigningGamepadToPlayer1(true);
 	}
-
+	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode GameMapsSettings"));
 	//Get All Actors Of Class
-	TArray<AActor*> OutActors;
-	UGameplayStatics::GetAllActorsOfClass(World, BP_Camera, OutActors);
+	/*TArray<AActor*> AllCamera;
+	UGameplayStatics::GetAllActorsOfClass(World, ABTCamera::StaticClass(), AllCamera);
+	if (AllCamera.IsValidIndex(0))
+	{
+		CameraRef = Cast<ABTCamera>(AllCamera[0]);
+		UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode CameraRef"));
+	}*/
+	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode GetAllActorsOfClass"));
 
 	//Get Player Start Points
 	GetPlayerStartPoints();
-
+	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode GetPlayerStartPoints"));
 	//Create WBP Menu Widget
 
-	MenuWidgetRef = CreateWidget<UMenu>(World, UMenu::StaticClass());
+	MenuWidgetRef = CreateWidget<ULocalCharacterSelectMenu>(World, LocalCharacterSelectMenu->GetClass());
 	////Add to Viewport
 	if (MenuWidgetRef) 
 	{
@@ -50,13 +65,15 @@ void ABTLocalMultiGameMode::BeginPlay()
 		// Handle the case where widget creation failed
 		UE_LOG(LogTemp, Error, TEXT("Widget creation failed"));
 	}
+	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode MenuWidgetRef"));
 
 	////Delay until next tick
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindUFunction(this, FName("SpawnInputReceivers"));
 	// Set up a timer to call the delegate on the next tick
 	GetWorld()->GetTimerManager().SetTimerForNextTick(TimerDelegate);
-	//Completed
+	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode TimerDelegate"));
+	// Completed
 }
 
 void ABTLocalMultiGameMode::GetPlayerStartPoints()
@@ -65,6 +82,10 @@ void ABTLocalMultiGameMode::GetPlayerStartPoints()
 
 	// Get all player start points in the world and store them in the array
 	UGameplayStatics::GetAllActorsOfClass(World, PlayerStartClass, PlayerStartArray);
+	if (!PlayerStartArray.IsValidIndex(0))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetPlayerStartPoints PlayerStartArray NULL"));
+	}
 }
 
 void ABTLocalMultiGameMode::SpawnInputReceivers()

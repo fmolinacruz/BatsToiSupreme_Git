@@ -7,7 +7,7 @@
 #include <Characters/BTPlayerCharacter.h>
 #include "BTCamera.generated.h"
 
-UCLASS()
+UCLASS(Blueprintable)
 class BATSTOISUPREME_REAL_API ABTCamera : public AActor
 {
 	GENERATED_BODY()
