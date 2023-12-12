@@ -5,7 +5,7 @@
 bool UBTGraphCondition::Verify(APlayerController* PlayerController)
 {
 	Controller = PlayerController;
-	VerifyCondition(PlayerController);
+	return VerifyCondition(PlayerController);
 }
 
 bool UBTGraphCondition::VerifyCondition_Implementation(APlayerController* PlayerController) const
