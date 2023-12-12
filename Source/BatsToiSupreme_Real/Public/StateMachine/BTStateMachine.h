@@ -35,10 +35,11 @@ public:
 	}
 
 	void DispatchTick(float DeltaTime);
+	bool TransitionNode(const FGameplayTag& TransitionTag);
 
 protected:
 	virtual bool ActivateNode(UBTGraphNode* Node) override;
-
+	
 	void Internal_Start();
 
 private:

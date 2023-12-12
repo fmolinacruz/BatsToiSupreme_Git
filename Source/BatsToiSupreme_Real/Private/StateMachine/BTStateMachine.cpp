@@ -77,3 +77,35 @@ void UBTStateMachine::Internal_Start()
 		}
 	}
 }
+
+bool UBTStateMachine::TransitionNode(const FGameplayTag& TransitionTag)
+{
+	if (!IsActive())
+	{
+		BTLOG_ERROR("[UBTStateMachine] - TransitionNode: StateMachine didn't start yet!")
+		return false;
+	}
+
+	for (UBTGraphNode* Node : GetAllActiveNodes())
+	{
+		UBTStateMachineNode* StateNode = Cast<UBTStateMachineNode>(Node);
+		if (StateNode == CurrentNode)
+		{
+			for (auto EdgeData : StateNode->EdgeDatas)
+			{
+				UBTStateMachineTransition* Transition = Cast<UBTStateMachineTransition>(EdgeData.Value);
+				if (Transition && Transition->GetTransitionTag() == TransitionTag && Transition->VerifyTransitionConditions())
+				{
+					DeactivateNode(StateNode);
+					UBTStateMachineNode* NextNode = Cast<UBTStateMachineNode>(EdgeData.Key);
+					if (NextNode)
+					{
+						NextNode->Transition(StateNode->GetNodeState());
+						return ActivateNode(NextNode);
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
