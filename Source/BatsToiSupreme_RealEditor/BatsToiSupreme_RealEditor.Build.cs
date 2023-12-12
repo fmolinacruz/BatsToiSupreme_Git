@@ -10,6 +10,9 @@ public class BatsToiSupreme_RealEditor : ModuleRules
             new string[]
             {
                 "Core",
+                "GameplayTags",
+                "UnrealEd",
+                "BatsToiSupreme_Real"
             }
         );
 
