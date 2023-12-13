@@ -16,8 +16,8 @@ public:
 	static FName GetStyleSetName();
 
 private:
-	static TSharedRef<class FSlateStyleSet> Create();
-	static TSharedRef<class FSlateStyleSet> CreateStyle(FName StyleSetName);
+	static TSharedRef<FSlateStyleSet> CreateDefault();
+	static TSharedRef<FSlateStyleSet> CreateStyle(const FName StyleSetName);
 
-	static TSharedPtr<class FSlateStyleSet> StyleInstance;
+	static TSharedPtr<FSlateStyleSet> StyleInstance;
 };
