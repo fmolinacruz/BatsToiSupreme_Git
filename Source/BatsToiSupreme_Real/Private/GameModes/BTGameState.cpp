@@ -38,3 +38,12 @@ void ABTGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 
 	DOREPLIFETIME(ThisClass, ServerFPS);
 }
+
+void ABTGameState::ChangeGameState(EGameState NewState)
+{
+	if (GameState != NewState)
+	{
+		GameState = NewState;
+		OnGameStateChanged.Broadcast(GameState);
+	}
+}
