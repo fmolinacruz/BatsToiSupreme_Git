@@ -6,7 +6,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "PlayerMappableInputConfig.h"
 #include "Characters/BTPlayerCharacter.h"
+#include "GameModes/BTGameState.h"
 #include "PlayerCommon/BTPlayerController.h"
+#include "Utilities/BTGameFunctionLibrary.h"
 
 UBTPlayerInput::UBTPlayerInput()
 {
@@ -55,7 +57,8 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 void UBTPlayerInput::RequestStartMovement(const FInputActionValue& Value)
 {
 	const FVector2D MovementVector = Value.Get<FVector2D>();
-	if (PlayerCharacter)
+	const ABTGameState* GameState = UBTGameFunctionLibrary::GetBTGameState(this);
+	if (PlayerCharacter && GameState && GameState->GetGameState() == EGameState::InGame)
 	{
 		PlayerCharacter->AddMovementBuffer(MovementVector);
 	}
@@ -63,7 +66,8 @@ void UBTPlayerInput::RequestStartMovement(const FInputActionValue& Value)
 
 void UBTPlayerInput::RequestCancelMovement(const FInputActionValue& Value)
 {
-	if (PlayerCharacter)
+	const ABTGameState* GameState = UBTGameFunctionLibrary::GetBTGameState(this);
+	if (PlayerCharacter && GameState && GameState->GetGameState() == EGameState::InGame)
 	{
 		PlayerCharacter->RefreshMovementBuffer();
 	}	

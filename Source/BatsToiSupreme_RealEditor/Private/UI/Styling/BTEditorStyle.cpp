@@ -17,18 +17,22 @@ TSharedPtr<FSlateStyleSet> FBTEditorStyle::StyleInstance = nullptr;
 
 void FBTEditorStyle::Initialize()
 {
+	/*
 	if (!StyleInstance.IsValid())
 	{
 		StyleInstance = Create();
 		FSlateStyleRegistry::RegisterSlateStyle(*StyleInstance);
 	}
+	*/
 }
 
 void FBTEditorStyle::Shutdown()
 {
+	/*
 	FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
 	ensure(StyleInstance.IsUnique());
 	StyleInstance.Reset();
+	*/
 }
 
 void FBTEditorStyle::ReloadTextures()
