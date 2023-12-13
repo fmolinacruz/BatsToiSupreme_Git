@@ -12,14 +12,15 @@
 void ABTLocalMultiGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode BeginPlay"));
 	
-	if (LocalCharacterSelectMenu == nullptr)
+	if (LocalCharacterSelectMenuTemplate == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("LocalCharacterSelectMenu NULL"));
+		UE_LOG(LogTemp, Error, TEXT("LocalCharacterSelectMenuTemplate NULL"));
 	}
-	if (CameraRef == nullptr)
+	if (CameraTemplate == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("CameraRef NULL"));
+		UE_LOG(LogTemp, Error, TEXT("CameraTemplate NULL"));
 	}
 
 
@@ -30,7 +31,6 @@ void ABTLocalMultiGameMode::BeginPlay()
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode BeginPlay"));
 	// SetSkipAssigningGamepadToPlayer1
 	UGameMapsSettings* GameMapsSettings = UGameMapsSettings::GetGameMapsSettings();
 	if (GameMapsSettings != nullptr)
@@ -38,40 +38,35 @@ void ABTLocalMultiGameMode::BeginPlay()
 		GameMapsSettings->SetSkipAssigningGamepadToPlayer1(true);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode GameMapsSettings"));
-	//Get All Actors Of Class
-	/*TArray<AActor*> AllCamera;
-	UGameplayStatics::GetAllActorsOfClass(World, ABTCamera::StaticClass(), AllCamera);
-	if (AllCamera.IsValidIndex(0))
-	{
-		CameraRef = Cast<ABTCamera>(AllCamera[0]);
-		UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode CameraRef"));
-	}*/
-	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode GetAllActorsOfClass"));
+
+	//Get BT Camera
+	AActor* FoundActor = UGameplayStatics::GetActorOfClass(World, CameraTemplate);
+	CameraRef = Cast<ABTCamera>(FoundActor);
 
 	//Get Player Start Points
 	GetPlayerStartPoints();
 	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode GetPlayerStartPoints"));
 	//Create WBP Menu Widget
 
-	MenuWidgetRef = CreateWidget<ULocalCharacterSelectMenu>(World, LocalCharacterSelectMenu->GetClass());
-	////Add to Viewport
-	if (MenuWidgetRef) 
+	if (LocalCharacterSelectMenuTemplate != nullptr)
 	{
-		// Add the widget to the viewport
-		MenuWidgetRef->AddToViewport(1);
+		MenuWidgetRef = CreateWidget<ULocalCharacterSelectMenu>(World, LocalCharacterSelectMenuTemplate);
+		////Add to Viewport
+		if (MenuWidgetRef)
+		{
+			// Add the widget to the viewport
+			MenuWidgetRef->AddToViewport(1);
+		}
+		else
+		{
+			// Handle the case where widget creation failed
+			UE_LOG(LogTemp, Error, TEXT("Widget creation failed"));
+		}
+		UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode MenuWidgetRef"));
 	}
-	else
-	{
-		// Handle the case where widget creation failed
-		UE_LOG(LogTemp, Error, TEXT("Widget creation failed"));
-	}
-	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode MenuWidgetRef"));
-
 	////Delay until next tick
-	FTimerDelegate TimerDelegate;
-	TimerDelegate.BindUFunction(this, FName("SpawnInputReceivers"));
-	// Set up a timer to call the delegate on the next tick
-	GetWorld()->GetTimerManager().SetTimerForNextTick(TimerDelegate);
+	GetWorldTimerManager().SetTimerForNextTick(this, &ABTLocalMultiGameMode::SpawnInputReceivers);
+    
 	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode TimerDelegate"));
 	// Completed
 }
@@ -97,7 +92,7 @@ void ABTLocalMultiGameMode::SpawnInputReceivers()
 			int index = NameToInt(Actor);
 		}
 	}*/
-
+	UE_LOG(LogTemp, Warning, TEXT("SpawnInputReceivers "));
 	int32 Index = 0;
 	for (AActor* Actor : PlayerStartArray)
 	{
@@ -154,7 +149,10 @@ int ABTLocalMultiGameMode::NameToInt(AActor* Player)
 void ABTLocalMultiGameMode::GameStarted()
 {
 	bIsInGame = true;
-	CameraRef->GameStarted(Players);
+	if (CameraRef != nullptr)
+	{
+		CameraRef->GameStarted(Players);
+	}
 
 	// Get the game state
 	AGameStateBase* State = UGameplayStatics::GetGameState(World);
@@ -169,6 +167,21 @@ void ABTLocalMultiGameMode::GameStarted()
 			BtGameState->InitializePlayer();
 		}
 	}
+}
+
+bool ABTLocalMultiGameMode::StartGame1()
+{
+	AActor* FoundActor = UGameplayStatics::GetActorOfClass(World, ThirdPersionPlayerAITemplate);
+	AGSCModularCharacter* CharacterAI = Cast<AGSCModularCharacter>(FoundActor);
+	if (CharacterAI == nullptr)
+	{
+		if (CharacterAI != nullptr || Players.Num() >= MinPlayers)
+		{
+			GameStarted();
+			return true;
+		}
+	}
+	return false;
 }
 
 void ABTLocalMultiGameMode::RemoveUnusedCameras()

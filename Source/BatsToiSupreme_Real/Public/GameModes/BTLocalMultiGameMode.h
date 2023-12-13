@@ -29,21 +29,28 @@ protected:
 	void GetPlayerStartPoints();
 	void SpawnInputReceivers();
 	int NameToInt(AActor* PlayerStart);
-	void GameStarted();
 	void RemoveUnusedCameras();
 	void CreateLocalPlayerDebug(int ControllerId);
+	void GameStarted();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Menu")
-	ULocalCharacterSelectMenu* LocalCharacterSelectMenu;
+	UFUNCTION(BlueprintCallable, Category = "Utilities")
+	bool StartGame1();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-	ABTCamera* CameraRef;
+	//Property
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template")
+	TSubclassOf <ABTCamera> CameraTemplate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template")
+	TSubclassOf <ULocalCharacterSelectMenu> LocalCharacterSelectMenuTemplate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template")
+	TSubclassOf<AGSCModularCharacter> ThirdPersionPlayerAITemplate;
+
 
 	TArray<AActor*> PlayerStartArray;
 	TArray<AInputReceive*> PlayerInputReceiverArray;
 	TArray<APlayerController*> PlayerControllerArray;
 	TArray<ABTPlayerCharacter*> Players;
 	ULocalCharacterSelectMenu* MenuWidgetRef;
+	ABTCamera* CameraRef;
 	int MinPlayers;
 	bool bIsInGame;
 	UWorld* World;
