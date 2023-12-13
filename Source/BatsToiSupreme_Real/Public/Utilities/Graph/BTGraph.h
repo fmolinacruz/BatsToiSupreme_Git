@@ -36,13 +36,19 @@ public:
 	void ClearGraph();
 	
 	UFUNCTION(BlueprintCallable, Category = "BTGraph")
-	FORCEINLINE TArray<UBTGraphNode*> GetAllNodes()
+	FORCEINLINE TArray<UBTGraphNode*> GetAllNodes() const
 	{
 		return AllNodes;
 	}
 	
 	UFUNCTION(BlueprintCallable, Category = "BTGraph")
-	FORCEINLINE TArray<UBTGraphNode*> GetAllActiveNodes()
+	FORCEINLINE TArray<UBTGraphNode*> GetAllRootNodes() const
+	{
+		return RootNodes;
+	}
+	
+	UFUNCTION(BlueprintCallable, Category = "BTGraph")
+	FORCEINLINE TArray<UBTGraphNode*> GetAllActiveNodes() const
 	{
 		return ActiveNodes;
 	}
@@ -61,12 +67,15 @@ public:
 
 protected:
 	// TODO: This may need to support AI Controller
+	UPROPERTY(BlueprintReadOnly, Category = "BTGraph")
 	TObjectPtr<APlayerController> PlayerController;
-
-private:
-	UPROPERTY()
+	
+	UPROPERTY(BlueprintReadOnly, Category = "BTGraph")
 	TArray<UBTGraphNode*> AllNodes;
 	
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "BTGraph")
+	TArray<UBTGraphNode*> RootNodes;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "BTGraph")
 	TArray<UBTGraphNode*> ActiveNodes;
 };
