@@ -9,20 +9,26 @@
 #include <Camera/BTCamera.h>
 #include <GameFramework/PlayerStart.h>
 #include <Menu/LocalCharacterSelectMenu.h>
+#include "CommonInputTypeEnum.h"
 
 #include "BTLocalMultiGameMode.generated.h"
 /**
  * 
  */
+class UInputAction;
+struct FInputActionValue;
+
 UCLASS(Blueprintable)
 class BATSTOISUPREME_REAL_API ABTLocalMultiGameMode : public ABTGameModeBase
 {
 	GENERATED_BODY()
 
 public:
+	ABTLocalMultiGameMode();
 	// Called when the game starts
 	UFUNCTION(BlueprintCallable, Category = "Utilities")
 	virtual void BeginPlay() override;
+	virtual void PostInitializeComponents() override;
 	
 protected:
 
@@ -32,10 +38,15 @@ protected:
 	void RemoveUnusedCameras();
 	void CreateLocalPlayerDebug(int ControllerId);
 	void GameStarted();
+	void InitializeInputComponent(UInputComponent* MenuInputComponent);
+	// Actions
+	void CharacterSelect(const FInputActionValue& Value);
 
 	UFUNCTION(BlueprintCallable, Category = "Utilities")
 	bool StartGame1();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template")
+	bool bIsInGame;
 	//Property
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template")
 	TSubclassOf <ABTCamera> CameraTemplate;
@@ -45,6 +56,10 @@ protected:
 	TSubclassOf<AGSCModularCharacter> ThirdPersionPlayerAITemplate;
 
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Actions")
+	UInputAction* CharacterSelectInputAction;
+
+
 	TArray<AActor*> PlayerStartArray;
 	TArray<AInputReceive*> PlayerInputReceiverArray;
 	TArray<APlayerController*> PlayerControllerArray;
@@ -52,6 +67,5 @@ protected:
 	ULocalCharacterSelectMenu* MenuWidgetRef;
 	ABTCamera* CameraRef;
 	int MinPlayers;
-	bool bIsInGame;
 	UWorld* World;
 };

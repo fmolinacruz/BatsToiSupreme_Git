@@ -7,6 +7,14 @@
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraActor.h"
 #include <GameModes/BTGameState.h>
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+
+ABTLocalMultiGameMode::ABTLocalMultiGameMode()
+{
+	// Create and assign the InputComponent
+	//InputComponent = CreateDefaultSubobject<UInputComponent>(TEXT("InputComponent"));
+}
 
 // Called when the game starts
 void ABTLocalMultiGameMode::BeginPlay()
@@ -64,11 +72,19 @@ void ABTLocalMultiGameMode::BeginPlay()
 		}
 		UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode MenuWidgetRef"));
 	}
+
+	//InitializeInputComponent(InputComponent);
 	////Delay until next tick
-	GetWorldTimerManager().SetTimerForNextTick(this, &ABTLocalMultiGameMode::SpawnInputReceivers);
+	//GetWorldTimerManager().SetTimerForNextTick(this, &ABTLocalMultiGameMode::SpawnInputReceivers);
     
 	UE_LOG(LogTemp, Warning, TEXT("BTLocalMultiGameMode TimerDelegate"));
 	// Completed
+}
+
+void ABTLocalMultiGameMode::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	InitializeInputComponent(InputComponent);
 }
 
 void ABTLocalMultiGameMode::GetPlayerStartPoints()
@@ -167,6 +183,24 @@ void ABTLocalMultiGameMode::GameStarted()
 			BtGameState->InitializePlayer();
 		}
 	}
+}
+
+void ABTLocalMultiGameMode::InitializeInputComponent(UInputComponent* MenuInputComponent)
+{
+	if (MenuInputComponent == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MenuInputComponent == nullptr "));
+	}
+	else
+	{
+		UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(MenuInputComponent);
+		EnhancedInputComponent->BindAction(CharacterSelectInputAction, ETriggerEvent::Triggered, this, &ABTLocalMultiGameMode::CharacterSelect);
+	}
+}
+
+void ABTLocalMultiGameMode::CharacterSelect(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Error, TEXT("CharacterSelect "));
 }
 
 bool ABTLocalMultiGameMode::StartGame1()
