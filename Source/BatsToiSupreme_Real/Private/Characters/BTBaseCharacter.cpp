@@ -38,8 +38,8 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
 {
 	const FRotator GameViewRotator(0, 0, GetControlRotation().Yaw);
-	const FVector ForwardVector = MovementVector.X * UKismetMathLibrary::GetForwardVector(GameViewRotator);
-	const FVector RightVector = MovementVector.Y * UKismetMathLibrary::GetRightVector(GameViewRotator);
+	const FVector ForwardVector = MovementVector.Y * UKismetMathLibrary::GetForwardVector(GameViewRotator);
+	const FVector RightVector = MovementVector.X * UKismetMathLibrary::GetRightVector(GameViewRotator);
 	
 	MovementVelocity = ForwardVector + RightVector;
 	MovementVelocity.Normalize(0.001);
