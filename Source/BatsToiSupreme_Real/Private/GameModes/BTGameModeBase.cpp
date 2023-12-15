@@ -16,6 +16,7 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
+
 }
 
 void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
@@ -41,9 +42,18 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 	
 	const FVector& Location = StartSpots[CurrentPlayerIndex]->GetActorLocation();
 	const FRotator& Rotation = StartSpots[CurrentPlayerIndex]->GetActorRotation();
-	APawn* SpawnedCharacter = GetWorld()->SpawnActor<ABTBaseCharacter>(CharacterClass, Location, Rotation);
+	ABTBaseCharacter* SpawnedCharacter = GetWorld()->SpawnActor<ABTBaseCharacter>(CharacterClass, Location, Rotation);
 	PC->Possess(SpawnedCharacter);
 	PC->ClientSetViewTarget(MainCameraRef);
+
+	PlayerCharacters.Add(SpawnedCharacter);
+
+	// Check if there are at least 2 players, then set enemy
+	if (PlayerCharacters.Num() >= 2)
+	{
+		PlayerCharacters[0]->BTEnemy = PlayerCharacters[1];
+		PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
+	}		
 
 	CurrentPlayerIndex++;
 }

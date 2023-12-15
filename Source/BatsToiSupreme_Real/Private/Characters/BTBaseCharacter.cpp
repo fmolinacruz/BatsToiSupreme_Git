@@ -12,6 +12,11 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Enable replication for this actor
+	bReplicates = true;
+	// Enable replication of movement
+	SetReplicateMovement(true);
+
 	// Basic setup
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -25,14 +30,12 @@ void ABTBaseCharacter::BeginPlay()
 void ABTBaseCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	RotateTowardEnemy(DeltaSeconds);
-}
 
-void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
+	// Only run rotation logic on the owning client and the server
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		RotateTowardEnemy(DeltaSeconds);
+	}
 }
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
@@ -74,6 +77,16 @@ bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate()
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 {
+	PerformRotation(DeltaSeconds);
+
+	if (IsLocallyControlled() && !HasAuthority())
+	{
+		Server_RotateTowardEnemy(DeltaSeconds);
+	}
+}
+
+void ABTBaseCharacter::PerformRotation(float DeltaSeconds)
+{
 	if (BTEnemy == nullptr)
 	{
 		BTLOG_WARNING("BTEnemy is not set correctly !!");
@@ -82,9 +95,9 @@ void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 
 	const FVector StartLocation = GetActorLocation();
 	const FVector TargetLocation = BTEnemy->GetActorLocation();
-	
+
 	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
-	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, AutoTurningRate);
+	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, 100.0f);
 	SetActorRotation(NewRotation);
 
 	const bool IsStandingStillSelf = GetVelocity().Size() == 0;
@@ -105,3 +118,25 @@ void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 		bIsTurningLeft = false;
 	}
 }
+
+void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(float DeltaSeconds)
+{
+	PerformRotation(DeltaSeconds);
+}
+
+bool ABTBaseCharacter::Server_RotateTowardEnemy_Validate(float DeltaSeconds)
+{
+	// Perform any necessary validation here.
+	// For example, you might check if DeltaSeconds is within an expected range.
+	return true;
+}
+
+void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
+	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
+	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
+}
+

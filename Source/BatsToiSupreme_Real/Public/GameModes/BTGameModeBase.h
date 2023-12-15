@@ -15,16 +15,21 @@ class BATSTOISUPREME_REAL_API ABTGameModeBase : public AGameModeBase
 
 public:
 	ABTGameModeBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	
+	virtual void OnPostLogin(AController* NewPlayer) override;
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void OnPostLogin(AController* NewPlayer) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<AActor> CameraClass;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTBaseCharacter> CharacterClass;
+
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Players")
+	TArray<ABTBaseCharacter*> PlayerCharacters;
 
 private:
 	void GetMainCameraRef();

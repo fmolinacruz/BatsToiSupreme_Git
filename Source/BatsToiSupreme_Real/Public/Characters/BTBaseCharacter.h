@@ -31,25 +31,34 @@ public:
 
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	FVector MovementVelocity;
+
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	bool bIsTurningRight;
+
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	bool bIsTurningLeft;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Enemy")
+	TObjectPtr<ABTBaseCharacter> BTEnemy;
+
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
+	void RotateTowardEnemy(float DeltaSeconds);
+
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
+	void PerformRotation(float DeltaSeconds);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RotateTowardEnemy(float DeltaSeconds);
 	
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Enemy")
-	TObjectPtr<ABTBaseCharacter> BTEnemy;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
-	bool bIsTurningRight;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
-	bool bIsTurningLeft;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	float AutoTurningRate = 50.0f;
 	
 private:
-	void RotateTowardEnemy(float DeltaSeconds);
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
