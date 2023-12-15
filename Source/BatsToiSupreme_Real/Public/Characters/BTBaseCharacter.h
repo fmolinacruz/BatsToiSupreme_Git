@@ -19,9 +19,15 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void AddMovementBuffer(const FVector2D& MovementVector);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_AddMovementBuffer(const FVector2D& MovementVector);
 	
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RefreshMovementBuffer();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RefreshMovementBuffer();
 
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	FVector MovementVelocity;
@@ -44,4 +50,6 @@ protected:
 	
 private:
 	void RotateTowardEnemy(float DeltaSeconds);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

@@ -1,3 +1,4 @@
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31314.256
@@ -12,7 +13,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BatsToiSupreme_Real", "Inte
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Visualizers", "Visualizers", "{1CCEC849-CC72-4C59-8C36-2F7C38706D4C}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\programs\epic\EpicUE\UE_5.2\Engine\Extras\VisualStudioDebugging\Unreal.natvis = ..\..\programs\epic\EpicUE\UE_5.2\Engine\Extras\VisualStudioDebugging\Unreal.natvis
+		..\..\..\UE_5.2\Engine\Extras\VisualStudioDebugging\Unreal.natvis = ..\..\..\UE_5.2\Engine\Extras\VisualStudioDebugging\Unreal.natvis
 	EndProjectSection
 EndProject
 Global
@@ -22,6 +23,10 @@ Global
 		Development Editor|Win64 = Development Editor|Win64
 		Development|Win64 = Development|Win64
 		Shipping|Win64 = Shipping|Win64
+	EndGlobalSection
+	# UnrealVS Section
+	GlobalSection(ddbf523f-7eb6-4887-bd51-85a714ff87eb) = preSolution
+		AvailablePlatforms=Win64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{512565E5-3965-31C4-BD71-14A86086541C}.DebugGame Editor|Win64.ActiveCfg = BuiltWithUnrealBuildTool|Win64

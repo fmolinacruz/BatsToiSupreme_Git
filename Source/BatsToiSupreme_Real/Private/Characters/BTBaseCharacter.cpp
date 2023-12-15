@@ -37,17 +37,39 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & 
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
 {
+	Server_AddMovementBuffer(MovementVector);
+}
+
+void ABTBaseCharacter::Server_AddMovementBuffer_Implementation(const FVector2D& MovementVector)
+{
 	const FRotator GameViewRotator(0, 0, GetControlRotation().Yaw);
 	const FVector ForwardVector = MovementVector.Y * UKismetMathLibrary::GetForwardVector(GameViewRotator);
 	const FVector RightVector = MovementVector.X * UKismetMathLibrary::GetRightVector(GameViewRotator);
-	
+
 	MovementVelocity = ForwardVector + RightVector;
 	MovementVelocity.Normalize(0.001);
 }
 
+bool ABTBaseCharacter::Server_AddMovementBuffer_Validate(const FVector2D& MovementVector)
+{
+	// Add validation of the input here if necessary
+	return true;
+}
+
 void ABTBaseCharacter::RefreshMovementBuffer()
 {
+	Server_RefreshMovementBuffer();
+}
+
+void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation()
+{
 	MovementVelocity = FVector::Zero();
+}
+
+bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate()
+{
+	// Add validation of the input here if necessary
+	return true;
 }
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
