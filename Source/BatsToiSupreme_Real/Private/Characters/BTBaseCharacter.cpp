@@ -4,10 +4,11 @@
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+	: Super(ObjectInitializer), MovementVelocity(FVector::Zero())
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -27,27 +28,26 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 	RotateTowardEnemy(DeltaSeconds);
 }
 
+void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
+}
+
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
 {
-	MovementBufferX = MovementVector.X;
-	MovementBufferY = MovementVector.Y;
+	const FRotator GameViewRotator(0, 0, GetControlRotation().Yaw);
+	const FVector ForwardVector = MovementVector.X * UKismetMathLibrary::GetForwardVector(GameViewRotator);
+	const FVector RightVector = MovementVector.Y * UKismetMathLibrary::GetRightVector(GameViewRotator);
+	
+	MovementVelocity = ForwardVector + RightVector;
+	MovementVelocity.Normalize(0.001);
 }
 
 void ABTBaseCharacter::RefreshMovementBuffer()
 {
-	MovementBufferX = 0;
-	MovementBufferY = 0;
-}
-
-const FVector ABTBaseCharacter::GetMovementVelocity()
-{
-	const FRotator GameViewRotator(0, 0, GetControlRotation().Yaw);
-	const FVector ForwardVector = MovementBufferY * UKismetMathLibrary::GetForwardVector(GameViewRotator);
-	const FVector RightVector = MovementBufferX * UKismetMathLibrary::GetRightVector(GameViewRotator);
-	
-	FVector CombineVector = ForwardVector + RightVector;
-	CombineVector.Normalize(0.001);
-	return CombineVector;
+	MovementVelocity = FVector::Zero();
 }
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)

@@ -10,7 +10,7 @@
 class UBTCharacterMovement;
 
 UCLASS()
-class BATSTOISUPREME_REAL_API ABTBaseCharacter : public AGSCModularCharacter, public IBTCharacterMovement
+class BATSTOISUPREME_REAL_API ABTBaseCharacter : public AGSCModularCharacter
 {
 	GENERATED_BODY()
 
@@ -23,8 +23,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RefreshMovementBuffer();
 
-	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
-	virtual const FVector GetMovementVelocity() override;
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	FVector MovementVelocity;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -44,7 +44,4 @@ protected:
 	
 private:
 	void RotateTowardEnemy(float DeltaSeconds);
-
-	float MovementBufferX;
-	float MovementBufferY;
 };
