@@ -49,5 +49,5 @@ protected:
 	float ServerFPS;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Batstoi")
-	EGameState GameState = EGameState::MainMenu;
+	EGameState GameState = EGameState::InGame;
 };
