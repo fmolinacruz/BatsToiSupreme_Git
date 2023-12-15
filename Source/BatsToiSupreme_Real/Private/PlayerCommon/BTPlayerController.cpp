@@ -8,12 +8,14 @@
 
 ABTPlayerController::ABTPlayerController() : bHasSetupInput(false)
 {
+	bAutoManageActiveCameraTarget = false;
 }
 
 void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 {
 	Super::AcknowledgePossession(InPawn);
 
+	BTLOG_DISPLAY("[ABTPlayerController] - AcknowledgePossession: Posses %s", *InPawn->GetName());
 	if (bHasSetupInput)
 	{
 		return;
