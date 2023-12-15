@@ -81,7 +81,7 @@ void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 
 	if (IsLocallyControlled() && !HasAuthority())
 	{
-		Server_RotateTowardEnemy(DeltaSeconds);
+		Server_RotateTowardEnemy(this, DeltaSeconds);
 	}
 }
 
@@ -119,15 +119,42 @@ void ABTBaseCharacter::PerformRotation(float DeltaSeconds)
 	}
 }
 
-void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(float DeltaSeconds)
+void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
-	PerformRotation(DeltaSeconds);
+	if (InCharacter->BTEnemy == nullptr)
+	{
+		BTLOG_WARNING("BTEnemy is not set correctly !!");
+		return;
+	}
+
+	const FVector StartLocation = InCharacter->GetActorLocation();
+	const FVector TargetLocation = InCharacter->BTEnemy->GetActorLocation();
+
+	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+	const FRotator NewRotation = FMath::RInterpTo(InCharacter->GetActorRotation(), TargetRotation, DeltaSeconds, 100.0f);
+	InCharacter->SetActorRotation(NewRotation);
+
+	const bool IsStandingStillSelf = InCharacter->GetVelocity().Size() == 0;
+	const bool IsStandingStillEnemy = InCharacter->BTEnemy->GetVelocity().Size() == 0;
+
+	if (IsStandingStillSelf == true && IsStandingStillEnemy == false)
+	{
+		const FVector DirectionToEnemy = InCharacter->BTEnemy->GetActorLocation() - InCharacter->GetActorLocation();
+		const FVector VelocityOfEnemy = InCharacter->BTEnemy->GetVelocity();
+		const FVector CrossProduct = FVector::CrossProduct(DirectionToEnemy, VelocityOfEnemy);
+
+		InCharacter->bIsTurningRight = CrossProduct.Z > 0;
+		InCharacter->bIsTurningLeft = CrossProduct.Z < 0;
+	}
+	else
+	{
+		InCharacter->bIsTurningRight = false;
+		InCharacter->bIsTurningLeft = false;
+	}
 }
 
-bool ABTBaseCharacter::Server_RotateTowardEnemy_Validate(float DeltaSeconds)
+bool ABTBaseCharacter::Server_RotateTowardEnemy_Validate(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
-	// Perform any necessary validation here.
-	// For example, you might check if DeltaSeconds is within an expected range.
 	return true;
 }
 
@@ -135,6 +162,7 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & Ou
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
 	DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);

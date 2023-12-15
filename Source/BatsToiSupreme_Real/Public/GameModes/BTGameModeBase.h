@@ -27,11 +27,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTBaseCharacter> CharacterClass;
 
-public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Players")
 	TArray<ABTBaseCharacter*> PlayerCharacters;
 
 private:
+	UFUNCTION(NetMulticast, Reliable)
+	void SetPlayerEnemy();
+	
 	void GetMainCameraRef();
 	void GetStartSpots();
 	

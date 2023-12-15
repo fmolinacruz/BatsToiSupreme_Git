@@ -16,7 +16,6 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
@@ -39,7 +38,7 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 		BTLOG_WARNING("[ABTGameModeBase] - OnPostLogin: This is not a Player!");
 		return;
 	}
-	
+
 	const FVector& Location = StartSpots[CurrentPlayerIndex]->GetActorLocation();
 	const FRotator& Rotation = StartSpots[CurrentPlayerIndex]->GetActorRotation();
 	ABTBaseCharacter* SpawnedCharacter = GetWorld()->SpawnActor<ABTBaseCharacter>(CharacterClass, Location, Rotation);
@@ -51,11 +50,16 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 	// Check if there are at least 2 players, then set enemy
 	if (PlayerCharacters.Num() >= 2)
 	{
-		PlayerCharacters[0]->BTEnemy = PlayerCharacters[1];
-		PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
-	}		
+		SetPlayerEnemy();
+	}
 
 	CurrentPlayerIndex++;
+}
+
+void ABTGameModeBase::SetPlayerEnemy_Implementation()
+{
+	PlayerCharacters[0]->BTEnemy = PlayerCharacters[1];
+	PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
 }
 
 void ABTGameModeBase::GetMainCameraRef()
