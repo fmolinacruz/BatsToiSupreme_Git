@@ -54,13 +54,13 @@ FName FBTEditorStyle::GetStyleSetName()
 	return StyleSetName;
 }
 
-TSharedRef<FSlateStyleSet> FBTEditorStyle::Create()
+TSharedRef<FSlateStyleSet> FBTEditorStyle::CreateDefault()
 {
 	TSharedRef<FSlateStyleSet> Style = CreateStyle("BTEditorStyle");
 	return Style;
 }
 
-TSharedRef<FSlateStyleSet> FBTEditorStyle::CreateStyle(FName StyleSetName)
+TSharedRef<FSlateStyleSet> FBTEditorStyle::CreateStyle(const FName StyleSetName)
 {
 	TSharedRef<FSlateStyleSet> Style = MakeShareable(new FSlateStyleSet(StyleSetName));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("BatsToiSupreme_Real")->GetBaseDir() / TEXT("Resources"));

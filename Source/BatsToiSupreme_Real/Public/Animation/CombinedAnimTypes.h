@@ -11,7 +11,7 @@ UENUM(BlueprintType)
 enum class ERelativePosition : uint8
 {
 	Any UMETA(DisplayName = "Any position"),
-	SyncBone UMETA(DisplayName = "Get references from the sync bone"),
+	SyncBone UMETA(DisplayName = "Sync bone's position"),
 };
 
 UENUM(BlueprintType)
@@ -32,11 +32,11 @@ struct FCombinedAnimsData : public FTableRowBase
 
 	/* The montage to be played on attacker */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	class UAnimMontage* AttackerAnimMontage;
+	TObjectPtr<UAnimMontage> AttackerAnimMontage;
 
 	/* The montage to be played on receiver */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	class UAnimMontage* ReceiverAnimMontage;
+	TObjectPtr<UAnimMontage> ReceiverAnimMontage;
 
 	/* The direction of the anim to be played */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
