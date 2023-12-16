@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "StateMachine/Graph/BTGraphEdge.h"
+#include "Utilities/Graph/BTGraphEdge.h"
 
 UBTGraphEdge::UBTGraphEdge() {}
 

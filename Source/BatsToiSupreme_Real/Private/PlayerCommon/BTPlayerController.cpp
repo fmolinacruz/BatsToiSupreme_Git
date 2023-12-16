@@ -6,14 +6,21 @@
 #include "PlayerCommon/BTPlayerInput.h"
 #include "Utilities/BTLogging.h"
 
-ABTPlayerController::ABTPlayerController()
+ABTPlayerController::ABTPlayerController() : bHasSetupInput(false)
 {
+	bAutoManageActiveCameraTarget = false;
 }
 
-void ABTPlayerController::OnPossess(APawn* InPawn)
+void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 {
-	Super::OnPossess(InPawn);
+	Super::AcknowledgePossession(InPawn);
 
+	BTLOG_DISPLAY("[ABTPlayerController] - AcknowledgePossession: Posses %s", *InPawn->GetName());
+	if (bHasSetupInput)
+	{
+		return;
+	}
+	
 	PlayerCharacter = Cast<ABTPlayerCharacter>(GetCharacter());
 	if (PlayerCharacter)
 	{
@@ -23,4 +30,6 @@ void ABTPlayerController::OnPossess(APawn* InPawn)
 	{
 		BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter!");
 	}
+	bHasSetupInput = true;
 }
+

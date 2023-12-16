@@ -6,6 +6,16 @@
 #include "GameFramework/GameStateBase.h"
 #include "BTGameState.generated.h"
 
+UENUM(BlueprintType)
+enum class EGameState : uint8
+{
+	MainMenu UMETA(DisplayName = "In Game Main Menu"),
+	InGame UMETA(DisplayName = "In Game Battle"),
+	PauseMenu UMETA(DisplayName = "In Game Battle's Pause")
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameStateChanged, const EGameState&, NewState);
+
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTGameState : public AGameStateBase
 {
@@ -13,13 +23,31 @@ class BATSTOISUPREME_REAL_API ABTGameState : public AGameStateBase
 	
 public:
 	ABTGameState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	
+	UFUNCTION(BlueprintCallable, Category = "Batstoi")
+	void ChangeGameState(EGameState NewState);
 
-	UFUNCTION(BlueprintCallable, Category="Batstoi")
-	float GetServerFPS() const { return ServerFPS; }
+	UFUNCTION(BlueprintCallable, Category = "Batstoi")
+	FORCEINLINE float GetServerFPS() const
+	{
+		return ServerFPS;
+	}
+	
+	UFUNCTION(BlueprintCallable, Category = "Batstoi")
+	FORCEINLINE EGameState GetGameState() const
+	{
+		return GameState;
+	}
+
+	UPROPERTY(BlueprintAssignable, Category = "Batstoi")
+	FOnGameStateChanged OnGameStateChanged;
 
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 	
 	UPROPERTY(Replicated)
 	float ServerFPS;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Batstoi")
+	EGameState GameState = EGameState::InGame;
 };

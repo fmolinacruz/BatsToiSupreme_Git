@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "StateMachine/Graph/BTGraphCondition.h"
+#include "Utilities/Graph/BTGraphCondition.h"
 
 bool UBTGraphCondition::Verify(APlayerController* PlayerController)
 {
