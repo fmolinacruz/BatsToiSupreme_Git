@@ -9,9 +9,9 @@
 UENUM(BlueprintType)
 enum class EGameState : uint8
 {
-	MainMenu,
-	InGame,
-	PauseMenu
+	MainMenu UMETA(DisplayName = "In Game Main Menu"),
+	InGame UMETA(DisplayName = "In Game Battle"),
+	PauseMenu UMETA(DisplayName = "In Game Battle's Pause")
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameStateChanged, const EGameState&, NewState);
@@ -24,16 +24,16 @@ class BATSTOISUPREME_REAL_API ABTGameState : public AGameStateBase
 public:
 	ABTGameState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	
-	UFUNCTION(BlueprintCallable, Category="Batstoi")
+	UFUNCTION(BlueprintCallable, Category = "Batstoi")
 	void ChangeGameState(EGameState NewState);
 
-	UFUNCTION(BlueprintCallable, Category="Batstoi")
+	UFUNCTION(BlueprintCallable, Category = "Batstoi")
 	FORCEINLINE float GetServerFPS() const
 	{
 		return ServerFPS;
 	}
 	
-	UFUNCTION(BlueprintCallable, Category="Batstoi")
+	UFUNCTION(BlueprintCallable, Category = "Batstoi")
 	FORCEINLINE EGameState GetGameState() const
 	{
 		return GameState;
@@ -51,5 +51,5 @@ protected:
 	float ServerFPS;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Batstoi")
-	EGameState GameState = EGameState::MainMenu;
+	EGameState GameState = EGameState::InGame;
 };
