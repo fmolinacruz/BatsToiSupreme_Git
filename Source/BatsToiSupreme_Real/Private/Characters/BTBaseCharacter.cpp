@@ -12,14 +12,21 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Enable replication for this actor
-	bReplicates = true;
-	// Enable replication of movement
-	SetReplicateMovement(true);
-
 	// Basic setup
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = false; // Disable controller rotation
+	bReplicates = true;                // Enable replication for this actor
+	SetReplicateMovement(true);        // Enable replication of movement
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+
+void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
+	DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
+	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
+	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -77,49 +84,24 @@ bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate()
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 {
-	PerformRotation(DeltaSeconds);
-
+	Internal_RotateTowardEnemy(this, DeltaSeconds);
 	if (IsLocallyControlled() && !HasAuthority())
 	{
 		Server_RotateTowardEnemy(this, DeltaSeconds);
 	}
 }
 
-void ABTBaseCharacter::PerformRotation(float DeltaSeconds)
+void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
-	if (BTEnemy == nullptr)
-	{
-		BTLOG_WARNING("BTEnemy is not set correctly !!");
-		return;
-	}
-
-	const FVector StartLocation = GetActorLocation();
-	const FVector TargetLocation = BTEnemy->GetActorLocation();
-
-	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
-	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, 100.0f);
-	SetActorRotation(NewRotation);
-
-	const bool IsStandingStillSelf = GetVelocity().Size() == 0;
-	const bool IsStandingStillEnemy = BTEnemy->GetVelocity().Size() == 0;
-
-	if (IsStandingStillSelf == true && IsStandingStillEnemy == false)
-	{
-		const FVector DirectionToEnemy = BTEnemy->GetActorLocation() - GetActorLocation();
-		const FVector VelocityOfEnemy = BTEnemy->GetVelocity();
-		const FVector CrossProduct = FVector::CrossProduct(DirectionToEnemy, VelocityOfEnemy);
-
-		bIsTurningRight = CrossProduct.Z > 0;
-		bIsTurningLeft = CrossProduct.Z < 0;
-	}
-	else
-	{
-		bIsTurningRight = false;
-		bIsTurningLeft = false;
-	}
+	Internal_RotateTowardEnemy(InCharacter, DeltaSeconds);
 }
 
-void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
+bool ABTBaseCharacter::Server_RotateTowardEnemy_Validate(ABTBaseCharacter* InCharacter, float DeltaSeconds)
+{
+	return true;
+}
+
+void ABTBaseCharacter::Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
 	if (InCharacter->BTEnemy == nullptr)
 	{
@@ -152,19 +134,3 @@ void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter*
 		InCharacter->bIsTurningLeft = false;
 	}
 }
-
-bool ABTBaseCharacter::Server_RotateTowardEnemy_Validate(ABTBaseCharacter* InCharacter, float DeltaSeconds)
-{
-	return true;
-}
-
-void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
-	DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
-	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
-	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
-}
-
