@@ -8,7 +8,7 @@
 #include "Utilities/BTLogging.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+	: Super(ObjectInitializer), MovementBufferX(0.0f), MovementBufferY(0.0f)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -17,9 +17,6 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	bReplicates = true;                // Enable replication for this actor
 	SetReplicateMovement(true);        // Enable replication of movement
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-
-	SpeedX_C = 0.0f;
-	SpeedY_C = 0.0f;
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -27,11 +24,10 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
-	//DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
-	DOREPLIFETIME(ABTBaseCharacter, SpeedX_C);
-	DOREPLIFETIME(ABTBaseCharacter, SpeedY_C);
+	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
+	DOREPLIFETIME(ABTBaseCharacter, MovementBufferY);
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -52,35 +48,30 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
 {
-	Server_AddMovementBuffer(MovementVector);
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		Server_AddMovementBuffer(this, MovementVector);
+	}
 }
 
-void ABTBaseCharacter::Server_AddMovementBuffer_Implementation(const FVector2D& MovementVector)
+void ABTBaseCharacter::Server_AddMovementBuffer_Implementation(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector)
 {
-	const FRotator GameViewRotator(0, 0, GetControlRotation().Yaw);
+	// TODO: This seems complicated, can we simplify this.
+	const FRotator GameViewRotator(0, 0, InCharacter->GetControlRotation().Yaw);
 	const FVector ForwardVector = MovementVector.Y * UKismetMathLibrary::GetForwardVector(GameViewRotator);
 	const FVector RightVector = MovementVector.X * UKismetMathLibrary::GetRightVector(GameViewRotator);
 
 	FVector MovementVelocity = ForwardVector + RightVector;
 	MovementVelocity.Normalize(0.001);
 
-	float DotProductForward = FVector::DotProduct(MovementVelocity, GetActorForwardVector());
-	float DotProductRight = FVector::DotProduct(MovementVelocity, GetActorRightVector());
+	const float DotProductForward = FVector::DotProduct(MovementVelocity, InCharacter->GetActorForwardVector());
+	const float DotProductRight = FVector::DotProduct(MovementVelocity, InCharacter->GetActorRightVector());
 
-	float SpeedX_New = DotProductForward * 100.0f;
-	float SpeedY_New = DotProductRight * 100.0f;
-
-	SpeedX_C = FMath::Lerp(SpeedX_C, SpeedX_New, 0.3f);
-	SpeedY_C = FMath::Lerp(SpeedY_C, SpeedY_New, 0.3f);
-
-//	//if (GEngine)
-//	//{
-//	//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("SpeedX_C: %f"), SpeedX_C));
-//	//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("SpeedY_C: %f"), SpeedY_C));
-//	//}
+	InCharacter->MovementBufferX = FMath::Lerp(MovementBufferX, DotProductForward * 100.0f, 0.3f);
+	InCharacter->MovementBufferY = FMath::Lerp(MovementBufferY, DotProductRight * 100.0f, 0.3f);
 }
 
-bool ABTBaseCharacter::Server_AddMovementBuffer_Validate(const FVector2D& MovementVector)
+bool ABTBaseCharacter::Server_AddMovementBuffer_Validate(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector)
 {
 	// Add validation of the input here if necessary
 	return true;
@@ -88,17 +79,19 @@ bool ABTBaseCharacter::Server_AddMovementBuffer_Validate(const FVector2D& Moveme
 
 void ABTBaseCharacter::RefreshMovementBuffer()
 {
-	Server_RefreshMovementBuffer();
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		Server_RefreshMovementBuffer(this);
+	}
 }
 
-void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation()
+void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharacter* InCharacter)
 {
-	//MovementVelocity = FVector::Zero();
-	SpeedX_C = 0.0f;
-	SpeedY_C = 0.0f;
+	InCharacter->MovementBufferX = 0.0f;
+	InCharacter->MovementBufferY = 0.0f;
 }
 
-bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate()
+bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate(ABTBaseCharacter* InCharacter)
 {
 	// Add validation of the input here if necessary
 	return true;
