@@ -35,8 +35,14 @@ public:
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds);
 	
+	//UPROPERTY(Replicated, BlueprintReadOnly)
+	//FVector MovementVelocity;
+
 	UPROPERTY(Replicated, BlueprintReadOnly)
-	FVector MovementVelocity;
+	float SpeedX_C;
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	float SpeedY_C;
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	bool bIsTurningRight;
@@ -53,6 +59,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	float AutoTurningRate = 50.0f;
+
+	bool bIsFirst = true;
 
 private:
 	static void Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds);

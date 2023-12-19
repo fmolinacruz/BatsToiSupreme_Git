@@ -8,7 +8,7 @@
 #include "Utilities/BTLogging.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer), MovementVelocity(FVector::Zero())
+	: Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -17,6 +17,9 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	bReplicates = true;                // Enable replication for this actor
 	SetReplicateMovement(true);        // Enable replication of movement
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	SpeedX_C = 0.0f;
+	SpeedY_C = 0.0f;
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -24,9 +27,11 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
-	DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
+	//DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
+	DOREPLIFETIME(ABTBaseCharacter, SpeedX_C);
+	DOREPLIFETIME(ABTBaseCharacter, SpeedY_C);
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -56,8 +61,23 @@ void ABTBaseCharacter::Server_AddMovementBuffer_Implementation(const FVector2D& 
 	const FVector ForwardVector = MovementVector.Y * UKismetMathLibrary::GetForwardVector(GameViewRotator);
 	const FVector RightVector = MovementVector.X * UKismetMathLibrary::GetRightVector(GameViewRotator);
 
-	MovementVelocity = ForwardVector + RightVector;
+	FVector MovementVelocity = ForwardVector + RightVector;
 	MovementVelocity.Normalize(0.001);
+
+	float DotProductForward = FVector::DotProduct(MovementVelocity, GetActorForwardVector());
+	float DotProductRight = FVector::DotProduct(MovementVelocity, GetActorRightVector());
+
+	float SpeedX_New = DotProductForward * 100.0f;
+	float SpeedY_New = DotProductRight * 100.0f;
+
+	SpeedX_C = FMath::Lerp(SpeedX_C, SpeedX_New, 0.3f);
+	SpeedY_C = FMath::Lerp(SpeedY_C, SpeedY_New, 0.3f);
+
+//	//if (GEngine)
+//	//{
+//	//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("SpeedX_C: %f"), SpeedX_C));
+//	//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("SpeedY_C: %f"), SpeedY_C));
+//	//}
 }
 
 bool ABTBaseCharacter::Server_AddMovementBuffer_Validate(const FVector2D& MovementVector)
@@ -73,7 +93,9 @@ void ABTBaseCharacter::RefreshMovementBuffer()
 
 void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation()
 {
-	MovementVelocity = FVector::Zero();
+	//MovementVelocity = FVector::Zero();
+	SpeedX_C = 0.0f;
+	SpeedY_C = 0.0f;
 }
 
 bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate()
