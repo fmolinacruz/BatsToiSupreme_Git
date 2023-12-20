@@ -14,4 +14,7 @@ class BATSTOISUPREME_REAL_API ULocalCharacterSelectMenu : public UUserWidget
 {
 	GENERATED_BODY()
 	
+public:
+	UFUNCTION(BlueprintCallable, Category = "Utilities")
+	void DebugLog();
 };

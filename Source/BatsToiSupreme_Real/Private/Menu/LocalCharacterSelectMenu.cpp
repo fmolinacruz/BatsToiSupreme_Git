@@ -3,3 +3,7 @@
 
 #include "Menu/LocalCharacterSelectMenu.h"
 
+void ULocalCharacterSelectMenu::DebugLog()
+{
+	UE_LOG(LogTemp, Error, TEXT("Debug Log "));
+}
