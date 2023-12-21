@@ -20,32 +20,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void AddMovementBuffer(const FVector2D& MovementVector);
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_AddMovementBuffer(const FVector2D& MovementVector);
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_AddMovementBuffer(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector);
 	
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RefreshMovementBuffer();
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RefreshMovementBuffer();
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_RefreshMovementBuffer(ABTBaseCharacter* InCharacter);
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RotateTowardEnemy(float DeltaSeconds);
 
-	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
-	void PerformRotation(float DeltaSeconds);
-
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds);
-	
-	UPROPERTY(Replicated, BlueprintReadOnly)
-	FVector MovementVelocity;
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Movement")
+	float MovementBufferX;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Movement")
+	float MovementBufferY;
+
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	bool bIsTurningRight;
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	bool bIsTurningLeft;
 
@@ -58,4 +56,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	float AutoTurningRate = 50.0f;
+
+private:
+	static void Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds);
 };
