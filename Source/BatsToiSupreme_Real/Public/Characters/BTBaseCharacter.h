@@ -20,19 +20,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void AddMovementBuffer(const FVector2D& MovementVector);
 
-	UFUNCTION(Server, Unreliable, WithValidation)
+	UFUNCTION(Server, Unreliable)
 	void Server_AddMovementBuffer(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector);
 	
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RefreshMovementBuffer();
 
-	UFUNCTION(Server, Unreliable, WithValidation)
+	UFUNCTION(Server, Unreliable)
 	void Server_RefreshMovementBuffer(ABTBaseCharacter* InCharacter);
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RotateTowardEnemy(float DeltaSeconds);
 
-	UFUNCTION(Server, Unreliable, WithValidation)
+	UFUNCTION(Server, Unreliable)
 	void Server_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds);
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Movement")

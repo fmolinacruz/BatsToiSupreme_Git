@@ -4,6 +4,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameplayDebuggerTypes.h"
 #include "PlayerMappableInputConfig.h"
 #include "Characters/BTPlayerCharacter.h"
 #include "GameModes/BTGameState.h"
