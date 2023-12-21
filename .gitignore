@@ -103,5 +103,5 @@ Plugins/**/Intermediate/*
 # Auto generated files / folder
 .idea/
 .vsconfig
-
+.DS_Store
 # End of https://www.toptal.com/developers/gitignore/api/unrealengine

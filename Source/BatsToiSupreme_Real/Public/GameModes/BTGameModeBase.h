@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "BTGameModeBase.generated.h"
 
+class ABTBaseCharacter;
+
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTGameModeBase : public AGameModeBase
 {
@@ -13,4 +15,30 @@ class BATSTOISUPREME_REAL_API ABTGameModeBase : public AGameModeBase
 
 public:
 	ABTGameModeBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+
+	virtual void OnPostLogin(AController* NewPlayer) override;
+
+protected:
+	virtual void BeginPlay() override;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	TSubclassOf<AActor> CameraClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	TSubclassOf<ABTBaseCharacter> CharacterClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Players")
+	TArray<ABTBaseCharacter*> PlayerCharacters;
+
+private:
+	void GetMainCameraRef();
+	void GetStartSpots();
+
+	UPROPERTY(Transient)
+	TObjectPtr<AActor> MainCameraRef;
+
+	UPROPERTY(Transient)
+	TArray<AActor*> StartSpots;
+
+	int CurrentPlayerIndex = 0;
 };

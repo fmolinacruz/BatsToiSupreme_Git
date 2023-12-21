@@ -14,6 +14,10 @@ ABTGameState::ABTGameState(const FObjectInitializer& ObjectInitializer)
 	ServerFPS = 0.0f;
 }
 
+void ABTGameState::InitializePlayer()
+{
+}
+
 void ABTGameState::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -37,4 +41,13 @@ void ABTGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, ServerFPS);
+}
+
+void ABTGameState::ChangeGameState(EGameState NewState)
+{
+	if (GameState != NewState)
+	{
+		GameState = NewState;
+		OnGameStateChanged.Broadcast(GameState);
+	}
 }

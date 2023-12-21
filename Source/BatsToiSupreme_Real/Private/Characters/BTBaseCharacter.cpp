@@ -4,16 +4,30 @@
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+	: Super(ObjectInitializer), MovementBufferX(0.0f), MovementBufferY(0.0f)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Basic setup
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = false; // Disable controller rotation
+	bReplicates = true;                // Enable replication for this actor
+	SetReplicateMovement(true);        // Enable replication of movement
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+
+void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
+	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
+	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
+	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
+	DOREPLIFETIME(ABTBaseCharacter, MovementBufferY);
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -24,62 +38,114 @@ void ABTBaseCharacter::BeginPlay()
 void ABTBaseCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	RotateTowardEnemy(DeltaSeconds);
+
+	// Only run rotation logic on the owning client and the server
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		RotateTowardEnemy(DeltaSeconds);
+	}
 }
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
 {
-	MovementBufferX = MovementVector.X;
-	MovementBufferY = MovementVector.Y;
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		Server_AddMovementBuffer(this, MovementVector);
+	}
+}
+
+void ABTBaseCharacter::Server_AddMovementBuffer_Implementation(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector)
+{
+	// TODO: This seems complicated, can we simplify this.
+	const FRotator GameViewRotator(0, 0, InCharacter->GetControlRotation().Yaw);
+	const FVector ForwardVector = MovementVector.Y * UKismetMathLibrary::GetForwardVector(GameViewRotator);
+	const FVector RightVector = MovementVector.X * UKismetMathLibrary::GetRightVector(GameViewRotator);
+
+	FVector MovementVelocity = ForwardVector + RightVector;
+	MovementVelocity.Normalize(0.001);
+
+	const float DotProductForward = FVector::DotProduct(MovementVelocity, InCharacter->GetActorForwardVector());
+	const float DotProductRight = FVector::DotProduct(MovementVelocity, InCharacter->GetActorRightVector());
+
+	InCharacter->MovementBufferX = FMath::Lerp(MovementBufferX, DotProductForward * 100.0f, 0.3f);
+	InCharacter->MovementBufferY = FMath::Lerp(MovementBufferY, DotProductRight * 100.0f, 0.3f);
+}
+
+bool ABTBaseCharacter::Server_AddMovementBuffer_Validate(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector)
+{
+	// Add validation of the input here if necessary
+	return true;
 }
 
 void ABTBaseCharacter::RefreshMovementBuffer()
 {
-	MovementBufferX = 0;
-	MovementBufferY = 0;
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		Server_RefreshMovementBuffer(this);
+	}
 }
 
-const FVector ABTBaseCharacter::GetMovementVelocity()
+void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharacter* InCharacter)
 {
-	const FRotator GameViewRotator(0, 0, GetControlRotation().Yaw);
-	const FVector ForwardVector = MovementBufferY * UKismetMathLibrary::GetForwardVector(GameViewRotator);
-	const FVector RightVector = MovementBufferX * UKismetMathLibrary::GetRightVector(GameViewRotator);
-	
-	FVector CombineVector = ForwardVector + RightVector;
-	CombineVector.Normalize(0.001);
-	return CombineVector;
+	InCharacter->MovementBufferX = 0.0f;
+	InCharacter->MovementBufferY = 0.0f;
+}
+
+bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate(ABTBaseCharacter* InCharacter)
+{
+	// Add validation of the input here if necessary
+	return true;
 }
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 {
-	if (BTEnemy == nullptr)
+	Internal_RotateTowardEnemy(this, DeltaSeconds);
+	if (IsLocallyControlled() && !HasAuthority())
+	{
+		Server_RotateTowardEnemy(this, DeltaSeconds);
+	}
+}
+
+void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
+{
+	Internal_RotateTowardEnemy(InCharacter, DeltaSeconds);
+}
+
+bool ABTBaseCharacter::Server_RotateTowardEnemy_Validate(ABTBaseCharacter* InCharacter, float DeltaSeconds)
+{
+	return true;
+}
+
+void ABTBaseCharacter::Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds)
+{
+	if (InCharacter->BTEnemy == nullptr)
 	{
 		BTLOG_WARNING("BTEnemy is not set correctly !!");
 		return;
 	}
 
-	const FVector StartLocation = GetActorLocation();
-	const FVector TargetLocation = BTEnemy->GetActorLocation();
-	
-	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
-	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, AutoTurningRate);
-	SetActorRotation(NewRotation);
+	const FVector StartLocation = InCharacter->GetActorLocation();
+	const FVector TargetLocation = InCharacter->BTEnemy->GetActorLocation();
 
-	const bool IsStandingStillSelf = GetVelocity().Size() == 0;
-	const bool IsStandingStillEnemy = BTEnemy->GetVelocity().Size() == 0;
+	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+	const FRotator NewRotation = FMath::RInterpTo(InCharacter->GetActorRotation(), TargetRotation, DeltaSeconds, 100.0f);
+	InCharacter->SetActorRotation(NewRotation);
+
+	const bool IsStandingStillSelf = InCharacter->GetVelocity().Size() == 0;
+	const bool IsStandingStillEnemy = InCharacter->BTEnemy->GetVelocity().Size() == 0;
 
 	if (IsStandingStillSelf == true && IsStandingStillEnemy == false)
 	{
-		const FVector DirectionToEnemy = BTEnemy->GetActorLocation() - GetActorLocation();
-		const FVector VelocityOfEnemy = BTEnemy->GetVelocity();
+		const FVector DirectionToEnemy = InCharacter->BTEnemy->GetActorLocation() - InCharacter->GetActorLocation();
+		const FVector VelocityOfEnemy = InCharacter->BTEnemy->GetVelocity();
 		const FVector CrossProduct = FVector::CrossProduct(DirectionToEnemy, VelocityOfEnemy);
 
-		bIsTurningRight = CrossProduct.Z > 0;
-		bIsTurningLeft = CrossProduct.Z < 0;
+		InCharacter->bIsTurningRight = CrossProduct.Z > 0;
+		InCharacter->bIsTurningLeft = CrossProduct.Z < 0;
 	}
 	else
 	{
-		bIsTurningRight = false;
-		bIsTurningLeft = false;
+		InCharacter->bIsTurningRight = false;
+		InCharacter->bIsTurningLeft = false;
 	}
 }

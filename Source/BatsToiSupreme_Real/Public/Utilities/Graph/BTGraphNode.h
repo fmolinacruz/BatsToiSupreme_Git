@@ -7,6 +7,7 @@
 #include "BTGraphNode.generated.h"
 
 class UBTGraph;
+class UBTGraphEdge;
 
 UENUM(BlueprintType)
 enum class ENodeState : uint8
@@ -30,10 +31,16 @@ public:
 	bool IsLeafNode() const;
 
 	UFUNCTION(BlueprintCallable, Category = "BTGraph|Node")
+	UBTGraphEdge* GetEdgeBasedOnChildNode(const UBTGraphNode* ChildNode);
+
+	UFUNCTION(BlueprintCallable, Category = "BTGraph|Node")
 	FORCEINLINE UBTGraph* GetGraph() const
 	{
 		return Graph;
 	}
+	
+	UPROPERTY(BlueprintReadOnly, Category = "BTGraph|Node")
+	TMap<TObjectPtr<UBTGraphNode>, TObjectPtr<UBTGraphEdge>> EdgeDatas;
 
 	UPROPERTY(BlueprintReadOnly, Category = "BTGraph|Node")
 	TArray<UBTGraphNode*> ParentNodes;

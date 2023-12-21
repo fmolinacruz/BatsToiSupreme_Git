@@ -17,8 +17,9 @@ public:
 	ABTPlayerController();
 
 protected:
-	virtual void OnPossess(APawn* InPawn) override;
+	virtual void AcknowledgePossession(APawn* InPawn) override;
 
 private:
 	TObjectPtr<ABTPlayerCharacter> PlayerCharacter;
+	bool bHasSetupInput;
 };
