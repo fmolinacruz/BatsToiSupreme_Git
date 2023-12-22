@@ -19,6 +19,7 @@ enum class ERelativeDirection : uint8
 {
 	Left UMETA(DisplayName = "Left Direction"),
 	Right UMETA(DisplayName = "Right Direction"),
+	None UMETA(DisplayName = "No Direction")
 };
 
 USTRUCT(BlueprintType)

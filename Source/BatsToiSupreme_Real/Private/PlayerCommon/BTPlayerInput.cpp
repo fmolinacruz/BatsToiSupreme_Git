@@ -5,6 +5,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "PlayerMappableInputConfig.h"
+#include "Characters/BTCharacterAbilityHandler.h"
 #include "Characters/BTPlayerCharacter.h"
 #include "GameModes/BTGameState.h"
 #include "PlayerCommon/BTPlayerController.h"
@@ -52,10 +53,10 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestStartMovement);
 	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Completed, this, &UBTPlayerInput::RequestCancelMovement);
-	EnhancedInputComponent->BindAction(LeftLightInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestLeftLightAction);
-	EnhancedInputComponent->BindAction(LeftHeavyInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestLeftHeavyAction);
-	EnhancedInputComponent->BindAction(RightLightInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestRightLightAction);
-	EnhancedInputComponent->BindAction(RightHeavyInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestRightHeavyAction);
+	EnhancedInputComponent->BindAction(LeftLightInputAction, ETriggerEvent::Started, this, &UBTPlayerInput::RequestLeftLightAction);
+	EnhancedInputComponent->BindAction(LeftHeavyInputAction, ETriggerEvent::Started, this, &UBTPlayerInput::RequestLeftHeavyAction);
+	EnhancedInputComponent->BindAction(RightLightInputAction, ETriggerEvent::Started, this, &UBTPlayerInput::RequestRightLightAction);
+	EnhancedInputComponent->BindAction(RightHeavyInputAction, ETriggerEvent::Started, this, &UBTPlayerInput::RequestRightHeavyAction);
 }
 
 void UBTPlayerInput::RequestStartMovement(const FInputActionValue& Value)
@@ -81,6 +82,7 @@ void UBTPlayerInput::RequestLeftLightAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
+		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::LeftLight);
 	}
 }
 
@@ -88,6 +90,7 @@ void UBTPlayerInput::RequestLeftHeavyAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
+		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::LeftHeavy);
 	}
 }
 
@@ -95,6 +98,7 @@ void UBTPlayerInput::RequestRightLightAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
+		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::RightLight);
 	}
 }
 
@@ -102,6 +106,7 @@ void UBTPlayerInput::RequestRightHeavyAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
+		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::RightHeavy);
 	}
 }
 
@@ -109,5 +114,6 @@ void UBTPlayerInput::RequestSprawlAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
+		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::Sprawl);
 	}
 }

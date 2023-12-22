@@ -16,7 +16,8 @@ public class BatsToiSupreme_Real : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"HeadMountedDisplay", 
-			"GASCompanion"
+			"GASCompanion",
+			"GameplayAbilities",
 		});
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {

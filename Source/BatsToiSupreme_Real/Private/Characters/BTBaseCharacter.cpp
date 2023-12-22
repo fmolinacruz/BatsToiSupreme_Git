@@ -2,7 +2,7 @@
 
 #include "Characters/BTBaseCharacter.h"
 
-#include "Characters/BTCharacterAbilityHandler.h"
+#include "Animation/BTAnimationComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
@@ -19,8 +19,10 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	SetReplicateMovement(true);        // Enable replication of movement
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-	
+
+	// Components
 	BTAbilityHandler = CreateDefaultSubobject<UBTCharacterAbilityHandler>(TEXT("Ability Handler"));
+	BTAnimationHandler = CreateDefaultSubobject<UBTAnimationComponent>(TEXT("Animation Handler"));
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -104,6 +106,14 @@ void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 	if (IsLocallyControlled() && !HasAuthority())
 	{
 		Server_RotateTowardEnemy(this, DeltaSeconds);
+	}
+}
+
+void ABTBaseCharacter::HandleTriggerAbility(const EAbilityInputType InputType)
+{
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		BTAbilityHandler->ActivateAbility(InputType);
 	}
 }
 
