@@ -2,6 +2,7 @@
 
 #include "Characters/BTBaseCharacter.h"
 
+#include "Characters/BTCharacterAbilityHandler.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
@@ -18,6 +19,8 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	SetReplicateMovement(true);        // Enable replication of movement
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+	
+	BTAbilityHandler = CreateDefaultSubobject<UBTCharacterAbilityHandler>(TEXT("Ability Handler"));
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

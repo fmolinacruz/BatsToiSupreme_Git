@@ -4,7 +4,6 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "GameplayDebuggerTypes.h"
 #include "PlayerMappableInputConfig.h"
 #include "Characters/BTPlayerCharacter.h"
 #include "GameModes/BTGameState.h"
@@ -53,6 +52,10 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestStartMovement);
 	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Completed, this, &UBTPlayerInput::RequestCancelMovement);
+	EnhancedInputComponent->BindAction(LeftLightInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestLeftLightAction);
+	EnhancedInputComponent->BindAction(LeftHeavyInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestLeftHeavyAction);
+	EnhancedInputComponent->BindAction(RightLightInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestRightLightAction);
+	EnhancedInputComponent->BindAction(RightHeavyInputAction, ETriggerEvent::Triggered, this, &UBTPlayerInput::RequestRightHeavyAction);
 }
 
 void UBTPlayerInput::RequestStartMovement(const FInputActionValue& Value)
@@ -71,5 +74,40 @@ void UBTPlayerInput::RequestCancelMovement(const FInputActionValue& Value)
 	if (PlayerCharacter && GameState && GameState->GetGameState() == EGameState::InGame)
 	{
 		PlayerCharacter->RefreshMovementBuffer();
-	}	
+	}
+}
+
+void UBTPlayerInput::RequestLeftLightAction(const FInputActionValue& Value)
+{
+	if (PlayerCharacter)
+	{
+	}
+}
+
+void UBTPlayerInput::RequestLeftHeavyAction(const FInputActionValue& Value)
+{
+	if (PlayerCharacter)
+	{
+	}
+}
+
+void UBTPlayerInput::RequestRightLightAction(const FInputActionValue& Value)
+{
+	if (PlayerCharacter)
+	{
+	}
+}
+
+void UBTPlayerInput::RequestRightHeavyAction(const FInputActionValue& Value)
+{
+	if (PlayerCharacter)
+	{
+	}
+}
+
+void UBTPlayerInput::RequestSprawlAction(const FInputActionValue& Value)
+{
+	if (PlayerCharacter)
+	{
+	}
 }
