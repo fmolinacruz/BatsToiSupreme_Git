@@ -2,6 +2,7 @@
 
 #include "Characters/BTBaseCharacter.h"
 
+#include "Animation/BTAnimationComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
@@ -16,7 +17,12 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	bUseControllerRotationYaw = false; // Disable controller rotation
 	bReplicates = true;                // Enable replication for this actor
 	SetReplicateMovement(true);        // Enable replication of movement
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+
+	// Components
+	BTAbilityHandler = CreateDefaultSubobject<UBTCharacterAbilityHandler>(TEXT("Ability Handler"));
+	BTAnimationHandler = CreateDefaultSubobject<UBTAnimationComponent>(TEXT("Animation Handler"));
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -33,6 +39,15 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void ABTBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
+		}
+	}
 }
 
 void ABTBaseCharacter::Tick(float DeltaSeconds)
@@ -71,12 +86,6 @@ void ABTBaseCharacter::Server_AddMovementBuffer_Implementation(ABTBaseCharacter*
 	InCharacter->MovementBufferY = FMath::Lerp(MovementBufferY, DotProductRight * 100.0f, 0.3f);
 }
 
-bool ABTBaseCharacter::Server_AddMovementBuffer_Validate(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector)
-{
-	// Add validation of the input here if necessary
-	return true;
-}
-
 void ABTBaseCharacter::RefreshMovementBuffer()
 {
 	if (IsLocallyControlled() || HasAuthority())
@@ -91,12 +100,6 @@ void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharac
 	InCharacter->MovementBufferY = 0.0f;
 }
 
-bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate(ABTBaseCharacter* InCharacter)
-{
-	// Add validation of the input here if necessary
-	return true;
-}
-
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 {
 	Internal_RotateTowardEnemy(this, DeltaSeconds);
@@ -106,14 +109,17 @@ void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 	}
 }
 
+void ABTBaseCharacter::HandleTriggerAbility(const EAbilityInputType InputType)
+{
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		BTAbilityHandler->ActivateAbility(InputType);
+	}
+}
+
 void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
 	Internal_RotateTowardEnemy(InCharacter, DeltaSeconds);
-}
-
-bool ABTBaseCharacter::Server_RotateTowardEnemy_Validate(ABTBaseCharacter* InCharacter, float DeltaSeconds)
-{
-	return true;
 }
 
 void ABTBaseCharacter::Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds)
