@@ -17,15 +17,18 @@ public class BatsToiSupreme_Real : ModuleRules
 			"InputCore", 
 			"HeadMountedDisplay", 
 			"GASCompanion",
-			"GameplayAbilities",
-		});
+            "EngineSettings",
+            "GameplayAbilities",
+        });
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"CommonInput",
 			"EnhancedInput",
 			"GameplayTasks",
 			"GameplayTags",
-		});
+            "UMG",
+            "CommonUI",
+        });
 		
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

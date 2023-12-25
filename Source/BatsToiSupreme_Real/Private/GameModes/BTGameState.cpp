@@ -14,6 +14,10 @@ ABTGameState::ABTGameState(const FObjectInitializer& ObjectInitializer)
 	ServerFPS = 0.0f;
 }
 
+void ABTGameState::InitializePlayer()
+{
+}
+
 void ABTGameState::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);

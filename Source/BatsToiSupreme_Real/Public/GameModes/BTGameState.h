@@ -42,6 +42,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Batstoi")
 	FOnGameStateChanged OnGameStateChanged;
 
+	void InitializePlayer();
+
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 	
