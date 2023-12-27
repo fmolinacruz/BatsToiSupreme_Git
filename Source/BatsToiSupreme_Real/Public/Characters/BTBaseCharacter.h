@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Animation/CombinedAnimTypes.h"
 #include "Characters/BTCharacterAbilityHandler.h"
 #include "ModularGameplayActors/GSCModularCharacter.h"
 #include "BTBaseCharacter.generated.h"
@@ -27,8 +28,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RotateTowardEnemy(float DeltaSeconds);
 
-	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
-	void HandleTriggerAbility(const EAbilityInputType InputType);
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Ability")
+	void HandleTriggerAbilityInput(const EAbilityInputType InputType);
+	
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Ability")
+	void HandleTriggerAbilityTag(const FGameplayTag AbilityTag, const ERelativeDirection Direction = ERelativeDirection::None);
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Component")
 	FORCEINLINE UBTCharacterAbilityHandler* GetAbilityHandler() const

@@ -109,11 +109,19 @@ void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 	}
 }
 
-void ABTBaseCharacter::HandleTriggerAbility(const EAbilityInputType InputType)
+void ABTBaseCharacter::HandleTriggerAbilityInput(const EAbilityInputType InputType)
 {
 	if (IsLocallyControlled() || HasAuthority())
 	{
-		BTAbilityHandler->ActivateAbility(InputType);
+		BTAbilityHandler->ActivateAbilityWithInput(InputType);
+	}
+}
+
+void ABTBaseCharacter::HandleTriggerAbilityTag(const FGameplayTag AbilityTag, const ERelativeDirection Direction)
+{
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		BTAbilityHandler->ActivateAbilityWithTag(AbilityTag, Direction);
 	}
 }
 

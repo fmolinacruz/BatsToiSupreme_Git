@@ -29,21 +29,46 @@ ERelativeDirection UBTCharacterAbilityHandler::GetDirectionBasedOnInput(const EA
 		case EAbilityInputType::LeftLight:
 		case EAbilityInputType::LeftHeavy:
 			return ERelativeDirection::Left;
+			
 		case EAbilityInputType::RightLight:
 		case EAbilityInputType::RightHeavy:
 			return ERelativeDirection::Right;
+			
 		case EAbilityInputType::Sprawl:
 		default:
 			return ERelativeDirection::None;
 	}
 }
 
-void UBTCharacterAbilityHandler::ActivateAbility(const EAbilityInputType InputType)
+ERelativeDirection UBTCharacterAbilityHandler::GetDirectionBasedOnTag(const FGameplayTag AbilityTag)
+{
+	for (auto t : CurrentInputTags)
+	{
+		if (t.Value == AbilityTag)
+		{
+			return GetDirectionBasedOnInput(t.Key);
+		}
+	}
+	return ERelativeDirection::None;
+}
+
+void UBTCharacterAbilityHandler::ActivateAbilityWithInput(const EAbilityInputType InputType)
 {
 	FGameplayTagContainer TagContainer;
 	TagContainer.AddTag(CurrentInputTags[InputType]);
 	CharacterOwner->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(TagContainer);
 	CharacterOwner->GetAnimationHandler()->TryPlayCombinedAnimation(CharacterOwner->BTEnemy, CurrentInputTags[InputType], GetDirectionBasedOnInput(InputType));
+}
+
+void UBTCharacterAbilityHandler::ActivateAbilityWithTag(const FGameplayTag AbilityTag, const ERelativeDirection Direction)
+{
+	// Last effort to get the direction from current database
+	const ERelativeDirection AbilityDirection = (Direction == ERelativeDirection::None) ? GetDirectionBasedOnTag(AbilityTag) : Direction;
+
+	FGameplayTagContainer TagContainer;
+	TagContainer.AddTag(AbilityTag);
+	CharacterOwner->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(TagContainer);
+	CharacterOwner->GetAnimationHandler()->TryPlayCombinedAnimation(CharacterOwner->BTEnemy, AbilityTag, AbilityDirection);
 }
 
 void UBTCharacterAbilityHandler::ProcessNewInputDecision(const EAbilityInputType InputType, const FGameplayTag& NewInputTags)

@@ -30,7 +30,10 @@ public:
 	UBTCharacterAbilityHandler();
 
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|Ability")
-	void ActivateAbility(const EAbilityInputType InputType);
+	void ActivateAbilityWithInput(const EAbilityInputType InputType);
+	
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|Ability")
+	void ActivateAbilityWithTag(const FGameplayTag AbilityTag, const ERelativeDirection Direction);
 
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|Ability")
 	void ProcessNewInputDecision(const EAbilityInputType InputType, const FGameplayTag& NewInputTags);
@@ -40,6 +43,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|Ability")
 	ERelativeDirection GetDirectionBasedOnInput(const EAbilityInputType InputType);
+	
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|Ability")
+	ERelativeDirection GetDirectionBasedOnTag(const FGameplayTag AbilityTag);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Ability")
 	TMap<EAbilityInputType, FGameplayTag> CurrentInputTags;
