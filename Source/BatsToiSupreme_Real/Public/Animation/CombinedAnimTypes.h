@@ -46,6 +46,10 @@ struct FCombinedAnimsData : public FTableRowBase
 	/* The receiver will be move to this position when the animation start */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	ERelativePosition ReceiverForcePosition = ERelativePosition::Any;
+
+	/* The stamina to trigger this ability */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	float StaminaUsage;
 };
 
 USTRUCT(BlueprintType)

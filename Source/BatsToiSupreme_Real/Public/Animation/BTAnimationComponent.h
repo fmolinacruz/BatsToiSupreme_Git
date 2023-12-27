@@ -55,6 +55,12 @@ public:
 	{
 		return CurrentAnim.ReceiverCharacterRef;
 	}
+	
+	UFUNCTION(BlueprintPure, Category = "Batstoi|Animation Component")
+	FORCEINLINE FCombinedAnim& GetCurrentAnimationData()
+	{
+		return CurrentAnim;
+	}
 
 	UPROPERTY(BlueprintAssignable, Category = "Batstoi|Animation Component")
 	FOnCombinedAnimationStarted OnCombinedAnimationStarted;
