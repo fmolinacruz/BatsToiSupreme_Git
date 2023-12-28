@@ -49,18 +49,38 @@ public:
 
 	void InitializeInputComponent(UInputComponent* PlayerInputComponent);
 
+protected:
+	virtual void BeginPlay() override;
+
 	// Actions
 	void RequestStartMovement(const FInputActionValue& Value);
 	void RequestCancelMovement(const FInputActionValue& Value);
-
-protected:
-	virtual void BeginPlay() override;
+	void RequestLeftLightAction(const FInputActionValue& Value);
+	void RequestLeftHeavyAction(const FInputActionValue& Value);
+	void RequestRightLightAction(const FInputActionValue& Value);
+	void RequestRightHeavyAction(const FInputActionValue& Value);
+	void RequestSprawlAction(const FInputActionValue& Value);
 
 	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput")
 	TArray<FMappableConfig> DefaultInputConfigs;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
 	UInputAction* MoveInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* LeftLightInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* LeftHeavyInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* RightLightInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* RightHeavyInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* SprawlInputAction;
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Player")

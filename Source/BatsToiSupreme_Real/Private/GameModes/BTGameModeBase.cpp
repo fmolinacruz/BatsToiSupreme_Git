@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GameModes/BTGameModeBase.h"
+//#include "GameMapsSetting.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Characters/BTBaseCharacter.h"
@@ -50,16 +51,11 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 	// Check if there are at least 2 players, then set enemy
 	if (PlayerCharacters.Num() >= 2)
 	{
-		SetPlayerEnemy();
+		PlayerCharacters[0]->BTEnemy = PlayerCharacters[1];
+		PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
 	}
 
 	CurrentPlayerIndex++;
-}
-
-void ABTGameModeBase::SetPlayerEnemy_Implementation()
-{
-	PlayerCharacters[0]->BTEnemy = PlayerCharacters[1];
-	PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
 }
 
 void ABTGameModeBase::GetMainCameraRef()

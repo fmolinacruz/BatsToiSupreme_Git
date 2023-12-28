@@ -32,23 +32,24 @@ void UBTAnimationComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UBTAnimationComponent, CurrentAnim);
 }
 
-bool UBTAnimationComponent::TryPlayCombinedAnimation(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag)
+bool UBTAnimationComponent::TryPlayCombinedAnimation(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag, const ERelativeDirection& Direction)
 {
 	if (!CanPlayCombinedAnimWithCharacter(OtherCharacter, CombineAnimTag))
 	{
 		return false;
 	}
 
-	PlayCombinedAnimation(OtherCharacter, CombineAnimTag);
+	PlayCombinedAnimation(OtherCharacter, CombineAnimTag, Direction);
 	return true;
 }
 
-void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag)
+void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag, const ERelativeDirection& Direction)
 {
-	const FCombinedAnimsData* AnimsData = GetCombinedAnimData(CombineAnimTag);
+	const FCombinedAnimsData* AnimsData = GetCombinedAnimData(CombineAnimTag, Direction);
 	if (AnimsData && AnimsData->AttackerAnimMontage)
 	{
-		CurrentAnim = FCombinedAnim(*AnimsData, CombineAnimTag, OtherCharacter); // TODO: Polish code here
+		// TODO: Polish code here
+		CurrentAnim = FCombinedAnim(*AnimsData, CombineAnimTag, OtherCharacter); 
 		// TODO(Nghia Lam): Motion wrapping here
 
 		StartAnimOnAttacker();
@@ -57,7 +58,7 @@ void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* Oth
 	}
 }
 
-bool UBTAnimationComponent::PlayCombinedAnimation_Validate(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag)
+bool UBTAnimationComponent::PlayCombinedAnimation_Validate(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag, const ERelativeDirection& Direction)
 {
 	return true;
 }
@@ -133,13 +134,13 @@ void UBTAnimationComponent::HandleMontageFinished(UAnimMontage* InMontage, bool 
 	}
 }
 
-FCombinedAnimsData* UBTAnimationComponent::GetCombinedAnimData(const FGameplayTag& AnimTag) const
+FCombinedAnimsData* UBTAnimationComponent::GetCombinedAnimData(const FGameplayTag& AnimTag, const ERelativeDirection Direction) const
 {
 	const auto Anims = AnimsConfigDatabase->GetRowMap();
 	for (const auto Anim : Anims)
 	{
 		FCombinedAnimsData* CurrentData = reinterpret_cast<FCombinedAnimsData*>(Anim.Value);
-		if (CurrentData->AnimTag == AnimTag)
+		if (CurrentData->AnimTag == AnimTag && CurrentData->AnimDirection == Direction)
 		{
 			return CurrentData;
 		}

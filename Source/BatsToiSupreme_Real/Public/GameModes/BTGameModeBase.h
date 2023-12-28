@@ -15,7 +15,7 @@ class BATSTOISUPREME_REAL_API ABTGameModeBase : public AGameModeBase
 
 public:
 	ABTGameModeBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
-	
+
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
 protected:
@@ -23,7 +23,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<AActor> CameraClass;
-	
+
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTBaseCharacter> CharacterClass;
 
@@ -31,15 +31,12 @@ protected:
 	TArray<ABTBaseCharacter*> PlayerCharacters;
 
 private:
-	UFUNCTION(NetMulticast, Reliable)
-	void SetPlayerEnemy();
-	
 	void GetMainCameraRef();
 	void GetStartSpots();
-	
+
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> MainCameraRef;
-	
+
 	UPROPERTY(Transient)
 	TArray<AActor*> StartSpots;
 

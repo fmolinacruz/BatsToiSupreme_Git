@@ -2,29 +2,53 @@
 
 #include "Characters/BTBaseCharacter.h"
 
+#include "Animation/BTAnimationComponent.h"
+#include "Characters/BTCharacterAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer), MovementVelocity(FVector::Zero())
+	: Super(ObjectInitializer), MovementBufferX(0.0f), MovementBufferY(0.0f)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Enable replication for this actor
-	bReplicates = true;
-	// Enable replication of movement
-	SetReplicateMovement(true);
-
 	// Basic setup
-	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false; // Disable controller rotation
+	bReplicates = true;                // Enable replication for this actor
+	SetReplicateMovement(true);        // Enable replication of movement
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+
+	// Components
+	BTAbilityHandler = CreateDefaultSubobject<UBTCharacterAbilityHandler>(TEXT("Ability Handler"));
+	BTAnimationHandler = CreateDefaultSubobject<UBTAnimationComponent>(TEXT("Animation Handler"));
+}
+
+void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
+	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
+	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
+	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
+	DOREPLIFETIME(ABTBaseCharacter, MovementBufferY);
 }
 
 void ABTBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
+		}
+	}
 }
 
 void ABTBaseCharacter::Tick(float DeltaSeconds)
@@ -40,86 +64,84 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
 {
-	Server_AddMovementBuffer(MovementVector);
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		Server_AddMovementBuffer(this, MovementVector);
+	}
 }
 
-void ABTBaseCharacter::Server_AddMovementBuffer_Implementation(const FVector2D& MovementVector)
+void ABTBaseCharacter::Server_AddMovementBuffer_Implementation(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector)
 {
-	const FRotator GameViewRotator(0, 0, GetControlRotation().Yaw);
+	// TODO: This seems complicated, can we simplify this.
+	const FRotator GameViewRotator(0, 0, InCharacter->GetControlRotation().Yaw);
 	const FVector ForwardVector = MovementVector.Y * UKismetMathLibrary::GetForwardVector(GameViewRotator);
 	const FVector RightVector = MovementVector.X * UKismetMathLibrary::GetRightVector(GameViewRotator);
 
-	MovementVelocity = ForwardVector + RightVector;
+	FVector MovementVelocity = ForwardVector + RightVector;
 	MovementVelocity.Normalize(0.001);
-}
 
-bool ABTBaseCharacter::Server_AddMovementBuffer_Validate(const FVector2D& MovementVector)
-{
-	// Add validation of the input here if necessary
-	return true;
+	const float DotProductForward = FVector::DotProduct(MovementVelocity, InCharacter->GetActorForwardVector());
+	const float DotProductRight = FVector::DotProduct(MovementVelocity, InCharacter->GetActorRightVector());
+
+	InCharacter->MovementBufferX = FMath::Lerp(MovementBufferX, DotProductForward * 100.0f, 0.3f);
+	InCharacter->MovementBufferY = FMath::Lerp(MovementBufferY, DotProductRight * 100.0f, 0.3f);
 }
 
 void ABTBaseCharacter::RefreshMovementBuffer()
 {
-	Server_RefreshMovementBuffer();
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		Server_RefreshMovementBuffer(this);
+	}
 }
 
-void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation()
+void ABTBaseCharacter::SetCanAdjustRotation(const bool NewCanAdjust)
 {
-	MovementVelocity = FVector::Zero();
+	bCanAdjustRotation = NewCanAdjust;
 }
 
-bool ABTBaseCharacter::Server_RefreshMovementBuffer_Validate()
+void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharacter* InCharacter)
 {
-	// Add validation of the input here if necessary
-	return true;
+	InCharacter->MovementBufferX = 0.0f;
+	InCharacter->MovementBufferY = 0.0f;
 }
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 {
-	PerformRotation(DeltaSeconds);
-
+	if (!bCanAdjustRotation)
+	{
+		return;
+	}
+	
+	Internal_RotateTowardEnemy(this, DeltaSeconds);
 	if (IsLocallyControlled() && !HasAuthority())
 	{
 		Server_RotateTowardEnemy(this, DeltaSeconds);
 	}
 }
 
-void ABTBaseCharacter::PerformRotation(float DeltaSeconds)
+void ABTBaseCharacter::HandleTriggerAbilityInput(const EAbilityInputType InputType)
 {
-	if (BTEnemy == nullptr)
+	if (IsLocallyControlled() || HasAuthority())
 	{
-		BTLOG_WARNING("BTEnemy is not set correctly !!");
-		return;
+		BTAbilityHandler->ActivateAbilityWithInput(InputType);
 	}
+}
 
-	const FVector StartLocation = GetActorLocation();
-	const FVector TargetLocation = BTEnemy->GetActorLocation();
-
-	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
-	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, 100.0f);
-	SetActorRotation(NewRotation);
-
-	const bool IsStandingStillSelf = GetVelocity().Size() == 0;
-	const bool IsStandingStillEnemy = BTEnemy->GetVelocity().Size() == 0;
-
-	if (IsStandingStillSelf == true && IsStandingStillEnemy == false)
+void ABTBaseCharacter::HandleTriggerAbilityTag(const FGameplayTag AbilityTag, const ERelativeDirection Direction)
+{
+	if (IsLocallyControlled() || HasAuthority())
 	{
-		const FVector DirectionToEnemy = BTEnemy->GetActorLocation() - GetActorLocation();
-		const FVector VelocityOfEnemy = BTEnemy->GetVelocity();
-		const FVector CrossProduct = FVector::CrossProduct(DirectionToEnemy, VelocityOfEnemy);
-
-		bIsTurningRight = CrossProduct.Z > 0;
-		bIsTurningLeft = CrossProduct.Z < 0;
-	}
-	else
-	{
-		bIsTurningRight = false;
-		bIsTurningLeft = false;
+		BTAbilityHandler->ActivateAbilityWithTag(AbilityTag, Direction);
 	}
 }
 
 void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
+{
+	Internal_RotateTowardEnemy(InCharacter, DeltaSeconds);
+}
+
+void ABTBaseCharacter::Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
 	if (InCharacter->BTEnemy == nullptr)
 	{
@@ -152,19 +174,3 @@ void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter*
 		InCharacter->bIsTurningLeft = false;
 	}
 }
-
-bool ABTBaseCharacter::Server_RotateTowardEnemy_Validate(ABTBaseCharacter* InCharacter, float DeltaSeconds)
-{
-	return true;
-}
-
-void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
-	DOREPLIFETIME(ABTBaseCharacter, MovementVelocity);
-	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
-	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
-}
-
