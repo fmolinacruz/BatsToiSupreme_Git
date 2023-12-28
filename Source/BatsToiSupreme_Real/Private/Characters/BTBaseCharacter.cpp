@@ -3,6 +3,7 @@
 #include "Characters/BTBaseCharacter.h"
 
 #include "Animation/BTAnimationComponent.h"
+#include "Characters/BTCharacterAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
