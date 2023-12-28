@@ -82,7 +82,7 @@ void UBTPlayerInput::RequestLeftLightAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::LeftLight);
+		PlayerCharacter->HandleTriggerAbilityInput(EAbilityInputType::LeftLight);
 	}
 }
 
@@ -90,7 +90,7 @@ void UBTPlayerInput::RequestLeftHeavyAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::LeftHeavy);
+		PlayerCharacter->HandleTriggerAbilityInput(EAbilityInputType::LeftHeavy);
 	}
 }
 
@@ -98,7 +98,7 @@ void UBTPlayerInput::RequestRightLightAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::RightLight);
+		PlayerCharacter->HandleTriggerAbilityInput(EAbilityInputType::RightLight);
 	}
 }
 
@@ -106,7 +106,7 @@ void UBTPlayerInput::RequestRightHeavyAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::RightHeavy);
+		PlayerCharacter->HandleTriggerAbilityInput(EAbilityInputType::RightHeavy);
 	}
 }
 
@@ -114,6 +114,6 @@ void UBTPlayerInput::RequestSprawlAction(const FInputActionValue& Value)
 {
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->HandleTriggerAbility(EAbilityInputType::Sprawl);
+		PlayerCharacter->HandleTriggerAbilityInput(EAbilityInputType::Sprawl);
 	}
 }
