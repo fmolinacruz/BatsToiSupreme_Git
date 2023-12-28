@@ -94,6 +94,11 @@ void ABTBaseCharacter::RefreshMovementBuffer()
 	}
 }
 
+void ABTBaseCharacter::SetCanAdjustRotation(const bool NewCanAdjust)
+{
+	bCanAdjustRotation = NewCanAdjust;
+}
+
 void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharacter* InCharacter)
 {
 	InCharacter->MovementBufferX = 0.0f;
@@ -102,6 +107,11 @@ void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharac
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 {
+	if (!bCanAdjustRotation)
+	{
+		return;
+	}
+	
 	Internal_RotateTowardEnemy(this, DeltaSeconds);
 	if (IsLocallyControlled() && !HasAuthority())
 	{

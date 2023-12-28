@@ -26,6 +26,9 @@ public:
 	void RefreshMovementBuffer();
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
+	void SetCanAdjustRotation(const bool NewCanAdjust);
+	
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RotateTowardEnemy(float DeltaSeconds);
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Ability")
@@ -65,6 +68,9 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
+	bool bCanAdjustRotation = true;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	float AutoTurningRate = 50.0f;
 
