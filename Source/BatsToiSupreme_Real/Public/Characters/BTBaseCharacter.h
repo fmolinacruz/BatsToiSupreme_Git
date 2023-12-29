@@ -69,6 +69,12 @@ public:
 
 	UPROPERTY(Replicated, BlueprintReadWrite, Category = "BatstoiCharacter|PlayerID")
 	int32 PlayerIndex;
+
+	UPROPERTY(Replicated, BlueprintReadWrite, Category = "BatstoiCharacter|Attribute")
+	float StaminaAttribute = 0.0f;
+
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Attribute")
+	float GetStaminaProgress() const;
 	
 protected:
 	virtual void BeginPlay() override;
