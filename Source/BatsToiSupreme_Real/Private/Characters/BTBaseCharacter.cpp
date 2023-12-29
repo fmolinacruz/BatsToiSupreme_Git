@@ -35,6 +35,7 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferY);
+	DOREPLIFETIME(ABTBaseCharacter, PlayerIndex);
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -134,6 +135,11 @@ void ABTBaseCharacter::HandleTriggerAbilityTag(const FGameplayTag AbilityTag, co
 	{
 		BTAbilityHandler->ActivateAbilityWithTag(AbilityTag, Direction);
 	}
+}
+
+void ABTBaseCharacter::SetPlayerIndex(int32 NewIndex)
+{
+	PlayerIndex = NewIndex;
 }
 
 void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
