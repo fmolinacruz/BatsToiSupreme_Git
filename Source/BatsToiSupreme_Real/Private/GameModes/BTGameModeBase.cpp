@@ -55,6 +55,8 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 		PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
 	}
 
+	SpawnedCharacter->SetPlayerIndex(CurrentPlayerIndex);
+
 	CurrentPlayerIndex++;
 }
 

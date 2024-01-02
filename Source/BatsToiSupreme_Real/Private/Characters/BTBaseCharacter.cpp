@@ -24,6 +24,7 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	// Components
 	BTAbilityHandler = CreateDefaultSubobject<UBTCharacterAbilityHandler>(TEXT("Ability Handler"));
 	BTAnimationHandler = CreateDefaultSubobject<UBTAnimationComponent>(TEXT("Animation Handler"));
+
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -35,6 +36,8 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferY);
+	DOREPLIFETIME(ABTBaseCharacter, PlayerIndex);
+	DOREPLIFETIME(ABTBaseCharacter, StaminaAttribute);
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -60,6 +63,17 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 	{
 		RotateTowardEnemy(DeltaSeconds);
 	}
+	//StaminaAttribute = GetStaminaProgress();
+	StaminaAttribute = GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
+}
+
+float ABTBaseCharacter::GetStaminaProgress() const
+{
+	if (AbilitySystemComponent)
+	{
+		return GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
+	}
+	return 0.0f;
 }
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
@@ -134,6 +148,11 @@ void ABTBaseCharacter::HandleTriggerAbilityTag(const FGameplayTag AbilityTag, co
 	{
 		BTAbilityHandler->ActivateAbilityWithTag(AbilityTag, Direction);
 	}
+}
+
+void ABTBaseCharacter::SetPlayerIndex(int32 NewIndex)
+{
+	PlayerIndex = NewIndex;
 }
 
 void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
