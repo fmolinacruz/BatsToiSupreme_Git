@@ -24,7 +24,6 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	// Components
 	BTAbilityHandler = CreateDefaultSubobject<UBTCharacterAbilityHandler>(TEXT("Ability Handler"));
 	BTAnimationHandler = CreateDefaultSubobject<UBTAnimationComponent>(TEXT("Animation Handler"));
-
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
