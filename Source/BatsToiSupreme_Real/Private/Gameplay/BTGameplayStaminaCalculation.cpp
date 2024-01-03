@@ -6,21 +6,10 @@
 #include "Animation/BTAnimationComponent.h"
 #include "Animation/CombinedAnimTypes.h"
 #include "Characters/BTBaseCharacter.h"
-#include "Characters/BTCharacterAttributeSet.h"
 #include "Utilities/BTLogging.h"
 
 UBTGameplayStaminaCalculation::UBTGameplayStaminaCalculation()
 {
-	StaminaDef.AttributeToCapture = UBTCharacterAttributeSet::GetStaminaAttribute();
-	StaminaDef.AttributeSource = EGameplayEffectAttributeCaptureSource::Target;
-	StaminaDef.bSnapshot = false;
-
-	MaxStaminaDef.AttributeToCapture = UBTCharacterAttributeSet::GetMaxStaminaAttribute();
-	MaxStaminaDef.AttributeSource = EGameplayEffectAttributeCaptureSource::Target;
-	MaxStaminaDef.bSnapshot = false;
-
-	RelevantAttributesToCapture.Add(StaminaDef);
-	RelevantAttributesToCapture.Add(MaxStaminaDef);
 }
 
 float UBTGameplayStaminaCalculation::CalculateBaseMagnitude_Implementation(const FGameplayEffectSpec& Spec) const

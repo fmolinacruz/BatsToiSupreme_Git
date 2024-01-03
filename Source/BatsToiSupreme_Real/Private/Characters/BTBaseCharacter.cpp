@@ -3,6 +3,7 @@
 #include "Characters/BTBaseCharacter.h"
 
 #include "Animation/BTAnimationComponent.h"
+#include "Characters/BTCharacterAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
@@ -34,6 +35,8 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferY);
+	DOREPLIFETIME(ABTBaseCharacter, PlayerIndex);
+	DOREPLIFETIME(ABTBaseCharacter, StaminaAttribute);
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -59,6 +62,17 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 	{
 		RotateTowardEnemy(DeltaSeconds);
 	}
+	//StaminaAttribute = GetStaminaProgress();
+	StaminaAttribute = GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
+}
+
+float ABTBaseCharacter::GetStaminaProgress() const
+{
+	if (AbilitySystemComponent)
+	{
+		return GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
+	}
+	return 0.0f;
 }
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
@@ -94,6 +108,11 @@ void ABTBaseCharacter::RefreshMovementBuffer()
 	}
 }
 
+void ABTBaseCharacter::SetCanAdjustRotation(const bool NewCanAdjust)
+{
+	bCanAdjustRotation = NewCanAdjust;
+}
+
 void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharacter* InCharacter)
 {
 	InCharacter->MovementBufferX = 0.0f;
@@ -102,6 +121,11 @@ void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharac
 
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 {
+	if (!bCanAdjustRotation)
+	{
+		return;
+	}
+	
 	Internal_RotateTowardEnemy(this, DeltaSeconds);
 	if (IsLocallyControlled() && !HasAuthority())
 	{
@@ -123,6 +147,11 @@ void ABTBaseCharacter::HandleTriggerAbilityTag(const FGameplayTag AbilityTag, co
 	{
 		BTAbilityHandler->ActivateAbilityWithTag(AbilityTag, Direction);
 	}
+}
+
+void ABTBaseCharacter::SetPlayerIndex(int32 NewIndex)
+{
+	PlayerIndex = NewIndex;
 }
 
 void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)

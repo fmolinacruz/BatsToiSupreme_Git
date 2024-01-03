@@ -2,6 +2,7 @@
 
 #include "Characters/BTCharacterAttributeSet.h"
 
+#include "Components/GSCCoreComponent.h"
 #include "Net/UnrealNetwork.h"
 
 UBTCharacterAttributeSet::UBTCharacterAttributeSet()
@@ -77,6 +78,15 @@ void UBTCharacterAttributeSet::SetAttributeClamped(const FGameplayAttribute& Att
 
 void UBTCharacterAttributeSet::HandleStaminaAttribute(const FGSCAttributeSetExecutionData& ExecutionData)
 {
+	UGSCCoreComponent* TargetCoreComponent = ExecutionData.TargetCoreComponent;
+	
 	const float ClampMinimumValue = GetClampMinimumValueFor(GetStaminaAttribute());
 	SetStamina(FMath::Clamp(GetStamina(), ClampMinimumValue, GetMaxStamina()));
+	
+	if (TargetCoreComponent)
+	{
+		const float DeltaValue = ExecutionData.DeltaValue;
+		const FGameplayTagContainer SourceTags = ExecutionData.SourceTags;
+		TargetCoreComponent->HandleStaminaChange(DeltaValue, SourceTags);
+	}
 }

@@ -26,6 +26,9 @@ public:
 	void RefreshMovementBuffer();
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
+	void SetCanAdjustRotation(const bool NewCanAdjust);
+	
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Movement")
 	void RotateTowardEnemy(float DeltaSeconds);
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Ability")
@@ -33,6 +36,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Ability")
 	void HandleTriggerAbilityTag(const FGameplayTag AbilityTag, const ERelativeDirection Direction = ERelativeDirection::None);
+
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|PlayerID")
+	void SetPlayerIndex(int32 NewIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Component")
 	FORCEINLINE UBTCharacterAbilityHandler* GetAbilityHandler() const
@@ -60,11 +66,23 @@ public:
 
 	UPROPERTY(Replicated, BlueprintReadWrite, Category = "BatstoiCharacter|Enemy")
 	TObjectPtr<ABTBaseCharacter> BTEnemy;
+
+	UPROPERTY(Replicated, BlueprintReadWrite, Category = "BatstoiCharacter|PlayerID")
+	int32 PlayerIndex;
+
+	UPROPERTY(Replicated, BlueprintReadWrite, Category = "BatstoiCharacter|Attribute")
+	float StaminaAttribute = 0.0f;
+
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Attribute")
+	float GetStaminaProgress() const;
 	
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
+	bool bCanAdjustRotation = true;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	float AutoTurningRate = 50.0f;
 

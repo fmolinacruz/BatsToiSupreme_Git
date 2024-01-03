@@ -33,7 +33,7 @@ public:
 	void ActivateAbilityWithInput(const EAbilityInputType InputType);
 	
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|Ability")
-	void ActivateAbilityWithTag(const FGameplayTag AbilityTag, const ERelativeDirection Direction);
+	void ActivateAbilityWithTag(const FGameplayTag& AbilityTag, const ERelativeDirection Direction);
 
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|Ability")
 	void ProcessNewInputDecision(const EAbilityInputType InputType, const FGameplayTag& NewInputTags);
