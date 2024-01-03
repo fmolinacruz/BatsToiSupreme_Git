@@ -47,6 +47,7 @@
 *.VC.opendb
 *.modules
 *.temp
+BatsToiSupreme_Real.sln
 
 # Precompiled Assets
 SourceArt/**/*.png
