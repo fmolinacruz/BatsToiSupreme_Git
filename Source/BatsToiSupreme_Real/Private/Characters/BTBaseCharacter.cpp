@@ -8,6 +8,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
+#include "Engine/GameEngine.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MovementBufferX(0.0f), MovementBufferY(0.0f)
@@ -73,6 +74,11 @@ float ABTBaseCharacter::GetStaminaProgress() const
 		return GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
 	}
 	return 0.0f;
+}
+
+void ABTBaseCharacter::SetStaminaAttribute(float value)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("SetStaminaAttribute %f"), value));
 }
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)

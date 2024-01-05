@@ -75,6 +75,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Attribute")
 	float GetStaminaProgress() const;
+
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Attribute")
+	void SetStaminaAttribute(float value);
 	
 protected:
 	virtual void BeginPlay() override;
