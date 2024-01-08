@@ -52,6 +52,7 @@ void ABTBaseCharacter::BeginPlay()
 			AnimInstance->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
 		}
 	}
+
 }
 
 void ABTBaseCharacter::Tick(float DeltaSeconds)
@@ -64,7 +65,6 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 		RotateTowardEnemy(DeltaSeconds);
 	}
 	//StaminaAttribute = GetStaminaProgress();
-	StaminaAttribute = GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
 }
 
 float ABTBaseCharacter::GetStaminaProgress() const
@@ -76,9 +76,16 @@ float ABTBaseCharacter::GetStaminaProgress() const
 	return 0.0f;
 }
 
-void ABTBaseCharacter::SetStaminaAttribute(float value)
+void ABTBaseCharacter::SetStaminaAttribute1(float value)
 {
+
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("SetStaminaAttribute %f"), value));
+
+	StaminaAttribute = GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
+
+	StaminaAttribute -= value;
+	StaminaAttribute = fmax(0, StaminaAttribute);
+	BTLOG_WARNING("SetStaminaAttribute Result: %f", StaminaAttribute);
 }
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
