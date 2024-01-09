@@ -76,16 +76,18 @@ float ABTBaseCharacter::GetStaminaProgress() const
 	return 0.0f;
 }
 
-void ABTBaseCharacter::SetStaminaAttribute1(float value)
+void ABTBaseCharacter::SetStaminaProgress(float value)
 {
+	GetAbilitySystemComponent()->SetNumericAttributeBase(UBTCharacterAttributeSet::GetStaminaAttribute(), value);
+}
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("SetStaminaAttribute %f"), value));
-
-	StaminaAttribute = GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
-
+void ABTBaseCharacter::SetStaminaConsumption(float value)
+{
+	StaminaAttribute = GetStaminaProgress();
 	StaminaAttribute -= value;
 	StaminaAttribute = fmax(0, StaminaAttribute);
-	BTLOG_WARNING("SetStaminaAttribute Result: %f", StaminaAttribute);
+	SetStaminaProgress(StaminaAttribute);
+
 }
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
