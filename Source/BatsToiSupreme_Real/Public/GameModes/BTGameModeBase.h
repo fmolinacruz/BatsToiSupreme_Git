@@ -27,8 +27,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTBaseCharacter> CharacterClass;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Players")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
 	TArray<ABTBaseCharacter*> PlayerCharacters;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	bool bIsLocal = false;
+
 
 private:
 	void GetMainCameraRef();

@@ -23,6 +23,11 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
 
+	if (bIsLocal)
+	{
+		return;
+	}
+
 	BTLOG_DISPLAY("[ABTGameModeBase] - OnPostLogin: Login New Player %s", *NewPlayer->GetName());
 	if (MainCameraRef == nullptr)
 	{
