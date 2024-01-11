@@ -3,32 +3,66 @@
 
 #include "Input/BTInputReceiver.h"
 
+#include "PlayerCommon/BTPlayerController.h"
+#include "PlayerCommon/BTUISelectInput.h"
+#include "GameModes/BTGameModeBase.h"
+
 // Sets default values
 ABTInputReceiver::ABTInputReceiver()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
+	// Create the input component
+	BTUISelectionInputComponent = CreateDefaultSubobject<UBTUISelectInput>(TEXT("InputComponent"));
 }
 
-// Called when the game starts or when spawned
 void ABTInputReceiver::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
-// Called every frame
-void ABTInputReceiver::Tick(float DeltaTime)
+void ABTInputReceiver::InitializeWithPlayerController(ABTPlayerController* NewPlayerController, int32 PlayerIndex)
 {
-	Super::Tick(DeltaTime);
-
+	if (!NewPlayerController)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("NewPlayerController is nullptr"));
+		}
+		return;
+	}
+	PlayerController = NewPlayerController;
+	CurrentPlayerIndex = PlayerIndex;
 }
 
-// Called to bind functionality to input
-void ABTInputReceiver::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ABTInputReceiver::OnCharacterSelected_Implementation(int32 CharacterID)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	if (!PlayerController)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("OnCharacterSelected old is nullptr"));
+		}
+		return;
+	}
 
+	// Assuming your GameMode has a function called 'SpawnPlayerCharacter' that takes a PlayerController, CharacterID, and PlayerIndex
+	ABTGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ABTGameModeBase>();
+	if (!GameMode)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GameMode is nullptr"));
+		}
+		return;
+	}
+
+	if (bHasSpawnedPlayer)
+	{
+		return;
+	}
+
+	GameMode->SpawnPlayerCharacter(PlayerController, CharacterID, CurrentPlayerIndex);
+	bHasSpawnedPlayer = true;
 }
-

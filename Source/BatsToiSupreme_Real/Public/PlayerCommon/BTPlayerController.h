@@ -7,6 +7,7 @@
 #include "BTPlayerController.generated.h"
 
 class ABTPlayerCharacter;
+class ABTInputReceiver;
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTPlayerController : public AGSCModularPlayerController
@@ -22,4 +23,7 @@ protected:
 private:
 	TObjectPtr<ABTPlayerCharacter> PlayerCharacter;
 	bool bHasSetupInput;
+
+	// InputReceiver
+	TObjectPtr<ABTInputReceiver> InputReceiver;
 };

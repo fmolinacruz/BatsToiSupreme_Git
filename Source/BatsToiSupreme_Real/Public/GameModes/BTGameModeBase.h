@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Input/BTInputReceiver.h"
 #include "BTGameModeBase.generated.h"
 
 class ABTBaseCharacter;
@@ -31,6 +32,9 @@ protected:
 	TArray<ABTBaseCharacter*> PlayerCharacters;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	TSubclassOf<ABTInputReceiver> InputReceiverClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	bool bIsLocal = false;
 
 
@@ -45,4 +49,11 @@ private:
 	TArray<AActor*> StartSpots;
 
 	int CurrentPlayerIndex = 0;
+
+//public:
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Batstoi")
+//	bool bUseInputReceiver = false;
+
+public:
+	void SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 };

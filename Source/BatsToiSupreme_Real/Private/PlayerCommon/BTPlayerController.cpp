@@ -2,6 +2,9 @@
 
 #include "PlayerCommon/BTPlayerController.h"
 
+#include "Input/BTInputReceiver.h"
+#include "PlayerCommon/BTUISelectInput.h"
+
 #include "Characters/BTPlayerCharacter.h"
 #include "PlayerCommon/BTPlayerInput.h"
 #include "Utilities/BTLogging.h"
@@ -25,11 +28,26 @@ void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 	if (PlayerCharacter)
 	{
 		PlayerCharacter->GetBTInputComponent()->InitializeInputComponent(InputComponent);
+		bHasSetupInput = true;
 	}
 	else
 	{
-		BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter!");
+		//BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter!");
+		InputReceiver = Cast<ABTInputReceiver>(InPawn);
+		if (InputReceiver)
+		{
+			UBTUISelectInput* SelectionInputComponent = InputReceiver->GetBTUISelectionInputComponent();
+			if (SelectionInputComponent)
+			{
+				SelectionInputComponent->InitializeWithInputReceiver(InputReceiver);
+				SelectionInputComponent->InitializeInputComponent(InputComponent);
+			}
+		}
+		else
+		{
+			BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter or ABTInputReceiver!");
+		}
 	}
-	bHasSetupInput = true;
+	
 }
 

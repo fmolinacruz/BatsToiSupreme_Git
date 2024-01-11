@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "Components/InputComponent.h"
 #include "BTInputReceiver.generated.h"
+
+class UBTUISelectInput;
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTInputReceiver : public APawn
@@ -15,15 +18,25 @@ public:
 	// Sets default values for this pawn's properties
 	ABTInputReceiver();
 
+	void InitializeWithPlayerController(class ABTPlayerController* NewPlayerController, int32 PlayerIndex);
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
+	UBTUISelectInput* GetBTUISelectionInputComponent() const { return BTUISelectionInputComponent; }
+
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Batstoi|UI")
+	void OnCharacterSelected(int32 CharacterID);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|UI")
+	TObjectPtr<UBTUISelectInput> BTUISelectionInputComponent;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+private:
+	TObjectPtr<ABTPlayerController> PlayerController;
+	int32 CurrentPlayerIndex;
+	bool bHasSpawnedPlayer = false;
 };
