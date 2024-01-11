@@ -8,6 +8,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
+#include "Engine/GameEngine.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MovementBufferX(0.0f), MovementBufferY(0.0f)
@@ -51,6 +52,7 @@ void ABTBaseCharacter::BeginPlay()
 			AnimInstance->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
 		}
 	}
+
 }
 
 void ABTBaseCharacter::Tick(float DeltaSeconds)
@@ -63,7 +65,6 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 		RotateTowardEnemy(DeltaSeconds);
 	}
 	//StaminaAttribute = GetStaminaProgress();
-	StaminaAttribute = GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
 }
 
 float ABTBaseCharacter::GetStaminaProgress() const
@@ -73,6 +74,20 @@ float ABTBaseCharacter::GetStaminaProgress() const
 		return GetAbilitySystemComponent()->GetNumericAttribute(UBTCharacterAttributeSet::GetStaminaAttribute());
 	}
 	return 0.0f;
+}
+
+void ABTBaseCharacter::SetStaminaProgress(float value)
+{
+	GetAbilitySystemComponent()->SetNumericAttributeBase(UBTCharacterAttributeSet::GetStaminaAttribute(), value);
+}
+
+void ABTBaseCharacter::SetStaminaConsumption(float value)
+{
+	StaminaAttribute = GetStaminaProgress();
+	StaminaAttribute -= value;
+	StaminaAttribute = fmax(0, StaminaAttribute);
+	SetStaminaProgress(StaminaAttribute);
+
 }
 
 void ABTBaseCharacter::AddMovementBuffer(const FVector2D& MovementVector)
