@@ -14,5 +14,4 @@ class BATSTOISUPREME_REAL_API AInputReceive : public APawn
 public:
 	// Sets default values for this pawn's properties
 	AInputReceive();
-
 };
