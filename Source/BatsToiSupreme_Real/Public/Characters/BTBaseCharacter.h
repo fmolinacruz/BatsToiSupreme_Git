@@ -8,6 +8,7 @@
 #include "ModularGameplayActors/GSCModularCharacter.h"
 #include "BTBaseCharacter.generated.h"
 
+class UMotionWarpingComponent;
 class UBTCharacterMovement;
 class UBTAnimationComponent;
 
@@ -50,6 +51,12 @@ public:
 	FORCEINLINE UBTAnimationComponent* GetAnimationHandler() const
 	{
 		return BTAnimationHandler;
+	}
+	
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Component")
+	FORCEINLINE UMotionWarpingComponent* GetMotionWarp() const
+	{
+		return BTMotionWarp;
 	}
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Movement")
@@ -97,6 +104,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Component")
 	TObjectPtr<UBTAnimationComponent> BTAnimationHandler;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Component")
+	TObjectPtr<UMotionWarpingComponent> BTMotionWarp;
 
 private:
 	UFUNCTION(Server, Unreliable)

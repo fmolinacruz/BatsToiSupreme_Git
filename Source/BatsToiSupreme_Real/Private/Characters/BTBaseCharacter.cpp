@@ -2,13 +2,13 @@
 
 #include "Characters/BTBaseCharacter.h"
 
+#include "MotionWarpingComponent.h"
 #include "Animation/BTAnimationComponent.h"
 #include "Characters/BTCharacterAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
-#include "Engine/GameEngine.h"
 
 ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MovementBufferX(0.0f), MovementBufferY(0.0f)
@@ -25,6 +25,7 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	// Components
 	BTAbilityHandler = CreateDefaultSubobject<UBTCharacterAbilityHandler>(TEXT("Ability Handler"));
 	BTAnimationHandler = CreateDefaultSubobject<UBTAnimationComponent>(TEXT("Animation Handler"));
+	BTMotionWarp = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("Motion Warping"));
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

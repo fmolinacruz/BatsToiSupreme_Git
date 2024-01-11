@@ -16,6 +16,7 @@ public class BatsToiSupreme_Real : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"HeadMountedDisplay", 
+			"MotionWarping",
 			"GASCompanion",
             "EngineSettings",
             "GameplayAbilities",

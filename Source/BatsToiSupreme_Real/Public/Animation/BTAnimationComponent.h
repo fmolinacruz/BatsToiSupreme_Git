@@ -11,6 +11,8 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombinedAnimationStarted, const FGameplayTag&, animTag);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombinedAnimationEnded, const FGameplayTag&, animTag);
 
+// Forward declaration
+class ABTBaseCharacter;
 struct FCombinedAnimsData;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -45,7 +47,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintPure, Category = "Batstoi|Animation Component")
-	FORCEINLINE ACharacter* GetCharacterOwner() const
+	FORCEINLINE ABTBaseCharacter* GetCharacterOwner() const
 	{
 		return CharacterOwner;
 	}
@@ -106,5 +108,5 @@ private:
 	UPROPERTY(Replicated)
 	bool bIsPlayingCombinedAnim = false;
 
-	TObjectPtr<ACharacter> CharacterOwner;
+	TObjectPtr<ABTBaseCharacter> CharacterOwner;
 };

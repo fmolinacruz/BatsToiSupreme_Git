@@ -2,6 +2,10 @@
 
 #include "Animation/BTAnimationComponent.h"
 
+#include "MotionWarpingComponent.h"
+#include "RootMotionModifier.h"
+#include "RootMotionModifier_SkewWarp.h"
+#include "Characters/BTBaseCharacter.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
@@ -16,10 +20,10 @@ void UBTAnimationComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CharacterOwner = Cast<ACharacter>(GetOwner());
+	CharacterOwner = Cast<ABTBaseCharacter>(GetOwner());
 	if (!CharacterOwner)
 	{
-		BTLOG_ERROR("Please ONLY assign this component to ACharacter !");
+		BTLOG_ERROR("Please ONLY assign this component to ABTBaseCharacter !");
 	}
 }
 
@@ -49,8 +53,33 @@ void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* Oth
 	if (AnimsData && AnimsData->AttackerAnimMontage)
 	{
 		// TODO: Polish code here
-		CurrentAnim = FCombinedAnim(*AnimsData, CombineAnimTag, OtherCharacter); 
-		// TODO(Nghia Lam): Motion wrapping here
+		CurrentAnim = FCombinedAnim(*AnimsData, CombineAnimTag, OtherCharacter);
+
+		// Motion Warp
+		if (CurrentAnim.AnimData.ReceiverForcePosition == ERelativePosition::SyncBone && CharacterOwner->GetMotionWarp())
+		{
+			FTransform TargetTransform = CharacterOwner->BTEnemy->GetTransform();
+			TargetTransform.SetLocation(TargetTransform.GetLocation() - CurrentAnim.AnimData.ReceiverSyncPosition.GetLocation());
+			TargetTransform.SetRotation(TargetTransform.GetRotation() - CurrentAnim.AnimData.ReceiverSyncPosition.GetRotation());
+			
+			const FMotionWarpingTarget NewTarget = FMotionWarpingTarget(CurrentAnim.AnimData.WarpSyncPoint, TargetTransform);
+			
+			UMotionWarpingComponent* MotionComp = CharacterOwner->GetMotionWarp();
+			MotionComp->AddOrUpdateWarpTarget(NewTarget);
+
+			URootMotionModifier_SkewWarp::AddRootMotionModifierSkewWarp(
+				MotionComp,
+				CurrentAnim.AnimData.AttackerAnimMontage,
+				0.0f, CurrentAnim.AnimData.WarpDuration,
+				CurrentAnim.AnimData.WarpSyncPoint,
+				EWarpPointAnimProvider::None,
+				TargetTransform,
+				NAME_None,
+				true, true, true,
+				EMotionWarpRotationType::Facing,
+				CurrentAnim.AnimData.WarpRotationMultiplier
+			);
+		}
 
 		StartAnimOnAttacker();
 		StartAnimOnReceiver();

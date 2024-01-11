@@ -48,6 +48,15 @@ struct FCombinedAnimsData : public FTableRowBase
 	ERelativePosition ReceiverForcePosition = ERelativePosition::Any;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	FName WarpSyncPoint = "Sync";
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	float WarpDuration = 0.2f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	float WarpRotationMultiplier = 0.5f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	FTransform ReceiverSyncPosition;
 
 	/* The stamina to trigger this ability */
