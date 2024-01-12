@@ -24,8 +24,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
 	UBTUISelectInput* GetBTUISelectionInputComponent() const { return BTUISelectionInputComponent; }
 
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Batstoi|UI")
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
 	void OnCharacterSelected(int32 CharacterID);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Batstoi|UI")
+	void Server_OnCharacterSelected(int32 CharacterID);
+
+	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Batstoi|UI")
+	void Multicast_OnCharacterSelected(int32 CharacterID);
 
 protected:
 	// Called when the game starts or when spawned
@@ -35,8 +41,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|UI")
 	TObjectPtr<UBTUISelectInput> BTUISelectionInputComponent;
 
-private:
-	TObjectPtr<ABTPlayerController> PlayerController;
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|PlayerIndex")
 	int32 CurrentPlayerIndex;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|PlayerController")
+	TObjectPtr<ABTPlayerController> CurrentPlayerController;
+
+private:
 	bool bHasSpawnedPlayer = false;
+
+protected:
+	// Override replication
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

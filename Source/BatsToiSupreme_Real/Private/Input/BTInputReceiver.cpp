@@ -7,14 +7,26 @@
 #include "PlayerCommon/BTUISelectInput.h"
 #include "GameModes/BTGameModeBase.h"
 
+#include "Net/UnrealNetwork.h"
+
 // Sets default values
 ABTInputReceiver::ABTInputReceiver()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
+	bReplicates = true; 
+
 	// Create the input component
 	BTUISelectionInputComponent = CreateDefaultSubobject<UBTUISelectInput>(TEXT("InputComponent"));
+}
+
+void ABTInputReceiver::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABTInputReceiver, CurrentPlayerIndex);
+	DOREPLIFETIME(ABTInputReceiver, CurrentPlayerController);
 }
 
 void ABTInputReceiver::BeginPlay()
@@ -32,13 +44,23 @@ void ABTInputReceiver::InitializeWithPlayerController(ABTPlayerController* NewPl
 		}
 		return;
 	}
-	PlayerController = NewPlayerController;
+	CurrentPlayerController = NewPlayerController;
 	CurrentPlayerIndex = PlayerIndex;
 }
 
-void ABTInputReceiver::OnCharacterSelected_Implementation(int32 CharacterID)
+void ABTInputReceiver::OnCharacterSelected(int32 CharacterID)
 {
-	if (!PlayerController)
+	Server_OnCharacterSelected(CharacterID);
+}
+
+void ABTInputReceiver::Server_OnCharacterSelected_Implementation(int32 CharacterID)
+{
+	Multicast_OnCharacterSelected(CharacterID);
+}
+
+void ABTInputReceiver::Multicast_OnCharacterSelected_Implementation(int32 CharacterID)
+{
+	if (!CurrentPlayerController)
 	{
 		if (GEngine)
 		{
@@ -63,6 +85,6 @@ void ABTInputReceiver::OnCharacterSelected_Implementation(int32 CharacterID)
 		return;
 	}
 
-	GameMode->SpawnPlayerCharacter(PlayerController, CharacterID, CurrentPlayerIndex);
+	GameMode->SpawnPlayerCharacter(CurrentPlayerController, CharacterID, CurrentPlayerIndex);
 	bHasSpawnedPlayer = true;
 }

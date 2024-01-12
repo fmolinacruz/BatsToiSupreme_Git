@@ -56,4 +56,10 @@ private:
 
 public:
 	void SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Batstoi|SpawnPlayer")
+	void Server_SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+
+	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Batstoi|SpawnPlayer")
+	void Multicast_SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 };

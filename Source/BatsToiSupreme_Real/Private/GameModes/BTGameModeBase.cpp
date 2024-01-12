@@ -62,6 +62,16 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 
 void ABTGameModeBase::SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
 {
+	Server_SpawnPlayerCharacter(PC, CharacterID, PlayerIndex);
+}
+
+void ABTGameModeBase::Server_SpawnPlayerCharacter_Implementation(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
+{
+	Multicast_SpawnPlayerCharacter(PC, CharacterID, PlayerIndex);
+}
+
+void ABTGameModeBase::Multicast_SpawnPlayerCharacter_Implementation(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
+{
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Success SpawnPlayerCharacter"));
@@ -91,6 +101,7 @@ void ABTGameModeBase::SpawnPlayerCharacter(ABTPlayerController* PC, int Characte
 
 		PlayerCharacters.Add(SpawnedCharacter);
 		SpawnedCharacter->SetPlayerIndex(PlayerIndex);
+		SpawnedCharacter->SetCharacterID(CharacterID);
 
 		// Set enemies if there are at least 2 players
 		// (Assuming PlayerCharacters array is sorted by player index)
