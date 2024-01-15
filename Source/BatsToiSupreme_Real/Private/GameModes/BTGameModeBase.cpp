@@ -55,7 +55,14 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 		// PC->ClientSetViewTarget(MainCameraRef);
 
 		// Initialize the InputReceiver with the player controller and current player index
+		InputReceivers.Add(InputReceiver);
 		InputReceiver->InitializeWithPlayerController(PC, CurrentPlayerIndex);
+		
+		if (InputReceivers.Num() >= 2)
+		{
+			InputReceivers[0]->OtherPlayerController = InputReceivers[1]->CurrentPlayerController;
+			InputReceivers[1]->OtherPlayerController = InputReceivers[0]->CurrentPlayerController;
+		}
 	}
 	CurrentPlayerIndex++;
 }

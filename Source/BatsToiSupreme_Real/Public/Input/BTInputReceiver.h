@@ -23,7 +23,10 @@ public:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
-	UBTUISelectInput* GetBTUISelectionInputComponent() const { return BTUISelectionInputComponent; }
+	FORCEINLINE UBTUISelectInput* GetBTUISelectionInputComponent() const
+	{
+		return BTUISelectionInputComponent;
+	}
 
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
 	void OnCharacterSelected();
@@ -34,14 +37,11 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_CharacterSelected();
 
-	//UPROPERTY(ReplicatedUsing = OnRep_CurrentAnimationIndex)
-	//int32 CurrentAnimationIndex;
-
-	//UFUNCTION()
-	//void OnRep_CurrentAnimationIndex();
-
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|UI")
-	UWBTMenu* MenuWidgetRefCPP;
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|PlayerController")
+	TObjectPtr<ABTPlayerController> CurrentPlayerController;
+	
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|PlayerController")
+	TObjectPtr<ABTPlayerController> OtherPlayerController;
 
 protected:
 	// Called when the game starts or when spawned
@@ -50,15 +50,11 @@ protected:
 	// Create IRCreateCharacterSelectWidget
 	void CreateMenuUI();
 
-protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|UI")
 	TObjectPtr<UBTUISelectInput> BTUISelectionInputComponent;
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|PlayerIndex")
 	int32 CurrentPlayerIndex;
-
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|PlayerController")
-	TObjectPtr<ABTPlayerController> CurrentPlayerController;
 
 private:
 	bool bHasSpawnedPlayer = false;

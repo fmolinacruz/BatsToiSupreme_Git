@@ -18,7 +18,11 @@ class BATSTOISUPREME_REAL_API ABTPlayerController : public AGSCModularPlayerCont
 public:
 	ABTPlayerController();
 
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
 	UWBTMenu* CreateMenuWidget();
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
+	void PlayCharacterSelectedAnimation(int PlayerIndex);
 
 protected:
 	virtual void BeginPlay() override;
@@ -34,4 +38,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UI")
 	TSubclassOf<UWBTMenu> MenuUIClass;
+	
+	UPROPERTY(Transient)
+	TObjectPtr<UWBTMenu> CharacterSelectionWidgetRef;
 };

@@ -26,14 +26,26 @@ UWBTMenu* ABTPlayerController::CreateMenuWidget()
 {
 	if (IsLocalPlayerController() && MenuUIClass)
 	{
-		UWBTMenu* MyCharacterSelectUI = CreateWidget<UWBTMenu>(this, MenuUIClass);
-		if (MyCharacterSelectUI)
+		CharacterSelectionWidgetRef = CreateWidget<UWBTMenu>(this, MenuUIClass);
+		if (CharacterSelectionWidgetRef)
 		{
-			MyCharacterSelectUI->AddToViewport();
-			return MyCharacterSelectUI;
+			CharacterSelectionWidgetRef->AddToViewport();
+			return CharacterSelectionWidgetRef;
 		}
 	}
 	return nullptr;
+}
+
+void ABTPlayerController::PlayCharacterSelectedAnimation_Implementation(int PlayerIndex)
+{
+	if (CharacterSelectionWidgetRef && CharacterSelectionWidgetRef->CharacterAnimationsCPP.IsValidIndex(PlayerIndex))
+	{
+		UWidgetAnimation* AnimationToPlay = CharacterSelectionWidgetRef->CharacterAnimationsCPP[PlayerIndex];
+		if (AnimationToPlay)
+		{
+			CharacterSelectionWidgetRef->PlayAnimation(AnimationToPlay, 0.0f, 1, EUMGSequencePlayMode::Forward, 1.0f);
+		}
+	}
 }
 
 void ABTPlayerController::AcknowledgePossession(APawn* InPawn)

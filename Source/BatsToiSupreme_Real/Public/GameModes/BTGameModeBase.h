@@ -33,6 +33,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTInputReceiver> InputReceiverClass;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
+	TArray<ABTInputReceiver*> InputReceivers;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	bool bIsLocal = false;
