@@ -128,6 +128,6 @@ void UBTUISelectInput::OnSelect(const FInputActionValue& Value)
 		}
 		return;
 	}
-	InputReceiver->OnCharacterSelected(0);
+	InputReceiver->OnCharacterSelected();
 }
 

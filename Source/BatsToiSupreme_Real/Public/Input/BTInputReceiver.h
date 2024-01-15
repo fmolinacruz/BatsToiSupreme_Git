@@ -8,6 +8,7 @@
 #include "BTInputReceiver.generated.h"
 
 class UBTUISelectInput;
+class UWBTMenu;
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTInputReceiver : public APawn
@@ -25,17 +26,29 @@ public:
 	UBTUISelectInput* GetBTUISelectionInputComponent() const { return BTUISelectionInputComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
-	void OnCharacterSelected(int32 CharacterID);
+	void OnCharacterSelected();
 
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Batstoi|UI")
-	void Server_OnCharacterSelected(int32 CharacterID);
+	UFUNCTION(Server, Reliable)
+	void Server_CharacterSelected();
 
-	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Batstoi|UI")
-	void Multicast_OnCharacterSelected(int32 CharacterID);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_CharacterSelected();
+
+	//UPROPERTY(ReplicatedUsing = OnRep_CurrentAnimationIndex)
+	//int32 CurrentAnimationIndex;
+
+	//UFUNCTION()
+	//void OnRep_CurrentAnimationIndex();
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|UI")
+	UWBTMenu* MenuWidgetRefCPP;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	// Create IRCreateCharacterSelectWidget
+	void CreateMenuUI();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|UI")

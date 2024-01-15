@@ -8,6 +8,7 @@
 
 class ABTPlayerCharacter;
 class ABTInputReceiver;
+class UWBTMenu;
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTPlayerController : public AGSCModularPlayerController
@@ -17,7 +18,11 @@ class BATSTOISUPREME_REAL_API ABTPlayerController : public AGSCModularPlayerCont
 public:
 	ABTPlayerController();
 
+	UWBTMenu* CreateMenuWidget();
+
 protected:
+	virtual void BeginPlay() override;
+
 	virtual void AcknowledgePossession(APawn* InPawn) override;
 
 private:
@@ -26,4 +31,7 @@ private:
 
 	// InputReceiver
 	TObjectPtr<ABTInputReceiver> InputReceiver;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UI")
+	TSubclassOf<UWBTMenu> MenuUIClass;
 };

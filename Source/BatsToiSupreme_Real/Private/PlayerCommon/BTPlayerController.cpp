@@ -9,9 +9,31 @@
 #include "PlayerCommon/BTPlayerInput.h"
 #include "Utilities/BTLogging.h"
 
+//#include "Blueprint/UserWidget.h"
+#include "Menu/WBTMenu.h"
+
 ABTPlayerController::ABTPlayerController() : bHasSetupInput(false)
 {
 	bAutoManageActiveCameraTarget = false;
+}
+
+void ABTPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+UWBTMenu* ABTPlayerController::CreateMenuWidget()
+{
+	if (IsLocalPlayerController() && MenuUIClass)
+	{
+		UWBTMenu* MyCharacterSelectUI = CreateWidget<UWBTMenu>(this, MenuUIClass);
+		if (MyCharacterSelectUI)
+		{
+			MyCharacterSelectUI->AddToViewport();
+			return MyCharacterSelectUI;
+		}
+	}
+	return nullptr;
 }
 
 void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
@@ -47,7 +69,6 @@ void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 		{
 			BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter or ABTInputReceiver!");
 		}
-	}
-	
+	}	
 }
 

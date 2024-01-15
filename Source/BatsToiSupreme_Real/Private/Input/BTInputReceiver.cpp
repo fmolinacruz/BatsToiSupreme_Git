@@ -6,7 +6,8 @@
 #include "PlayerCommon/BTPlayerController.h"
 #include "PlayerCommon/BTUISelectInput.h"
 #include "GameModes/BTGameModeBase.h"
-
+//#include "Blueprint/UserWidget.h"
+#include "Menu/WBTMenu.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -27,11 +28,34 @@ void ABTInputReceiver::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(ABTInputReceiver, CurrentPlayerIndex);
 	DOREPLIFETIME(ABTInputReceiver, CurrentPlayerController);
+	DOREPLIFETIME(ABTInputReceiver, MenuWidgetRefCPP);
+	//DOREPLIFETIME(ABTInputReceiver, CurrentAnimationIndex);
 }
 
 void ABTInputReceiver::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CreateMenuUI();
+}
+
+void ABTInputReceiver::CreateMenuUI()
+{
+	if (CurrentPlayerController)
+	{
+		MenuWidgetRefCPP = CurrentPlayerController->CreateMenuWidget();
+
+		// MenuWidgetRefCPP is nullptr;
+		if (!MenuWidgetRefCPP)
+		{
+			//MenuWidgetRefCPP->AddToViewport();
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("MyMenuWidget is nullptr"));
+			}
+			return;
+		}
+	}
 }
 
 void ABTInputReceiver::InitializeWithPlayerController(ABTPlayerController* NewPlayerController, int32 PlayerIndex)
@@ -48,43 +72,24 @@ void ABTInputReceiver::InitializeWithPlayerController(ABTPlayerController* NewPl
 	CurrentPlayerIndex = PlayerIndex;
 }
 
-void ABTInputReceiver::OnCharacterSelected(int32 CharacterID)
+void ABTInputReceiver::OnCharacterSelected()
 {
-	Server_OnCharacterSelected(CharacterID);
+	Server_CharacterSelected();
 }
 
-void ABTInputReceiver::Server_OnCharacterSelected_Implementation(int32 CharacterID)
+void ABTInputReceiver::Server_CharacterSelected_Implementation()
 {
-	Multicast_OnCharacterSelected(CharacterID);
+	Multicast_CharacterSelected();
 }
 
-void ABTInputReceiver::Multicast_OnCharacterSelected_Implementation(int32 CharacterID)
+void ABTInputReceiver::Multicast_CharacterSelected_Implementation()
 {
-	if (!CurrentPlayerController)
+	if (MenuWidgetRefCPP && MenuWidgetRefCPP->CharacterAnimationsCPP.IsValidIndex(CurrentPlayerIndex))
 	{
-		if (GEngine)
+		UWidgetAnimation* AnimationToPlay = MenuWidgetRefCPP->CharacterAnimationsCPP[CurrentPlayerIndex];
+		if (AnimationToPlay)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("OnCharacterSelected old is nullptr"));
+			MenuWidgetRefCPP->PlayAnimation(AnimationToPlay, 0.0f, 1, EUMGSequencePlayMode::Forward, 1.0f);
 		}
-		return;
 	}
-
-	// Assuming your GameMode has a function called 'SpawnPlayerCharacter' that takes a PlayerController, CharacterID, and PlayerIndex
-	ABTGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ABTGameModeBase>();
-	if (!GameMode)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GameMode is nullptr"));
-		}
-		return;
-	}
-
-	if (bHasSpawnedPlayer)
-	{
-		return;
-	}
-
-	GameMode->SpawnPlayerCharacter(CurrentPlayerController, CharacterID, CurrentPlayerIndex);
-	bHasSpawnedPlayer = true;
 }
