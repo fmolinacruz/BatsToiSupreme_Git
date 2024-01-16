@@ -3,6 +3,7 @@
 
 #include "Menu/WBTMenu.h"
 #include "Menu/WBTCharacterSelect.h"
+#include "Kismet/GameplayStatics.h"
 
 
 void UWBTMenu::NativeConstruct()
@@ -10,6 +11,25 @@ void UWBTMenu::NativeConstruct()
 	Super::NativeConstruct();
 
 	AddToImagesSourcec();
+}
+
+void UWBTMenu::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+    // Update the current opacity towards the target opacity
+	if (!CharacterSelect)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CharacterSelect is null"));
+		}
+	}
+
+	float CurrentOpacity = CharacterSelect->GetRenderOpacity();
+	// Interpolate towards the target opacity
+	float NewOpacity = FMath::FInterpTo(CurrentOpacity, COpacityTargetCPP, 1.0f, 0.05f);
+	CharacterSelect->SetRenderOpacity(NewOpacity);
 }
 
 UWBTCharacterSelect* UWBTMenu::AddCharacterSelect(int32 PlayerIndex)
@@ -38,6 +58,15 @@ void UWBTMenu::AddToImagesSourcec()
 	if (CharacterIn2)
 	{
 		CharacterAnimationsCPP.Add(CharacterIn2);
+	}
+
+	if (CharacterSelected1)
+	{
+		CharacterSelectedAnimationsCPP.Add(CharacterSelected1);
+	}
+	if (CharacterSelected2)
+	{
+		CharacterSelectedAnimationsCPP.Add(CharacterSelected2);
 	}
 
 	if (PlayerImage1)

@@ -43,6 +43,9 @@ protected:
 	// MenuRight
 	void OnMenuRight(const FInputActionValue& Value);
 
+	// Restore
+	void Restore(const FInputActionValue& Value);
+
 	// Input Actions
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
 	UInputAction* SelectInputAction;
@@ -54,6 +57,10 @@ protected:
 	// MenuRight
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
 	UInputAction* MenuRightInputAction;
+
+	// Restore
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* RestoreInputAction;
 
 	// Mappable input configurations for the UI Selection
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UISelectionInput")

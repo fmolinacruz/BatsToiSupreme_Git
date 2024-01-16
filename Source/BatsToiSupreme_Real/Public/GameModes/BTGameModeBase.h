@@ -40,7 +40,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	bool bIsLocal = false;
 
-
 private:
 	void GetMainCameraRef();
 	void GetStartSpots();
@@ -52,6 +51,17 @@ private:
 	TArray<AActor*> StartSpots;
 
 	int CurrentPlayerIndex = 0;
+
+private:
+	// Define a structure to hold player data
+	struct PlayerData
+	{
+		ABTPlayerController* Controller;
+		int CharacterID;
+	};
+
+	// Create a map to store player data based on player index
+	std::unordered_map<int, PlayerData> PlayerMap;
 
 //public:
 //	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Batstoi")
@@ -65,4 +75,6 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Batstoi|SpawnPlayer")
 	void Multicast_SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+
+	void RestorePlayerCharacter(int PlayerIndex);
 };

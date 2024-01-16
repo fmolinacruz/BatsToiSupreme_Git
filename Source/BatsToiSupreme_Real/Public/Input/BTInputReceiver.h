@@ -38,8 +38,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
 	void OnMenuRight();
 
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
+	void OnRestore();
+
 	UFUNCTION(Server, Reliable)
 	void Server_CharacterSelected();
+
+	UFUNCTION(Server, Reliable)
+	void Server_CharacterDecided(int32 CharacterChoice);
+
+	UFUNCTION(Server, Reliable)
+	void Server_CharacterRestore();
 	
 	UFUNCTION(Server, Reliable)
 	void Server_CharacterChoiceChanged(int32 CharacterChoice);
@@ -76,6 +85,8 @@ protected:
 
 private:
 	bool bHasSpawnedPlayer = false;
+
+	bool IsReady = false;
 
 protected:
 	// Override replication

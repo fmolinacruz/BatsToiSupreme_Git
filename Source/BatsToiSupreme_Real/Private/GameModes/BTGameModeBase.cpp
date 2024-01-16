@@ -9,6 +9,8 @@
 #include "PlayerCommon/BTPlayerController.h"
 #include "Utilities/BTLogging.h"
 
+#include "Menu/WBTMenu.h"
+
 ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
 {
@@ -69,7 +71,44 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 
 void ABTGameModeBase::SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
 {
-	Server_SpawnPlayerCharacter(PC, CharacterID, PlayerIndex);
+	if (!PC)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("SpawnPlayerCharacter is nullptr"));
+		}
+		return;
+	}
+
+	// Add player data to the map
+	PlayerMap[PlayerIndex] = { PC, CharacterID };
+
+	// Check if there are at least 2 players
+	if (PlayerMap.size() >= 2)
+	{
+		for (auto& pair : PlayerMap)
+		{
+			Server_SpawnPlayerCharacter(pair.second.Controller, pair.second.CharacterID, pair.first);
+		}
+
+		for (ABTInputReceiver* InputReceiver : InputReceivers)
+		{
+			if (InputReceiver && InputReceiver->MenuWidgetRefCPP)
+			{
+				// Cast to UWBTMenu if necessary, assuming MenuWidgetRefCPP is of type UWBTMenu*
+				UWBTMenu* MenuWidget = Cast<UWBTMenu>(InputReceiver->MenuWidgetRefCPP);
+				if (MenuWidget)
+				{
+					// Set the opacity target to 0
+					MenuWidget->COpacityTargetCPP = 0.0f;
+				}
+			}
+			else
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("MenuWidgetRefCPP is nullptr"));
+			}
+		}
+	}
 }
 
 void ABTGameModeBase::Server_SpawnPlayerCharacter_Implementation(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
@@ -81,16 +120,7 @@ void ABTGameModeBase::Multicast_SpawnPlayerCharacter_Implementation(ABTPlayerCon
 {
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Success SpawnPlayerCharacter"));
-	}
-
-	if (!PC)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("SpawnPlayerCharacter is nullptr"));
-		}
-		return;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("SpawnPlayerCharacter with PlayerIndex: %d"), PlayerIndex));
 	}
 
 	// Retrieve the spawn location and rotation from the start spots array
@@ -118,6 +148,12 @@ void ABTGameModeBase::Multicast_SpawnPlayerCharacter_Implementation(ABTPlayerCon
 			PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
 		}
 	}
+}
+
+void ABTGameModeBase::RestorePlayerCharacter(int PlayerIndex)
+{
+	// Remove player data to the map
+	PlayerMap.erase(PlayerIndex);
 }
 
 void ABTGameModeBase::GetMainCameraRef()

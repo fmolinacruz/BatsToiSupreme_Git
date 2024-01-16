@@ -50,6 +50,30 @@ void ABTPlayerController::PlayCharacterSelectedAnimation_Implementation(const in
 	}
 }
 
+void ABTPlayerController::PlayCharacterDecidedAnimation_Implementation(const int PlayerIndex)
+{
+	if (CharacterSelectionWidgetRef && CharacterSelectionWidgetRef->CharacterSelectedAnimationsCPP.IsValidIndex(PlayerIndex))
+	{
+		UWidgetAnimation* AnimationToPlay = CharacterSelectionWidgetRef->CharacterSelectedAnimationsCPP[PlayerIndex];
+		if (AnimationToPlay)
+		{
+			CharacterSelectionWidgetRef->PlayAnimation(AnimationToPlay, 0.0f, 1, EUMGSequencePlayMode::Forward, 1.0f);
+		}
+	}
+}
+
+void ABTPlayerController::PlayCharacterRestore_Implementation(const int PlayerIndex)
+{
+	if (CharacterSelectionWidgetRef && CharacterSelectionWidgetRef->CharacterSelectedAnimationsCPP.IsValidIndex(PlayerIndex))
+	{
+		UWidgetAnimation* AnimationToPlay = CharacterSelectionWidgetRef->CharacterSelectedAnimationsCPP[PlayerIndex];
+		if (AnimationToPlay)
+		{
+			CharacterSelectionWidgetRef->PlayAnimation(AnimationToPlay, 1.0f, 1, EUMGSequencePlayMode::Reverse, 5.0f);
+		}
+	}
+}
+
 void ABTPlayerController::ChangeCharacterSelectionTexture_Implementation(const int PlayerIndex, const int CharacterChoice)
 {
 	if (CharacterSelectionWidgetRef && CharacterSelectionWidgetRef->ImagesSourcecCPP.IsValidIndex(CharacterChoice))

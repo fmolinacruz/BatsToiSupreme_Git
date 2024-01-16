@@ -92,6 +92,7 @@ void UBTUISelectInput::InitializeInputComponent(UInputComponent* PlayerInputComp
 		EnhancedInputComponent->BindAction(SelectInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnSelect);
 		EnhancedInputComponent->BindAction(MenuLeftInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnMenuLeft);
 		EnhancedInputComponent->BindAction(MenuRightInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnMenuRight);
+		EnhancedInputComponent->BindAction(RestoreInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::Restore);
 	}
 	else
 	{
@@ -167,4 +168,22 @@ void UBTUISelectInput::OnMenuRight(const FInputActionValue& Value)
 		return;
 	}
 	InputReceiver->OnMenuRight();
+}
+
+void UBTUISelectInput::Restore(const FInputActionValue& Value)
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("OnRestore"));
+	}
+
+	if (!InputReceiver)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputReceiver is nullptr"));
+		}
+		return;
+	}
+	InputReceiver->OnRestore();
 }

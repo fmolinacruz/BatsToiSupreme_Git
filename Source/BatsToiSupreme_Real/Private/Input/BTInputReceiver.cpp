@@ -4,6 +4,7 @@
 
 #include "PlayerCommon/BTPlayerController.h"
 #include "PlayerCommon/BTUISelectInput.h"
+#include "GameModes/BTGameModeBase.h"
 #include "Menu/WBTMenu.h"
 #include "Menu/WBTCharacterSelect.h"
 #include "Net/UnrealNetwork.h"
@@ -83,48 +84,71 @@ void ABTInputReceiver::OnCharacterSelected()
 		}
 		CharacterMenuRefCPP = MenuWidgetRefCPP->AddCharacterSelect(CurrentPlayerIndex);
 	}
+	else
+	{
+		if (IsReady == false)
+		{
+			IsReady = true;
+			const int32 CharacterChoice = CharacterMenuRefCPP->CharacterChoice;
+			Server_CharacterDecided(CharacterChoice);
+		}
+		//MenuWidgetRefCPP->CharacterSelect->SetVisibility(ESlateVisibility::Hidden);
+	}
 }
 
 void ABTInputReceiver::OnMenuLeft()
 {
-	if (!CharacterMenuRefCPP)
+	if (IsReady == false)
 	{
-		if (GEngine)
+		if (!CharacterMenuRefCPP)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CharacterMenuRefCPP is nullptr"));
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CharacterMenuRefCPP is nullptr"));
+			}
+			return;
 		}
-		return;
-	}
-	const int32 CharacterChoice = CharacterMenuRefCPP->SwitchCharacter(-1);
+		const int32 CharacterChoice = CharacterMenuRefCPP->SwitchCharacter(-1);
 
-	// Real UI update
-	Server_CharacterChoiceChanged(CharacterChoice);
+		// Real UI update
+		Server_CharacterChoiceChanged(CharacterChoice);
+	}
 }
 
 void ABTInputReceiver::OnMenuRight()
 {
-	if (!CharacterMenuRefCPP)
+	if (IsReady == false)
 	{
-		if (GEngine)
+		if (!CharacterMenuRefCPP)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CharacterMenuRefCPP is nullptr"));
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CharacterMenuRefCPP is nullptr"));
+			}
+			return;
 		}
-		return;
+		const int32 CharacterChoice = CharacterMenuRefCPP->SwitchCharacter(1);
+
+		// Real UI update
+		Server_CharacterChoiceChanged(CharacterChoice);
 	}
-	const int32 CharacterChoice = CharacterMenuRefCPP->SwitchCharacter(1);
-	
-	// Real UI update
-	Server_CharacterChoiceChanged(CharacterChoice);
 }
 
-void ABTInputReceiver::Server_CharacterChoiceChanged_Implementation(int32 CharacterChoice)
+void ABTInputReceiver::OnRestore()
 {
-	CurrentPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
-	
-	// Update UI of other clients
-	if (OtherPlayerController)
+	if (IsReady == true)
 	{
-		OtherPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
+		IsReady = false;
+
+		if (!CharacterMenuRefCPP)
+		{
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CharacterMenuRefCPP is nullptr"));
+			}
+			return;
+		}
+		Server_CharacterRestore();
 	}
 }
 
@@ -136,6 +160,67 @@ void ABTInputReceiver::Server_CharacterSelected_Implementation()
 	if (OtherPlayerController)
 	{
 		OtherPlayerController->PlayCharacterSelectedAnimation(CurrentPlayerIndex);
+	}
+}
+
+void ABTInputReceiver::Server_CharacterDecided_Implementation(int32 CharacterChoice)
+{
+	CurrentPlayerController->PlayCharacterDecidedAnimation(CurrentPlayerIndex);
+
+	// Update UI of other clients
+	if (OtherPlayerController)
+	{
+		OtherPlayerController->PlayCharacterDecidedAnimation(CurrentPlayerIndex);
+	}
+
+	ABTGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ABTGameModeBase>();
+	if (!GameMode)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GameMode is nullptr"));
+		}
+		return;
+	}
+	if (bHasSpawnedPlayer)
+	{
+		return;
+	}
+	GameMode->SpawnPlayerCharacter(CurrentPlayerController, CharacterChoice, CurrentPlayerIndex);
+	bHasSpawnedPlayer = true;
+}
+
+void ABTInputReceiver::Server_CharacterRestore_Implementation()
+{
+	CurrentPlayerController->PlayCharacterRestore(CurrentPlayerIndex);
+
+	// Update UI of other clients
+	if (OtherPlayerController)
+	{
+		OtherPlayerController->PlayCharacterRestore(CurrentPlayerIndex);
+	}
+
+	ABTGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ABTGameModeBase>();
+	if (!GameMode)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GameMode is nullptr"));
+		}
+		return;
+	}
+	GameMode->RestorePlayerCharacter(CurrentPlayerIndex);
+	bHasSpawnedPlayer = false;
+}
+
+void ABTInputReceiver::Server_CharacterChoiceChanged_Implementation(int32 CharacterChoice)
+{
+	CurrentPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
+
+	// Update UI of other clients
+	if (OtherPlayerController)
+	{
+		OtherPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
 	}
 }
 

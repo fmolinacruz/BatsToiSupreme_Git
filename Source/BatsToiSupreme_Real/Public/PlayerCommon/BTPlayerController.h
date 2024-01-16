@@ -25,6 +25,12 @@ public:
 	void PlayCharacterSelectedAnimation(const int PlayerIndex);
 
 	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
+	void PlayCharacterDecidedAnimation(const int PlayerIndex);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
+	void PlayCharacterRestore(const int PlayerIndex);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
 	void ChangeCharacterSelectionTexture(const int PlayerIndex, const int CharacterChoice);
 
 protected:
