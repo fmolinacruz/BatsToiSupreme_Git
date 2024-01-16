@@ -11,8 +11,10 @@
 
 //#include "Blueprint/UserWidget.h"
 #include "Menu/WBTMenu.h"
+#include "Net/UnrealNetwork.h"
 
-ABTPlayerController::ABTPlayerController() : bHasSetupInput(false)
+ABTPlayerController::ABTPlayerController()
+	: bHasSetupInput(false)
 {
 	bAutoManageActiveCameraTarget = false;
 }
@@ -36,7 +38,7 @@ UWBTMenu* ABTPlayerController::CreateMenuWidget()
 	return nullptr;
 }
 
-void ABTPlayerController::PlayCharacterSelectedAnimation_Implementation(int PlayerIndex)
+void ABTPlayerController::PlayCharacterSelectedAnimation_Implementation(const int PlayerIndex)
 {
 	if (CharacterSelectionWidgetRef && CharacterSelectionWidgetRef->CharacterAnimationsCPP.IsValidIndex(PlayerIndex))
 	{
@@ -44,6 +46,18 @@ void ABTPlayerController::PlayCharacterSelectedAnimation_Implementation(int Play
 		if (AnimationToPlay)
 		{
 			CharacterSelectionWidgetRef->PlayAnimation(AnimationToPlay, 0.0f, 1, EUMGSequencePlayMode::Forward, 1.0f);
+		}
+	}
+}
+
+void ABTPlayerController::ChangeCharacterSelectionTexture_Implementation(const int PlayerIndex, const int CharacterChoice)
+{
+	if (CharacterSelectionWidgetRef && CharacterSelectionWidgetRef->ImagesSourcecCPP.IsValidIndex(CharacterChoice))
+	{
+		UTexture2D* SelectedTexture = CharacterSelectionWidgetRef->ImagesSourcecCPP[CharacterChoice];
+		if (SelectedTexture)
+		{
+			CharacterSelectionWidgetRef->PlayerImagesCPP[PlayerIndex]->SetBrushFromTexture(SelectedTexture, true);
 		}
 	}
 }
@@ -57,7 +71,7 @@ void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 	{
 		return;
 	}
-	
+
 	PlayerCharacter = Cast<ABTPlayerCharacter>(GetCharacter());
 	if (PlayerCharacter)
 	{
@@ -66,7 +80,7 @@ void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 	}
 	else
 	{
-		//BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter!");
+		// BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter!");
 		InputReceiver = Cast<ABTInputReceiver>(InPawn);
 		if (InputReceiver)
 		{
@@ -81,6 +95,6 @@ void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 		{
 			BTLOG_WARNING("This controller is not attached to a ABTPlayerCharacter or ABTInputReceiver!");
 		}
-	}	
+	}
 }
 

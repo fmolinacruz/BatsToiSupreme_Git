@@ -40,6 +40,9 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_CharacterSelected();
+	
+	UFUNCTION(Server, Reliable)
+	void Server_CharacterChoiceChanged(int32 CharacterChoice);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_CharacterSelected();

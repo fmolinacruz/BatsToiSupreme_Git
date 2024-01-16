@@ -3,6 +3,7 @@
 
 #include "Menu/WBTCharacterSelect.h"
 #include "Menu/WBTMenu.h"
+#include "PlayerCommon/BTPlayerController.h"
 
 void UWBTCharacterSelect::NativeConstruct()
 {
@@ -32,16 +33,16 @@ void UWBTCharacterSelect::NativeConstruct()
 	// Check if MyTextBlock is valid before attempting to use it
 	if (PlayerNumber)
 	{
-		FText playerNumerText = FText::FromString("P" + (CharacterChoice + 1));
-		PlayerNumber->SetText(playerNumerText);
+		FText PlayerNumberText = FText::FromString("P" + (CharacterChoice + 1));
+		PlayerNumber->SetText(PlayerNumberText);
 	}
 }
 
-void UWBTCharacterSelect::SwitchCharacter(int32 Direction)
+int32 UWBTCharacterSelect::SwitchCharacter(const int32 Direction)
 {
 	// length MainMenu->ImagesSourcecCPP
-	int32 length = MainMenu->ImagesSourcecCPP.Num();
-	if (CharacterChoice + Direction >= length)
+	const int32 Length = MainMenu->ImagesSourcecCPP.Num();
+	if (CharacterChoice + Direction >= Length)
 	{
 		CharacterChoice = 0;
 	}
@@ -49,7 +50,7 @@ void UWBTCharacterSelect::SwitchCharacter(int32 Direction)
 	{
 		if (CharacterChoice + Direction < 0)
 		{
-			CharacterChoice = length - 1;
+			CharacterChoice = Length - 1;
 		}
 		else
 		{
@@ -57,12 +58,5 @@ void UWBTCharacterSelect::SwitchCharacter(int32 Direction)
 		}
 	}
 
-	if (MainMenu->ImagesSourcecCPP.IsValidIndex(CharacterChoice))
-	{
-		UTexture2D* SelectedTexture = MainMenu->ImagesSourcecCPP[CharacterChoice];
-		if (SelectedTexture)
-		{
-			MainMenu->PlayerImagesCPP[PlayerIndex]->SetBrushFromTexture(SelectedTexture, true);
-		}
-	}
+	return CharacterChoice;
 }

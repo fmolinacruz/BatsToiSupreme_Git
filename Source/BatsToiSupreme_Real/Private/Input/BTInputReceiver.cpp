@@ -95,7 +95,10 @@ void ABTInputReceiver::OnMenuLeft()
 		}
 		return;
 	}
-	CharacterMenuRefCPP->SwitchCharacter(-1);
+	const int32 CharacterChoice = CharacterMenuRefCPP->SwitchCharacter(-1);
+
+	// Real UI update
+	Server_CharacterChoiceChanged(CharacterChoice);
 }
 
 void ABTInputReceiver::OnMenuRight()
@@ -108,15 +111,30 @@ void ABTInputReceiver::OnMenuRight()
 		}
 		return;
 	}
-	CharacterMenuRefCPP->SwitchCharacter(1);
+	const int32 CharacterChoice = CharacterMenuRefCPP->SwitchCharacter(1);
+	
+	// Real UI update
+	Server_CharacterChoiceChanged(CharacterChoice);
+}
+
+void ABTInputReceiver::Server_CharacterChoiceChanged_Implementation(int32 CharacterChoice)
+{
+	CurrentPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
+	
+	// Update UI of other clients
+	if (OtherPlayerController)
+	{
+		OtherPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
+	}
 }
 
 void ABTInputReceiver::Server_CharacterSelected_Implementation()
 {
 	CurrentPlayerController->PlayCharacterSelectedAnimation(CurrentPlayerIndex);
+	
+	// Update UI of other clients
 	if (OtherPlayerController)
 	{
-		// Update UI of other clients
 		OtherPlayerController->PlayCharacterSelectedAnimation(CurrentPlayerIndex);
 	}
 }

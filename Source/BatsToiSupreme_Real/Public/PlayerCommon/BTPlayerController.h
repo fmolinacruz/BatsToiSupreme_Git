@@ -22,23 +22,24 @@ public:
 	UWBTMenu* CreateMenuWidget();
 
 	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
-	void PlayCharacterSelectedAnimation(int PlayerIndex);
+	void PlayCharacterSelectedAnimation(const int PlayerIndex);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
+	void ChangeCharacterSelectionTexture(const int PlayerIndex, const int CharacterChoice);
 
 protected:
 	virtual void BeginPlay() override;
-
 	virtual void AcknowledgePossession(APawn* InPawn) override;
 
 private:
-	TObjectPtr<ABTPlayerCharacter> PlayerCharacter;
-	bool bHasSetupInput;
-
-	// InputReceiver
-	TObjectPtr<ABTInputReceiver> InputReceiver;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UI")
 	TSubclassOf<UWBTMenu> MenuUIClass;
-	
+
 	UPROPERTY(Transient)
 	TObjectPtr<UWBTMenu> CharacterSelectionWidgetRef;
+
+	TObjectPtr<ABTPlayerCharacter> PlayerCharacter;
+	TObjectPtr<ABTInputReceiver> InputReceiver;
+
+	bool bHasSetupInput;
 };

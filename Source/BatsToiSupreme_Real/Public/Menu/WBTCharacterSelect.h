@@ -8,9 +8,7 @@
 #include "Components/TextBlock.h"
 #include "WBTCharacterSelect.generated.h"
 
-/**
- * 
- */
+class ABTPlayerController;
 class UWBTMenu;
 
 
@@ -30,13 +28,11 @@ public:
 	TObjectPtr<UTextBlock> PlayerNumber;
 
 	TArray<FLinearColor> PlayerColors;
-
+	TObjectPtr<UWBTMenu> MainMenu;
 	int32 CharacterChoice;
-
 	int32 PlayerIndex;
 
-	TObjectPtr<UWBTMenu> MainMenu;
-
 public:
-	void SwitchCharacter(int32 Direction);
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
+	int32 SwitchCharacter(const int32 Direction);
 };
