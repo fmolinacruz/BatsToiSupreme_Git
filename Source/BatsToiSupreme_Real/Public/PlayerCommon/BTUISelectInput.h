@@ -37,9 +37,23 @@ protected:
 	// Actions
 	void OnSelect(const FInputActionValue& Value);
 
+	// MenuLeft
+	void OnMenuLeft(const FInputActionValue& Value);
+
+	// MenuRight
+	void OnMenuRight(const FInputActionValue& Value);
+
 	// Input Actions
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
 	UInputAction* SelectInputAction;
+
+	// MenuLeft
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* MenuLeftInputAction;
+
+	// MenuRight
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* MenuRightInputAction;
 
 	// Mappable input configurations for the UI Selection
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UISelectionInput")

@@ -90,6 +90,8 @@ void UBTUISelectInput::InitializeInputComponent(UInputComponent* PlayerInputComp
 	if (EnhancedInputComponent)
 	{
 		EnhancedInputComponent->BindAction(SelectInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnSelect);
+		EnhancedInputComponent->BindAction(MenuLeftInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnMenuLeft);
+		EnhancedInputComponent->BindAction(MenuRightInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnMenuRight);
 	}
 	else
 	{
@@ -131,3 +133,38 @@ void UBTUISelectInput::OnSelect(const FInputActionValue& Value)
 	InputReceiver->OnCharacterSelected();
 }
 
+void UBTUISelectInput::OnMenuLeft(const FInputActionValue& Value)
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("OnMenuLeft"));
+	}
+
+	if (!InputReceiver)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputReceiver is nullptr"));
+		}
+		return;
+	}
+	InputReceiver->OnMenuLeft();
+}
+
+void UBTUISelectInput::OnMenuRight(const FInputActionValue& Value)
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("OnMenuRight"));
+	}
+
+	if (!InputReceiver)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputReceiver is nullptr"));
+		}
+		return;
+	}
+	InputReceiver->OnMenuRight();
+}

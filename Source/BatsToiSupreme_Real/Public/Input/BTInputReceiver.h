@@ -9,6 +9,7 @@
 
 class UBTUISelectInput;
 class UWBTMenu;
+class UWBTCharacterSelect;
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTInputReceiver : public APawn
@@ -31,6 +32,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
 	void OnCharacterSelected();
 
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
+	void OnMenuLeft();
+
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
+	void OnMenuRight();
+
 	UFUNCTION(Server, Reliable)
 	void Server_CharacterSelected();
 
@@ -42,6 +49,14 @@ public:
 	
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|PlayerController")
 	TObjectPtr<ABTPlayerController> OtherPlayerController;
+
+	// MenuWidgetRefCPP
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|UI")
+	TObjectPtr<UWBTMenu> MenuWidgetRefCPP;
+
+	// CharacterMenuRefCPP
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|UI")
+	TObjectPtr<UWBTCharacterSelect> CharacterMenuRefCPP;
 
 protected:
 	// Called when the game starts or when spawned

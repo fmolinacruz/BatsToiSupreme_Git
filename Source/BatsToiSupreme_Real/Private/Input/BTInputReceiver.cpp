@@ -5,6 +5,7 @@
 #include "PlayerCommon/BTPlayerController.h"
 #include "PlayerCommon/BTUISelectInput.h"
 #include "Menu/WBTMenu.h"
+#include "Menu/WBTCharacterSelect.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
 
@@ -25,6 +26,8 @@ void ABTInputReceiver::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTInputReceiver, CurrentPlayerIndex);
 	DOREPLIFETIME(ABTInputReceiver, CurrentPlayerController);
 	DOREPLIFETIME(ABTInputReceiver, OtherPlayerController);
+	DOREPLIFETIME(ABTInputReceiver, MenuWidgetRefCPP);
+	DOREPLIFETIME(ABTInputReceiver, CharacterMenuRefCPP);
 }
 
 void ABTInputReceiver::BeginPlay()
@@ -38,7 +41,7 @@ void ABTInputReceiver::CreateMenuUI()
 {
 	if (CurrentPlayerController)
 	{
-		const UWBTMenu* MenuWidgetRefCPP = CurrentPlayerController->CreateMenuWidget();
+		MenuWidgetRefCPP = CurrentPlayerController->CreateMenuWidget();
 
 		// MenuWidgetRefCPP is nullptr;
 		if (!MenuWidgetRefCPP)
@@ -67,7 +70,45 @@ void ABTInputReceiver::InitializeWithPlayerController(ABTPlayerController* NewPl
 
 void ABTInputReceiver::OnCharacterSelected()
 {
-	Server_CharacterSelected();
+	if (CharacterMenuRefCPP == nullptr)
+	{
+		Server_CharacterSelected();
+		if (!MenuWidgetRefCPP)
+		{
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("MenuWidgetRefCPP is nullptr"));
+			}
+			return;
+		}
+		CharacterMenuRefCPP = MenuWidgetRefCPP->AddCharacterSelect(CurrentPlayerIndex);
+	}
+}
+
+void ABTInputReceiver::OnMenuLeft()
+{
+	if (!CharacterMenuRefCPP)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CharacterMenuRefCPP is nullptr"));
+		}
+		return;
+	}
+	CharacterMenuRefCPP->SwitchCharacter(-1);
+}
+
+void ABTInputReceiver::OnMenuRight()
+{
+	if (!CharacterMenuRefCPP)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CharacterMenuRefCPP is nullptr"));
+		}
+		return;
+	}
+	CharacterMenuRefCPP->SwitchCharacter(1);
 }
 
 void ABTInputReceiver::Server_CharacterSelected_Implementation()
