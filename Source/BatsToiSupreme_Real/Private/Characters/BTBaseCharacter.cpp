@@ -28,7 +28,7 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	BTAnimationHandler = CreateDefaultSubobject<UBTAnimationComponent>(TEXT("Animation Handler"));
 	BTMotionWarp = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("Motion Warping"));
 	BTAnimTransformRef = CreateDefaultSubobject<UBTCharacterAttachmentRef>(TEXT("Animation Transform Ref"));
-	BTAnimTransformRef->SetupAttachment(GetMesh());
+	BTAnimTransformRef->SetupAttachment(RootComponent);
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
