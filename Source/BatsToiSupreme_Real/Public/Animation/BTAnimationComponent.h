@@ -95,8 +95,11 @@ private:
 	UFUNCTION(NetMulticast, Reliable, WithValidation, Category = "Batstoi|Animation Component")
 	void DispatchAnimEnded(const FGameplayTag& AnimTag);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|Animation Component")
 	void HandleMontageFinished(UAnimMontage* InMontage, bool bIsInterrupted);
+	
+	UFUNCTION(Server, Unreliable, BlueprintCallable, Category = "Batstoi|Animation Component")
+	void SetAnimationTransformReference(ABTBaseCharacter* InCharacter);
 
 	FCombinedAnimsData* GetCombinedAnimData(const FGameplayTag& AnimTag, const ERelativeDirection Direction) const;
 	void StartAnimOnAttacker();

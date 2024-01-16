@@ -4,6 +4,7 @@
 
 #include "MotionWarpingComponent.h"
 #include "Animation/BTAnimationComponent.h"
+#include "Characters/BTCharacterAttachmentRef.h"
 #include "Characters/BTCharacterAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -26,6 +27,8 @@ ABTBaseCharacter::ABTBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	BTAbilityHandler = CreateDefaultSubobject<UBTCharacterAbilityHandler>(TEXT("Ability Handler"));
 	BTAnimationHandler = CreateDefaultSubobject<UBTAnimationComponent>(TEXT("Animation Handler"));
 	BTMotionWarp = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("Motion Warping"));
+	BTAnimTransformRef = CreateDefaultSubobject<UBTCharacterAttachmentRef>(TEXT("Animation Transform Ref"));
+	BTAnimTransformRef->SetupAttachment(GetMesh());
 }
 
 void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -33,6 +36,7 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABTBaseCharacter, BTEnemy);
+	DOREPLIFETIME(ABTBaseCharacter, BTAnimTransformRef);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
@@ -53,7 +57,6 @@ void ABTBaseCharacter::BeginPlay()
 			AnimInstance->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
 		}
 	}
-
 }
 
 void ABTBaseCharacter::Tick(float DeltaSeconds)

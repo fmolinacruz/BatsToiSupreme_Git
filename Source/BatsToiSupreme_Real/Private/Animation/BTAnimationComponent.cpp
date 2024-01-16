@@ -6,6 +6,7 @@
 #include "RootMotionModifier.h"
 #include "RootMotionModifier_SkewWarp.h"
 #include "Characters/BTBaseCharacter.h"
+#include "Characters/BTCharacterAttachmentRef.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
@@ -58,10 +59,9 @@ void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* Oth
 		// Motion Warp
 		if (CurrentAnim.AnimData.ReceiverForcePosition == ERelativePosition::SyncBone && CharacterOwner->GetMotionWarp())
 		{
-			FTransform TargetTransform = CharacterOwner->BTEnemy->GetTransform();
-			TargetTransform.SetLocation(TargetTransform.GetLocation() - CurrentAnim.AnimData.ReceiverSyncPosition.GetLocation());
-			TargetTransform.SetRotation(TargetTransform.GetRotation() - CurrentAnim.AnimData.ReceiverSyncPosition.GetRotation());
+			SetAnimationTransformReference(CharacterOwner->BTEnemy);
 			
+			const FTransform TargetTransform = CharacterOwner->BTEnemy->GetAnimTransformRef()->GetComponentTransform();
 			const FMotionWarpingTarget NewTarget = FMotionWarpingTarget(CurrentAnim.AnimData.WarpSyncPoint, TargetTransform);
 			
 			UMotionWarpingComponent* MotionComp = CharacterOwner->GetMotionWarp();
@@ -161,6 +161,12 @@ void UBTAnimationComponent::HandleMontageFinished(UAnimMontage* InMontage, bool 
 		}
 		bIsPlayingCombinedAnim = false;
 	}
+}
+
+void UBTAnimationComponent::SetAnimationTransformReference_Implementation(ABTBaseCharacter* InCharacter)
+{
+	BTLOG_WARNING("Current Receiver Sync Position: %s", *CurrentAnim.AnimData.ReceiverSyncPosition.ToString());
+	InCharacter->GetAnimTransformRef()->SetRelativeTransform(CurrentAnim.AnimData.ReceiverSyncPosition);
 }
 
 FCombinedAnimsData* UBTAnimationComponent::GetCombinedAnimData(const FGameplayTag& AnimTag, const ERelativeDirection Direction) const
