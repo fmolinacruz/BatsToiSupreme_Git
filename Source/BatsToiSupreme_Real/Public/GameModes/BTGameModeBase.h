@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameLiftServerSDK.h"
 #include "GameFramework/GameModeBase.h"
 #include "BTGameModeBase.generated.h"
 
@@ -31,6 +32,8 @@ protected:
 	TArray<ABTBaseCharacter*> PlayerCharacters;
 
 private:
+	void InitGameLift();
+	
 	void GetMainCameraRef();
 	void GetStartSpots();
 
@@ -41,4 +44,5 @@ private:
 	TArray<AActor*> StartSpots;
 
 	int CurrentPlayerIndex = 0;
+	FProcessParameters GameLiftParams;
 };
