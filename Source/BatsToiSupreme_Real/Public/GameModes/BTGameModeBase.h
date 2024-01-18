@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Input/BTInputReceiver.h"
 #include "BTGameModeBase.generated.h"
 
 class ABTBaseCharacter;
@@ -27,8 +28,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTBaseCharacter> CharacterClass;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Players")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
 	TArray<ABTBaseCharacter*> PlayerCharacters;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	TSubclassOf<ABTInputReceiver> InputReceiverClass;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
+	TArray<ABTInputReceiver*> InputReceivers;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	bool bIsLocal = false;
 
 private:
 	void GetMainCameraRef();
@@ -41,4 +51,30 @@ private:
 	TArray<AActor*> StartSpots;
 
 	int CurrentPlayerIndex = 0;
+
+private:
+	// Define a structure to hold player data
+	struct PlayerData
+	{
+		ABTPlayerController* Controller;
+		int CharacterID;
+	};
+
+	// Create a map to store player data based on player index
+	std::unordered_map<int, PlayerData> PlayerMap;
+
+//public:
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Batstoi")
+//	bool bUseInputReceiver = false;
+
+public:
+	void SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Batstoi|SpawnPlayer")
+	void Server_SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+
+	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Batstoi|SpawnPlayer")
+	void Multicast_SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+
+	void RestorePlayerCharacter(int PlayerIndex);
 };

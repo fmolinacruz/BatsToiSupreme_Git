@@ -7,6 +7,8 @@
 #include "BTPlayerController.generated.h"
 
 class ABTPlayerCharacter;
+class ABTInputReceiver;
+class UWBTMenu;
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTPlayerController : public AGSCModularPlayerController
@@ -16,10 +18,34 @@ class BATSTOISUPREME_REAL_API ABTPlayerController : public AGSCModularPlayerCont
 public:
 	ABTPlayerController();
 
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
+	UWBTMenu* CreateMenuWidget();
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
+	void PlayCharacterSelectedAnimation(const int PlayerIndex);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
+	void PlayCharacterDecidedAnimation(const int PlayerIndex);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
+	void PlayCharacterRestore(const int PlayerIndex);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
+	void ChangeCharacterSelectionTexture(const int PlayerIndex, const int CharacterChoice);
+
 protected:
+	virtual void BeginPlay() override;
 	virtual void AcknowledgePossession(APawn* InPawn) override;
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UI")
+	TSubclassOf<UWBTMenu> MenuUIClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UWBTMenu> CharacterSelectionWidgetRef;
+
 	TObjectPtr<ABTPlayerCharacter> PlayerCharacter;
+	TObjectPtr<ABTInputReceiver> InputReceiver;
+
 	bool bHasSetupInput;
 };

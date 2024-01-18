@@ -37,6 +37,7 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferY);
 	DOREPLIFETIME(ABTBaseCharacter, PlayerIndex);
+	DOREPLIFETIME(ABTBaseCharacter, CharacterID);
 	DOREPLIFETIME(ABTBaseCharacter, StaminaAttribute);
 }
 
@@ -167,6 +168,11 @@ void ABTBaseCharacter::HandleTriggerAbilityTag(const FGameplayTag AbilityTag, co
 void ABTBaseCharacter::SetPlayerIndex(int32 NewIndex)
 {
 	PlayerIndex = NewIndex;
+}
+
+void ABTBaseCharacter::SetCharacterID(int32 NewIndex)
+{
+	CharacterID = NewIndex;
 }
 
 void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
