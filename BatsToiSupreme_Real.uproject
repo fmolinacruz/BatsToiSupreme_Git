@@ -87,8 +87,5 @@
 			"Name": "LiveLink",
 			"Enabled": true
 		}
-	],
-	"TargetPlatforms": [
-		"Windows"
 	]
 }
