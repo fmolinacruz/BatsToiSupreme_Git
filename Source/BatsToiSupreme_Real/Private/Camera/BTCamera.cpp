@@ -2,6 +2,7 @@
 
 
 #include "Camera/BTCamera.h"
+#include <Utilities/BTLogging.h>
 
 // Sets default values
 ABTCamera::ABTCamera()
@@ -13,6 +14,11 @@ ABTCamera::ABTCamera()
 
 void ABTCamera::GameStarted(TArray<ABTPlayerCharacter*> ActivePlayers)
 {
+}
+
+void ABTCamera::PrintCounterUI_Implementation()
+{
+	BTLOG_WARNING("ABTCamera::PrintCounterUICpp !!");
 }
 
 // Called when the game starts or when spawned
