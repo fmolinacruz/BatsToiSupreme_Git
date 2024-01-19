@@ -21,6 +21,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
 	UWBTMenu* CreateMenuWidget();
 
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
+	void TurnOffMenuWidget();
+
 	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
 	void PlayCharacterSelectedAnimation(const int PlayerIndex);
 
@@ -32,6 +35,9 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable, Category = "Batstoi|UI")
 	void ChangeCharacterSelectionTexture(const int PlayerIndex, const int CharacterChoice);
+	
+	UFUNCTION(Client, Reliable)
+	void Client_TurnOffCharacterSelectMenu();
 
 protected:
 	virtual void BeginPlay() override;

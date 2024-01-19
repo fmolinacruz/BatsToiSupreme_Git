@@ -93,15 +93,9 @@ void ABTGameModeBase::SpawnPlayerCharacter(ABTPlayerController* PC, int Characte
 
 		for (ABTInputReceiver* InputReceiver : InputReceivers)
 		{
-			if (InputReceiver && InputReceiver->MenuWidgetRefCPP)
+			if (InputReceiver)
 			{
-				// Cast to UWBTMenu if necessary, assuming MenuWidgetRefCPP is of type UWBTMenu*
-				UWBTMenu* MenuWidget = Cast<UWBTMenu>(InputReceiver->MenuWidgetRefCPP);
-				if (MenuWidget)
-				{
-					// Set the opacity target to 0
-					MenuWidget->COpacityTargetCPP = 0.0f;
-				}
+				InputReceiver->CurrentPlayerController->Client_TurnOffCharacterSelectMenu();
 			}
 			else
 			{

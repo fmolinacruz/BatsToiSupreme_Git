@@ -12,11 +12,13 @@
 //#include "Blueprint/UserWidget.h"
 #include "Menu/WBTMenu.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/Actor.h"
 
 ABTPlayerController::ABTPlayerController()
 	: bHasSetupInput(false)
 {
 	bAutoManageActiveCameraTarget = false;
+
 }
 
 void ABTPlayerController::BeginPlay()
@@ -36,6 +38,19 @@ UWBTMenu* ABTPlayerController::CreateMenuWidget()
 		}
 	}
 	return nullptr;
+}
+
+//Client Only
+void ABTPlayerController::TurnOffMenuWidget()
+{
+	bool IsClient = GetWorld()->IsClient();
+	if (!IsClient)
+		return;
+
+	if (CharacterSelectionWidgetRef)
+	{
+		CharacterSelectionWidgetRef->SetVisibility(ESlateVisibility::Hidden);
+	}
 }
 
 void ABTPlayerController::PlayCharacterSelectedAnimation_Implementation(const int PlayerIndex)
@@ -84,6 +99,12 @@ void ABTPlayerController::ChangeCharacterSelectionTexture_Implementation(const i
 			CharacterSelectionWidgetRef->PlayerImagesCPP[PlayerIndex]->SetBrushFromTexture(SelectedTexture, true);
 		}
 	}
+}
+
+//Turn off CharacterSelect Menu when done select character
+void ABTPlayerController::Client_TurnOffCharacterSelectMenu_Implementation()
+{
+	TurnOffMenuWidget();
 }
 
 void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
