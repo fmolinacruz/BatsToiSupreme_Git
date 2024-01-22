@@ -78,36 +78,4 @@ void UWBTMenu::AddToImagesSourcec()
 		PlayerImagesCPP.Add(PlayerImage2);
 	}
 
-	if (Image1)
-	{
-		ImagesSourcecCPP.Add(Image1);
-	}
-	if (Image2)
-	{
-		ImagesSourcecCPP.Add(Image2);
-	}
-	if (Image3)
-	{
-		ImagesSourcecCPP.Add(Image3);
-	}
-	if (Image4)
-	{
-		ImagesSourcecCPP.Add(Image4);
-	}
-	if (Image5)
-	{
-		ImagesSourcecCPP.Add(Image5);
-	}
-	if (Image6)
-	{
-		ImagesSourcecCPP.Add(Image6);
-	}
-	if (Image7)
-	{
-		ImagesSourcecCPP.Add(Image7);
-	}
-	if (Image8)
-	{
-		ImagesSourcecCPP.Add(Image8);
-	}
 }
