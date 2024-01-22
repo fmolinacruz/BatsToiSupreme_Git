@@ -9,6 +9,16 @@
 
 class ABTBaseCharacter;
 
+// Define a structure to hold player data
+USTRUCT()
+struct FPlayerData
+{
+	GENERATED_BODY()
+
+	int CharacterID;
+	ABTPlayerController* Controller;
+};
+
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTGameModeBase : public AGameModeBase
 {
@@ -19,6 +29,10 @@ public:
 
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
+	void CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+	void StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+	void RestorePlayerCharacter(int PlayerIndex);
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -33,7 +47,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTInputReceiver> InputReceiverClass;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
 	TArray<ABTInputReceiver*> InputReceivers;
 
@@ -52,29 +66,6 @@ private:
 
 	int CurrentPlayerIndex = 0;
 
-private:
-	// Define a structure to hold player data
-	struct PlayerData
-	{
-		ABTPlayerController* Controller;
-		int CharacterID;
-	};
-
 	// Create a map to store player data based on player index
-	std::unordered_map<int, PlayerData> PlayerMap;
-
-//public:
-//	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Batstoi")
-//	bool bUseInputReceiver = false;
-
-public:
-	void SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
-
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Batstoi|SpawnPlayer")
-	void Server_SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
-
-	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Batstoi|SpawnPlayer")
-	void Multicast_SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
-
-	void RestorePlayerCharacter(int PlayerIndex);
+	TMap<int, FPlayerData> PlayerMap;
 };
