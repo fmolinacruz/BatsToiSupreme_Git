@@ -186,7 +186,7 @@ void ABTInputReceiver::Server_CharacterDecided_Implementation(int32 CharacterCho
 	{
 		return;
 	}
-	GameMode->SpawnPlayerCharacter(CurrentPlayerController, CharacterChoice, CurrentPlayerIndex);
+	GameMode->CheckForSpawningPlayerCharacter(CurrentPlayerController, CharacterChoice, CurrentPlayerIndex);
 	bHasSpawnedPlayer = true;
 }
 

@@ -71,29 +71,6 @@ public:
 	TSubclassOf<UWBTCharacterSelect> CharacterSelectMenuTemplate;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Textures")
-	UTexture2D* Image1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Textures")
-	UTexture2D* Image2;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Textures")
-	UTexture2D* Image3;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Textures")
-	UTexture2D* Image4;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Textures")
-	UTexture2D* Image5;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Textures")
-	UTexture2D* Image6;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Textures")
-	UTexture2D* Image7;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|Textures")
-	UTexture2D* Image8;
-
 	TArray<UTexture2D*> ImagesSourcecCPP;
 
 protected:
