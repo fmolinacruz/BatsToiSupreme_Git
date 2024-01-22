@@ -90,9 +90,13 @@ void UBTUISelectInput::InitializeInputComponent(UInputComponent* PlayerInputComp
 	if (EnhancedInputComponent)
 	{
 		EnhancedInputComponent->BindAction(SelectInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnSelect);
+		EnhancedInputComponent->BindAction(SelectInputActionKB, ETriggerEvent::Started, this, &UBTUISelectInput::OnSelect);
 		EnhancedInputComponent->BindAction(MenuLeftInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnMenuLeft);
+		EnhancedInputComponent->BindAction(MenuLeftInputActionKB, ETriggerEvent::Started, this, &UBTUISelectInput::OnMenuLeft);
 		EnhancedInputComponent->BindAction(MenuRightInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::OnMenuRight);
+		EnhancedInputComponent->BindAction(MenuRightInputActionKB, ETriggerEvent::Started, this, &UBTUISelectInput::OnMenuRight);
 		EnhancedInputComponent->BindAction(RestoreInputAction, ETriggerEvent::Started, this, &UBTUISelectInput::Restore);
+		EnhancedInputComponent->BindAction(RestoreInputActionKB, ETriggerEvent::Started, this, &UBTUISelectInput::Restore);
 	}
 	else
 	{

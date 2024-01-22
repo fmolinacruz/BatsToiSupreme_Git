@@ -47,20 +47,37 @@ protected:
 	void Restore(const FInputActionValue& Value);
 
 	// Input Actions
+	//SelectInput
+	//GamePad
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
 	UInputAction* SelectInputAction;
+	//Keyboard
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* SelectInputActionKB;
 
 	// MenuLeft
+	// GamePad
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
 	UInputAction* MenuLeftInputAction;
+	// Keyboard
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* MenuLeftInputActionKB;
 
 	// MenuRight
+	// GamePad
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
 	UInputAction* MenuRightInputAction;
+	// Keyboard
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* MenuRightInputActionKB;
 
 	// Restore
+	// GamePad
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
 	UInputAction* RestoreInputAction;
+	// Keyboard
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* RestoreInputActionKB;
 
 	// Mappable input configurations for the UI Selection
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UISelectionInput")
