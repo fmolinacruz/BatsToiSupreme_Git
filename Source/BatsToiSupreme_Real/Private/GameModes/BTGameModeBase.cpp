@@ -69,7 +69,7 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 	CurrentPlayerIndex++;
 }
 
-void ABTGameModeBase::SpawnPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
+void ABTGameModeBase::CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
 {
 	if (!PC)
 	{
@@ -81,17 +81,17 @@ void ABTGameModeBase::SpawnPlayerCharacter(ABTPlayerController* PC, int Characte
 	}
 
 	// Add player data to the map
-	PlayerMap[PlayerIndex] = { PC, CharacterID };
+	PlayerMap.Add(PlayerIndex, { CharacterID, PC });
 
 	// Check if there are at least 2 players
-	if (PlayerMap.size() >= 2)
+	if (PlayerMap.Num() >= 2)
 	{
-		for (auto& pair : PlayerMap)
+		for (const auto& Pair : PlayerMap)
 		{
-			Server_SpawnPlayerCharacter(pair.second.Controller, pair.second.CharacterID, pair.first);
+			StartSpawningPlayerCharacter(Pair.Value.Controller, Pair.Value.CharacterID, Pair.Key);
 		}
 
-		for (ABTInputReceiver* InputReceiver : InputReceivers)
+		for (const ABTInputReceiver* InputReceiver : InputReceivers)
 		{
 			if (InputReceiver)
 			{
@@ -105,12 +105,7 @@ void ABTGameModeBase::SpawnPlayerCharacter(ABTPlayerController* PC, int Characte
 	}
 }
 
-void ABTGameModeBase::Server_SpawnPlayerCharacter_Implementation(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
-{
-	Multicast_SpawnPlayerCharacter(PC, CharacterID, PlayerIndex);
-}
-
-void ABTGameModeBase::Multicast_SpawnPlayerCharacter_Implementation(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
+void ABTGameModeBase::StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
 {
 	if (GEngine)
 	{
@@ -147,7 +142,7 @@ void ABTGameModeBase::Multicast_SpawnPlayerCharacter_Implementation(ABTPlayerCon
 void ABTGameModeBase::RestorePlayerCharacter(int PlayerIndex)
 {
 	// Remove player data to the map
-	PlayerMap.erase(PlayerIndex);
+	PlayerMap.Remove(PlayerIndex);
 }
 
 void ABTGameModeBase::GetMainCameraRef()
