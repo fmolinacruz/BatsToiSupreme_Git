@@ -21,7 +21,7 @@ public:
     //~ UFactory Interface
     virtual UObject* FactoryCreateFile( UClass* Class, UObject* InParent, FName Name, EObjectFlags Flags, const FString& InFilename, const TCHAR* Parms, FFeedbackContext* Warn, bool& bOutOperationCanceled );
     virtual void PostInitProperties() override;
-    void ImportTextureFolder( FString& fbxRootPath, FString& rootGamePath, TArray< TCHAR* > kFileExtension, FString &fbxName, TArray<FString> &kTextureList );
+    void ImportTextureFolder( FString& fbxRootPath, FString& rootGamePath, TArray< const TCHAR* > kFileExtension, FString &fbxName, TArray<FString> &kTextureList );
     TArray<FString> GetLODPaths( FString &targetFolderPath, FString &FbxName );
     void SetShaderType( FString shaderType );
 private:

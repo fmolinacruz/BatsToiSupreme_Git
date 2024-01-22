@@ -198,6 +198,7 @@ private:
     bool ReAssignSequenceSkeleton( const TArray<FAssetData>& kAssetsToRetarget, USkeleton* pSkeleton );
     bool ReAssignAnimationBlueprintSkeleton( UAnimBlueprint* pAnimBlueprint, USkeleton* pSkeleton );
     void RenameAsset( UObject* pAssetObject, const FString& strNewAssetName );
+    void SaveModifiedAssets( const TArray<FAssetData>& kAssetDatas );
 
     TSharedPtr< class FUICommandList > m_kPluginCommands;
     static URig* m_pEngineHumanoidRig;
