@@ -57,6 +57,7 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 	EnhancedInputComponent->BindAction(LeftHeavyInputAction, ETriggerEvent::Started, this, &UBTPlayerInput::RequestLeftHeavyAction);
 	EnhancedInputComponent->BindAction(RightLightInputAction, ETriggerEvent::Started, this, &UBTPlayerInput::RequestRightLightAction);
 	EnhancedInputComponent->BindAction(RightHeavyInputAction, ETriggerEvent::Started, this, &UBTPlayerInput::RequestRightHeavyAction);
+	EnhancedInputComponent->BindAction(SprawlInputAction, ETriggerEvent::Started, this, &UBTPlayerInput::RequestSprawlAction);
 }
 
 void UBTPlayerInput::RequestStartMovement(const FInputActionValue& Value)
