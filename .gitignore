@@ -21,6 +21,7 @@
 
 *.dll
 !UnrealEditor-RLPlugin.dll
+!aws-cpp-sdk-gamelift-server.dll
 
 # Fortran module files
 *.mod
@@ -30,6 +31,7 @@
 *.la
 *.a
 *.lib
+!aws-cpp-sdk-gamelift-server.lib
 
 # Executables
 *.exe
