@@ -59,26 +59,12 @@ void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* Oth
 		// Motion Warp
 		if (CurrentAnim.AnimData.ReceiverForcePosition == ERelativePosition::SyncBone && CharacterOwner->GetMotionWarp())
 		{
-			SetAnimationTransformReference(CharacterOwner->BTEnemy);
+			BTLOG_DISPLAY("Set Motion Warpinng !!");
+			SetAnimationTransformReference(CharacterOwner);
 			
-			const FTransform TargetTransform = CharacterOwner->BTEnemy->GetAnimTransformRef()->GetComponentTransform();
-			const FMotionWarpingTarget NewTarget = FMotionWarpingTarget(CurrentAnim.AnimData.WarpSyncPoint, TargetTransform);
-			
-			UMotionWarpingComponent* MotionComp = CharacterOwner->GetMotionWarp();
-			MotionComp->AddOrUpdateWarpTarget(NewTarget);
-
-			URootMotionModifier_SkewWarp::AddRootMotionModifierSkewWarp(
-				MotionComp,
-				CurrentAnim.AnimData.AttackerAnimMontage,
-				0.0f, CurrentAnim.AnimData.WarpDuration,
-				CurrentAnim.AnimData.WarpSyncPoint,
-				EWarpPointAnimProvider::None,
-				TargetTransform,
-				NAME_None,
-				true, true, true,
-				EMotionWarpRotationType::Facing,
-				CurrentAnim.AnimData.WarpRotationMultiplier
-			);
+			const FTransform TargetTransform = CharacterOwner->GetAnimTransformRef()->GetComponentTransform();
+			UMotionWarpingComponent* MotionComp = CharacterOwner->BTEnemy->GetMotionWarp();
+			MotionComp->AddOrUpdateWarpTargetFromComponent(CurrentAnim.AnimData.WarpSyncPoint, CharacterOwner->GetAnimTransformRef(), NAME_None, true);
 		}
 
 		StartAnimOnAttacker();
