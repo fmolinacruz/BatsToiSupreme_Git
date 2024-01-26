@@ -2,6 +2,11 @@
 
 #include "Animation/BTAnimationComponent.h"
 
+#include "MotionWarpingComponent.h"
+#include "RootMotionModifier.h"
+#include "RootMotionModifier_SkewWarp.h"
+#include "Characters/BTBaseCharacter.h"
+#include "Characters/BTCharacterAttachmentRef.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
@@ -16,10 +21,10 @@ void UBTAnimationComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CharacterOwner = Cast<ACharacter>(GetOwner());
+	CharacterOwner = Cast<ABTBaseCharacter>(GetOwner());
 	if (!CharacterOwner)
 	{
-		BTLOG_ERROR("Please ONLY assign this component to ACharacter !");
+		BTLOG_ERROR("Please ONLY assign this component to ABTBaseCharacter !");
 	}
 }
 
@@ -49,8 +54,18 @@ void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* Oth
 	if (AnimsData && AnimsData->AttackerAnimMontage)
 	{
 		// TODO: Polish code here
-		CurrentAnim = FCombinedAnim(*AnimsData, CombineAnimTag, OtherCharacter); 
-		// TODO(Nghia Lam): Motion wrapping here
+		CurrentAnim = FCombinedAnim(*AnimsData, CombineAnimTag, OtherCharacter);
+
+		// Motion Warp
+		if (CurrentAnim.AnimData.ReceiverForcePosition == ERelativePosition::SyncBone && CharacterOwner->GetMotionWarp())
+		{
+			BTLOG_DISPLAY("Set Motion Warpinng !!");
+			SetAnimationTransformReference(CharacterOwner);
+			
+			const FTransform TargetTransform = CharacterOwner->GetAnimTransformRef()->GetComponentTransform();
+			UMotionWarpingComponent* MotionComp = CharacterOwner->BTEnemy->GetMotionWarp();
+			MotionComp->AddOrUpdateWarpTargetFromComponent(CurrentAnim.AnimData.WarpSyncPoint, CharacterOwner->GetAnimTransformRef(), NAME_None, true);
+		}
 
 		StartAnimOnAttacker();
 		StartAnimOnReceiver();
@@ -132,6 +147,12 @@ void UBTAnimationComponent::HandleMontageFinished(UAnimMontage* InMontage, bool 
 		}
 		bIsPlayingCombinedAnim = false;
 	}
+}
+
+void UBTAnimationComponent::SetAnimationTransformReference_Implementation(ABTBaseCharacter* InCharacter)
+{
+	BTLOG_WARNING("Current Receiver Sync Position: %s", *CurrentAnim.AnimData.ReceiverSyncPosition.ToString());
+	InCharacter->GetAnimTransformRef()->SetRelativeTransform(CurrentAnim.AnimData.ReceiverSyncPosition);
 }
 
 FCombinedAnimsData* UBTAnimationComponent::GetCombinedAnimData(const FGameplayTag& AnimTag, const ERelativeDirection Direction) const

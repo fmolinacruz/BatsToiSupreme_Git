@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameLiftServerSDK.h"
 #include "GameFramework/GameModeBase.h"
 #include "Input/BTInputReceiver.h"
 #include "BTGameModeBase.generated.h"
@@ -55,6 +56,8 @@ protected:
 	bool bIsLocal = false;
 
 private:
+	void InitGameLift();
+	
 	void GetMainCameraRef();
 	void GetStartSpots();
 
@@ -68,4 +71,6 @@ private:
 
 	// Create a map to store player data based on player index
 	TMap<int, FPlayerData> PlayerMap;
+	
+	FProcessParameters GameLiftParams;
 };
