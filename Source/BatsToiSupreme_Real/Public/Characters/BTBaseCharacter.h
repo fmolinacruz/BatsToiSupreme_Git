@@ -42,6 +42,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|PlayerID")
 	void SetPlayerIndex(int32 NewIndex);
 
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|CharacterID")
+	void SetCharacterID(int32 NewIndex);
+
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Component")
 	FORCEINLINE UBTCharacterAbilityHandler* GetAbilityHandler() const
 	{
@@ -83,6 +86,9 @@ public:
 
 	UPROPERTY(Replicated, BlueprintReadWrite, Category = "BatstoiCharacter|PlayerID")
 	int32 PlayerIndex;
+
+	UPROPERTY(Replicated, BlueprintReadWrite, Category = "BatstoiCharacter|PlayerID")
+	int32 CharacterID;
 
 	UPROPERTY(Replicated, BlueprintReadWrite, Category = "BatstoiCharacter|Attribute")
 	float StaminaAttribute = 0.0f;

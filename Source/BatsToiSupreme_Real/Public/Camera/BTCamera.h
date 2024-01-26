@@ -19,6 +19,10 @@ public:
 	//Game Started
 	void GameStarted(TArray<ABTPlayerCharacter*> ActivePlayers);
 
+	//Event Print Counter UI Widget Component
+	UFUNCTION(BlueprintNativeEvent, Category = "BTCamera|CounterUI")
+	void PrintCounterUI();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -5,9 +5,20 @@
 #include "CoreMinimal.h"
 #include "GameLiftServerSDK.h"
 #include "GameFramework/GameModeBase.h"
+#include "Input/BTInputReceiver.h"
 #include "BTGameModeBase.generated.h"
 
 class ABTBaseCharacter;
+
+// Define a structure to hold player data
+USTRUCT()
+struct FPlayerData
+{
+	GENERATED_BODY()
+
+	int CharacterID;
+	ABTPlayerController* Controller;
+};
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTGameModeBase : public AGameModeBase
@@ -19,6 +30,10 @@ public:
 
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
+	void CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+	void StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
+	void RestorePlayerCharacter(int PlayerIndex);
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -28,8 +43,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTBaseCharacter> CharacterClass;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Players")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
 	TArray<ABTBaseCharacter*> PlayerCharacters;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	TSubclassOf<ABTInputReceiver> InputReceiverClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
+	TArray<ABTInputReceiver*> InputReceivers;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	bool bIsLocal = false;
 
 private:
 	void InitGameLift();
@@ -44,5 +68,9 @@ private:
 	TArray<AActor*> StartSpots;
 
 	int CurrentPlayerIndex = 0;
+
+	// Create a map to store player data based on player index
+	TMap<int, FPlayerData> PlayerMap;
+	
 	FProcessParameters GameLiftParams;
 };

@@ -9,6 +9,8 @@
 #include "PlayerCommon/BTPlayerController.h"
 #include "Utilities/BTLogging.h"
 
+#include "Menu/WBTMenu.h"
+
 ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
 {
@@ -117,6 +119,11 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
 
+	if (bIsLocal)
+	{
+		return;
+	}
+
 	BTLOG_DISPLAY("[ABTGameModeBase] - OnPostLogin: Login New Player %s", *NewPlayer->GetName());
 	if (MainCameraRef == nullptr)
 	{
@@ -136,22 +143,100 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 
 	const FVector& Location = StartSpots[CurrentPlayerIndex]->GetActorLocation();
 	const FRotator& Rotation = StartSpots[CurrentPlayerIndex]->GetActorRotation();
-	ABTBaseCharacter* SpawnedCharacter = GetWorld()->SpawnActor<ABTBaseCharacter>(CharacterClass, Location, Rotation);
-	PC->Possess(SpawnedCharacter);
-	PC->ClientSetViewTarget(MainCameraRef);
 
-	PlayerCharacters.Add(SpawnedCharacter);
-
-	// Check if there are at least 2 players, then set enemy
-	if (PlayerCharacters.Num() >= 2)
+	ABTInputReceiver* InputReceiver = GetWorld()->SpawnActor<ABTInputReceiver>(InputReceiverClass, Location, Rotation);
+	if (InputReceiver)
 	{
-		PlayerCharacters[0]->BTEnemy = PlayerCharacters[1];
-		PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
+		PC->Possess(InputReceiver);
+		// PC->ClientSetViewTarget(MainCameraRef);
+
+		// Initialize the InputReceiver with the player controller and current player index
+		InputReceivers.Add(InputReceiver);
+		InputReceiver->InitializeWithPlayerController(PC, CurrentPlayerIndex);
+		
+		if (InputReceivers.Num() >= 2)
+		{
+			InputReceivers[0]->OtherPlayerController = InputReceivers[1]->CurrentPlayerController;
+			InputReceivers[1]->OtherPlayerController = InputReceivers[0]->CurrentPlayerController;
+		}
+	}
+	CurrentPlayerIndex++;
+}
+
+void ABTGameModeBase::CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
+{
+	if (!PC)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("SpawnPlayerCharacter is nullptr"));
+		}
+		return;
 	}
 
-	SpawnedCharacter->SetPlayerIndex(CurrentPlayerIndex);
+	// Add player data to the map
+	PlayerMap.Add(PlayerIndex, { CharacterID, PC });
 
-	CurrentPlayerIndex++;
+	// Check if there are at least 2 players
+	if (PlayerMap.Num() >= 2)
+	{
+		for (const auto& Pair : PlayerMap)
+		{
+			StartSpawningPlayerCharacter(Pair.Value.Controller, Pair.Value.CharacterID, Pair.Key);
+		}
+
+		for (const ABTInputReceiver* InputReceiver : InputReceivers)
+		{
+			if (InputReceiver)
+			{
+				InputReceiver->CurrentPlayerController->Client_TurnOffCharacterSelectMenu();
+			}
+			else
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("MenuWidgetRefCPP is nullptr"));
+			}
+		}
+	}
+}
+
+void ABTGameModeBase::StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("SpawnPlayerCharacter with PlayerIndex: %d"), PlayerIndex));
+	}
+
+	// Retrieve the spawn location and rotation from the start spots array
+	const FVector& Location = StartSpots[PlayerIndex]->GetActorLocation();
+	const FRotator& Rotation = StartSpots[PlayerIndex]->GetActorRotation();
+
+	// Spawn the player character using the selected CharacterID
+	// For simplicity, this example uses the same CharacterClass for all IDs
+	ABTBaseCharacter* SpawnedCharacter = GetWorld()->SpawnActor<ABTBaseCharacter>(CharacterClass, Location, Rotation);
+	if (SpawnedCharacter)
+	{
+		// PC->UnPossess();
+		PC->Possess(SpawnedCharacter);
+		PC->ClientSetViewTarget(MainCameraRef);
+
+		PlayerCharacters.Add(SpawnedCharacter);
+		SpawnedCharacter->SetPlayerIndex(PlayerIndex);
+		SpawnedCharacter->SetCharacterID(CharacterID);
+
+		// Set enemies if there are at least 2 players
+		// (Assuming PlayerCharacters array is sorted by player index)
+		if (PlayerCharacters.Num() >= 2)
+		{
+			PlayerCharacters[0]->BTEnemy = PlayerCharacters[1];
+			PlayerCharacters[1]->BTEnemy = PlayerCharacters[0];
+		}
+	}
+}
+
+void ABTGameModeBase::RestorePlayerCharacter(int PlayerIndex)
+{
+	// Remove player data to the map
+	PlayerMap.Remove(PlayerIndex);
 }
 
 void ABTGameModeBase::GetMainCameraRef()
@@ -171,3 +256,4 @@ void ABTGameModeBase::GetStartSpots()
 {
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), StartSpots);
 }
+
