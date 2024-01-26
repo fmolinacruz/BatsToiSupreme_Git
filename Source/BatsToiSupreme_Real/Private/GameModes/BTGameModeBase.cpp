@@ -70,13 +70,13 @@ void ABTGameModeBase::InitGameLift()
 	// GameLift sends a game session activation request to the game server and passes a game session object with game properties and other settings.
 	// Here is where a game server takes action based on the game session object. When the game server is ready to receive incoming player connections,
 	// it invokes the server SDK call ActivateGameSession().
-	auto onGameSession = [=](const Aws::GameLift::Server::Model::GameSession& GameLiftSession) {
+	auto OnGameSession = [=](const Aws::GameLift::Server::Model::GameSession& GameLiftSession) {
 		const FString GameSessionId = FString(GameLiftSession.GetGameSessionId());
 		BTLOG_DISPLAY("GameSession Initializing: %s", *GameSessionId);
 		GameLiftSdkModule->ActivateGameSession();
 	};
 
-	GameLiftParams.OnStartGameSession.BindLambda(onGameSession);
+	GameLiftParams.OnStartGameSession.BindLambda(OnGameSession);
 
 	// Implement callback function OnProcessTerminate
 	// GameLift invokes this callback before shutting down the instance hosting this game server. It gives the game server a chance to save its state, communicate with services, etc.,
