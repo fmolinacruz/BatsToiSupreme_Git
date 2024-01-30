@@ -16,15 +16,15 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	GameLiftProcessParams.OnUpdateGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionUpdate);
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
 	GameLiftProcessParams.OnHealthCheck.BindUObject(this, &ABTGameModeBase::OnGameLiftServerHealthCheck);
+
+#if WITH_GAMELIFT
+	InitGameLift();
+#endif
 }
 
 void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-#if WITH_GAMELIFT
-	InitGameLift();
-#endif
 }
 
 void ABTGameModeBase::InitGameLift()
