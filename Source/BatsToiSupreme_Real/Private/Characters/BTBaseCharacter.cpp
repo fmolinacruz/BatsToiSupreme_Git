@@ -217,3 +217,16 @@ void ABTBaseCharacter::Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter,
 		InCharacter->bIsTurningLeft = false;
 	}
 }
+
+void ABTBaseCharacter::StartButtonMashCountingCPP(float Duration)
+{
+	MashAmountCPP = 0;
+	MashingCPP = true;
+	// Set a timer to call StopButtonMashCounting after Duration has passed
+	GetWorld()->GetTimerManager().SetTimer(MashCountingTimerHandle, this, &ABTBaseCharacter::StopButtonMashCountingCPP, Duration);
+}
+
+void ABTBaseCharacter::StopButtonMashCountingCPP()
+{
+	MashingCPP = false;
+}
