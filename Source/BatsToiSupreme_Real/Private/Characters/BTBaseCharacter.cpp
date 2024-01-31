@@ -44,6 +44,8 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTBaseCharacter, PlayerIndex);
 	DOREPLIFETIME(ABTBaseCharacter, CharacterID);
 	DOREPLIFETIME(ABTBaseCharacter, StaminaAttribute);
+	DOREPLIFETIME(ABTBaseCharacter, MashAmountCPP);
+	DOREPLIFETIME(ABTBaseCharacter, MashingCPP);
 }
 
 void ABTBaseCharacter::BeginPlay()

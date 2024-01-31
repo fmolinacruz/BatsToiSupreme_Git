@@ -128,11 +128,11 @@ protected:
 	FTimerHandle MashCountingTimerHandle;
 
 	// The amount of times the button has been mashed
-	UPROPERTY(BlueprintReadWrite, Category = "BatstoiCharacter|Mash")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Mash")
 	int32 MashAmountCPP = 0;
 
 	// Whether the button mashing is currently being counted
-	UPROPERTY(BlueprintReadWrite, Category = "BatstoiCharacter|Mash")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Mash")
 	bool MashingCPP = false;
 
 protected:
