@@ -17,12 +17,12 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
 	GameLiftProcessParams.OnHealthCheck.BindUObject(this, &ABTGameModeBase::OnGameLiftServerHealthCheck);
 	
-	InitGameLift();
 }
 
 void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
+	InitGameLift();
 }
 
 void ABTGameModeBase::InitGameLift()
@@ -30,6 +30,21 @@ void ABTGameModeBase::InitGameLift()
 	BTLOG_DISPLAY("Initialize GameLift Server !");
 
 	GameLiftSDKModule = &FModuleManager::LoadModuleChecked<FGameLiftServerSDKModule>(FName("GameLiftServerSDK"));
+
+	FString mode;
+	//Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-mode="), mode))
+	{
+		if (mode == "anywhere")
+		{
+			InitSDKAnyWhere();
+		}
+		else
+		{
+			InitSDKEC2();
+		}
+	}
+
 	GameLiftSDKModule->InitSDK();
 
 	GameLiftProcessParams.port = 7777;
@@ -40,6 +55,44 @@ void ABTGameModeBase::InitGameLift()
 	
 	BTLOG_DISPLAY("Calling Process Ready");
 	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
+}
+
+void ABTGameModeBase::InitSDKEC2()
+{
+	BTLOG_DISPLAY("InitSDKEC2");
+	GameLiftSDKModule->InitSDK();
+}
+
+void ABTGameModeBase::InitSDKAnyWhere()
+{
+	BTLOG_DISPLAY("InitSDKAnyWhere");
+
+	// AuthToken returned from the "aws gamelift get-compute-auth-token" API. Note this will expire and require a new call to the API after 15 minutes.
+	if (FParse::Value(FCommandLine::Get(), TEXT("-authtoken="), GameLiftServerParams.m_authToken))
+	{
+	}
+
+	// The Host/compute-name of the GameLift Anywhere instance.
+	if (FParse::Value(FCommandLine::Get(), TEXT("-hostid="), GameLiftServerParams.m_hostId))
+	{
+	}
+
+	// The Anywhere Fleet ID.
+	if (FParse::Value(FCommandLine::Get(), TEXT("-fleetid="), GameLiftServerParams.m_fleetId))
+	{
+	}
+
+	// The WebSocket URL (GameLiftServiceSdkEndpoint).
+	if (FParse::Value(FCommandLine::Get(), TEXT("-websocketurl="), GameLiftServerParams.m_webSocketUrl))
+	{
+	}
+	// The PID of the running process
+	GameLiftServerParams.m_processId = FString::Printf(TEXT("%d"), GetCurrentProcessId());
+
+	// InitSDK establishes a local connection with GameLift's agent to enable further communication.
+	// Use InitSDK(serverParameters) for a GameLift Anywhere fleet.
+	// Use InitSDK() for a GameLift managed EC2 fleet.
+	GameLiftSDKModule->InitSDK(GameLiftServerParams);
 }
 
 void ABTGameModeBase::OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession)

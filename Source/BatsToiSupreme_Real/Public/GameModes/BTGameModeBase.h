@@ -77,6 +77,8 @@ private: // Default game setup
 
 private: // GameLift
 	void InitGameLift();
+	void InitSDKEC2();
+	void InitSDKAnyWhere();
 
 	void OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession);
 	void OnGameLiftSessionUpdate(Aws::GameLift::Server::Model::UpdateGameSession UpdatedSession);
