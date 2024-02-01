@@ -1,12 +1,9 @@
 
 REM Set the folder name in a variable
-set name=%1
+set name=\BuildServer
 set BUILD_ROOT=.\BuildServer\WindowsServer
 set Region=ap-southeast-1
 
-if "%1"==""(
-	set name=BuildServer
-)
 
 echo Start Upload
 REM Upload

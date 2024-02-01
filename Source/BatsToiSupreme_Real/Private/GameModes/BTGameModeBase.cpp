@@ -35,14 +35,15 @@ void ABTGameModeBase::InitGameLift()
 	//Check Mode
 	if (FParse::Value(FCommandLine::Get(), TEXT("-mode="), mode))
 	{
-		if (mode == "anywhere")
-		{
-			InitSDKAnyWhere();
-		}
-		else
-		{
-			InitSDKEC2();
-		}
+		
+	}
+	if (mode == "anywhere")
+	{
+		InitSDKAnyWhere();
+	}
+	else
+	{
+		InitSDKEC2();
 	}
 
 	GameLiftSDKModule->InitSDK();
