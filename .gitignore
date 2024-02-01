@@ -22,6 +22,8 @@
 *.dll
 !UnrealEditor-RLPlugin.dll
 !aws-cpp-sdk-gamelift-server.dll
+!libcrypto-3-x64.dll
+!libssl-3-x64.dll
 
 # Fortran module files
 *.mod
