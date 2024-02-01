@@ -16,10 +16,8 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	GameLiftProcessParams.OnUpdateGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionUpdate);
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
 	GameLiftProcessParams.OnHealthCheck.BindUObject(this, &ABTGameModeBase::OnGameLiftServerHealthCheck);
-
-#if WITH_GAMELIFT
+	
 	InitGameLift();
-#endif
 }
 
 void ABTGameModeBase::BeginPlay()
@@ -31,32 +29,7 @@ void ABTGameModeBase::InitGameLift()
 {
 	BTLOG_DISPLAY("Initialize GameLift Server !");
 
-	// Getting the module first.
 	GameLiftSDKModule = &FModuleManager::LoadModuleChecked<FGameLiftServerSDKModule>(FName("GameLiftServerSDK"));
-
-	/*
-	if (FParse::Value(FCommandLine::Get(), TEXT("-authtoken="), GameLiftServerParams.m_authToken))
-	{
-		BTLOG_DISPLAY("AUTH_TOKEN: %s", *GameLiftServerParams.m_authToken);
-	}
-	if (FParse::Value(FCommandLine::Get(), TEXT("-hostid="), GameLiftServerParams.m_hostId))
-	{
-		BTLOG_DISPLAY("HOST_ID: %s", GameLiftServerParams.m_hostId);
-	}
-	if (FParse::Value(FCommandLine::Get(), TEXT("-fleetid="), GameLiftServerParams.m_fleetId))
-	{
-		BTLOG_DISPLAY("FLEET_ID: %s", *GameLiftServerParams.m_fleetId);
-	}
-	if (FParse::Value(FCommandLine::Get(), TEXT("-websocketurl="), GameLiftServerParams.m_webSocketUrl))
-	{
-		BTLOG_DISPLAY("WEBSOCKET_URL: %s", *GameLiftServerParams.m_webSocketUrl);
-	}
-
-	GameLiftServerParams.m_processId = FString::Printf(TEXT("%d"), GetCurrentProcessId());
-	BTLOG_DISPLAY("PID: %s", *GameLiftServerParams.m_processId);
-	*/
-
-	// GameLiftSDKModule->InitSDK(GameLiftServerParams);
 	GameLiftSDKModule->InitSDK();
 
 	GameLiftProcessParams.port = 7777;
