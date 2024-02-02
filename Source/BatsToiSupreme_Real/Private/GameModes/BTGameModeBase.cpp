@@ -12,17 +12,19 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
 {
 	GameLiftSDKModule = nullptr;
-	GameLiftProcessParams.OnStartGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionStart);
+	/*GameLiftProcessParams.OnStartGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionStart);
 	GameLiftProcessParams.OnUpdateGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionUpdate);
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
 	GameLiftProcessParams.OnHealthCheck.BindUObject(this, &ABTGameModeBase::OnGameLiftServerHealthCheck);
-	
+	*/
 }
 
 void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
+#if WITH_GAMELIFT 
 	InitGameLift();
+#endif
 }
 
 void ABTGameModeBase::InitGameLift()
@@ -30,6 +32,10 @@ void ABTGameModeBase::InitGameLift()
 	BTLOG_DISPLAY("Initialize GameLift Server !");
 
 	GameLiftSDKModule = &FModuleManager::LoadModuleChecked<FGameLiftServerSDKModule>(FName("GameLiftServerSDK"));
+	if (GameLiftSDKModule == nullptr)
+	{
+		BTLOG_WARNING("LoadModuleChecked NULL !");
+	}
 
 	FString mode;
 	//Check Mode
@@ -37,6 +43,7 @@ void ABTGameModeBase::InitGameLift()
 	{
 		
 	}
+	BTLOG_DISPLAY("Initialize GameLift Server ! %s", *mode);
 	if (mode == "anywhere")
 	{
 		InitSDKAnyWhere();
@@ -45,23 +52,62 @@ void ABTGameModeBase::InitGameLift()
 	{
 		InitSDKEC2();
 	}
+	BTLOG_DISPLAY("Initialize GameLift Server 1!");
+	// Implement callback function onStartGameSession
+	// GameLift sends a game session activation request to the game server
+	// and passes a game session object with game properties and other settings.
+	// Here is where a game server takes action based on the game session object.
+	// When the game server is ready to receive incoming player connections,
+	// it invokes the server SDK call ActivateGameSession().
+	auto onGameSession = [=](Aws::GameLift::Server::Model::GameSession gameSession) {
+		FString gameSessionId = FString(gameSession.GetGameSessionId());
+		BTLOG_DISPLAY("GameSession Initializing: %s", *gameSessionId);
+		GameLiftSDKModule->ActivateGameSession();
+	};
 
-	GameLiftSDKModule->InitSDK();
+	GameLiftProcessParams.OnStartGameSession.BindLambda(onGameSession);
+
+	// Implement callback function OnProcessTerminate
+	// GameLift invokes this callback before shutting down the instance hosting this game server.
+	// It gives the game server a chance to save its state, communicate with services, etc.,
+	// and initiate shut down. When the game server is ready to shut down, it invokes the
+	// server SDK call ProcessEnding() to tell GameLift it is shutting down.
+	auto onProcessTerminate = [=]() {
+		BTLOG_DISPLAY("Game Server Process is terminating");
+		GameLiftSDKModule->ProcessEnding();
+	};
+
+	GameLiftProcessParams.OnTerminate.BindLambda(onProcessTerminate);
+
+	// Implement callback function OnHealthCheck
+	// GameLift invokes this callback approximately every 60 seconds.
+	// A game server might want to check the health of dependencies, etc.
+	// Then it returns health status true if healthy, false otherwise.
+	// The game server must respond within 60 seconds, or GameLift records 'false'.
+	// In this example, the game server always reports healthy.
+	auto onHealthCheck = []() {
+		BTLOG_DISPLAY("Performing Health Check");
+		return true;
+	};
+	BTLOG_DISPLAY("Initialize GameLift Server 2!");
+	GameLiftProcessParams.OnHealthCheck.BindLambda(onHealthCheck);
 
 	GameLiftProcessParams.port = 7777;
-	
+	BTLOG_DISPLAY("Initialize GameLift Server 3!");
 	TArray<FString> Logfiles;
 	Logfiles.Add(TEXT("GameLiftServer/Saved/Logs/GameLiftTest.log"));
 	GameLiftProcessParams.logParameters = Logfiles;
-	
+	BTLOG_DISPLAY("Initialize GameLift Server 4!");
 	BTLOG_DISPLAY("Calling Process Ready");
 	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
+	BTLOG_DISPLAY("Initialize GameLift Server 5!");
 }
 
 void ABTGameModeBase::InitSDKEC2()
 {
 	BTLOG_DISPLAY("InitSDKEC2");
 	GameLiftSDKModule->InitSDK();
+	BTLOG_DISPLAY("InitSDKEC2 DONE");
 }
 
 void ABTGameModeBase::InitSDKAnyWhere()
@@ -94,6 +140,7 @@ void ABTGameModeBase::InitSDKAnyWhere()
 	// Use InitSDK(serverParameters) for a GameLift Anywhere fleet.
 	// Use InitSDK() for a GameLift managed EC2 fleet.
 	GameLiftSDKModule->InitSDK(GameLiftServerParams);
+	BTLOG_DISPLAY("InitSDKAnyWhere DONE");
 }
 
 void ABTGameModeBase::OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession)
