@@ -135,6 +135,26 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Mash")
 	bool MashingCPP = false;
 
+	// IsReceivingDecision
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	bool IsReceivingDecisionCPP = false;
+
+	// ChargeInput
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	bool ChargeInputCPP = true;
+
+	// string InputDirection
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	FString InputDirectionCPP;
+
+	// string InputType
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	FString InputTypeCPP;
+
+	// float StallingProgress
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	float StallingProgressCPP = 0.0f;
+
 protected:
 	// Function to stop button mash counting after a delay
 	UFUNCTION()
