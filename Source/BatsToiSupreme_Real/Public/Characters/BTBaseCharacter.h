@@ -155,6 +155,11 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
 	float StallingProgressCPP = 0.0f;
 
+	// bool CanHold
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	bool CanHoldCPP = true;
+
+
 protected:
 	// Function to stop button mash counting after a delay
 	UFUNCTION()

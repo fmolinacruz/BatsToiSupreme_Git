@@ -51,6 +51,7 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTBaseCharacter, InputDirectionCPP);
 	DOREPLIFETIME(ABTBaseCharacter, InputTypeCPP);
 	DOREPLIFETIME(ABTBaseCharacter, StallingProgressCPP);
+	DOREPLIFETIME(ABTBaseCharacter, CanHoldCPP);
 }
 
 void ABTBaseCharacter::BeginPlay()
