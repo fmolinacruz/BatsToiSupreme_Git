@@ -124,6 +124,47 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Component")
 	TObjectPtr<UBTCharacterAttachmentRef> BTAnimTransformRef;
 
+	// The timer handle used for the delay
+	FTimerHandle MashCountingTimerHandle;
+
+	// The amount of times the button has been mashed
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Mash")
+	int32 MashAmountCPP = 0;
+
+	// Whether the button mashing is currently being counted
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Mash")
+	bool MashingCPP = false;
+
+	// IsReceivingDecision
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	bool IsReceivingDecisionCPP = false;
+
+	// ChargeInput
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	bool ChargeInputCPP = true;
+
+	// string InputDirection
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	FString InputDirectionCPP;
+
+	// string InputType
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	FString InputTypeCPP;
+
+	// float StallingProgress
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	float StallingProgressCPP = 0.0f;
+
+	// bool CanHold
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
+	bool CanHoldCPP = true;
+
+
+protected:
+	// Function to stop button mash counting after a delay
+	UFUNCTION()
+	void StopButtonMashCountingCPP();
+
 private:
 	UFUNCTION(Server, Unreliable)
 	void Server_AddMovementBuffer(ABTBaseCharacter* InCharacter, const FVector2D& MovementVector);
@@ -135,4 +176,9 @@ private:
 	void Server_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds);
 	
 	static void Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds);
+
+public:
+	// Function to start button mash counting
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Mash")
+	void StartButtonMashCountingCPP(float Duration);
 };

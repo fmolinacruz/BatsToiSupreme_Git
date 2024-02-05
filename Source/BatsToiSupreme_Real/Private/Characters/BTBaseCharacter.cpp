@@ -44,6 +44,14 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTBaseCharacter, PlayerIndex);
 	DOREPLIFETIME(ABTBaseCharacter, CharacterID);
 	DOREPLIFETIME(ABTBaseCharacter, StaminaAttribute);
+	DOREPLIFETIME(ABTBaseCharacter, MashAmountCPP);
+	DOREPLIFETIME(ABTBaseCharacter, MashingCPP);
+	DOREPLIFETIME(ABTBaseCharacter, IsReceivingDecisionCPP);
+	DOREPLIFETIME(ABTBaseCharacter, ChargeInputCPP);
+	DOREPLIFETIME(ABTBaseCharacter, InputDirectionCPP);
+	DOREPLIFETIME(ABTBaseCharacter, InputTypeCPP);
+	DOREPLIFETIME(ABTBaseCharacter, StallingProgressCPP);
+	DOREPLIFETIME(ABTBaseCharacter, CanHoldCPP);
 }
 
 void ABTBaseCharacter::BeginPlay()
@@ -216,4 +224,17 @@ void ABTBaseCharacter::Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter,
 		InCharacter->bIsTurningRight = false;
 		InCharacter->bIsTurningLeft = false;
 	}
+}
+
+void ABTBaseCharacter::StartButtonMashCountingCPP(float Duration)
+{
+	MashAmountCPP = 0;
+	MashingCPP = true;
+	// Set a timer to call StopButtonMashCounting after Duration has passed
+	GetWorld()->GetTimerManager().SetTimer(MashCountingTimerHandle, this, &ABTBaseCharacter::StopButtonMashCountingCPP, Duration);
+}
+
+void ABTBaseCharacter::StopButtonMashCountingCPP()
+{
+	MashingCPP = false;
 }
