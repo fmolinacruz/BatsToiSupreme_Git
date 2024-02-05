@@ -59,10 +59,9 @@ void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* Oth
 		// Motion Warp
 		if (CurrentAnim.AnimData.ReceiverForcePosition == ERelativePosition::SyncBone && CharacterOwner->GetMotionWarp())
 		{
-			BTLOG_DISPLAY("Set Motion Warpinng !!");
 			SetAnimationTransformReference(CharacterOwner);
 			
-			const FTransform TargetTransform = CharacterOwner->GetAnimTransformRef()->GetComponentTransform();
+			//const FTransform TargetTransform = CharacterOwner->GetAnimTransformRef()->GetComponentTransform();
 			UMotionWarpingComponent* MotionComp = CharacterOwner->BTEnemy->GetMotionWarp();
 			MotionComp->AddOrUpdateWarpTargetFromComponent(CurrentAnim.AnimData.WarpSyncPoint, CharacterOwner->GetAnimTransformRef(), NAME_None, true);
 		}
