@@ -20,7 +20,7 @@ public class BatsToiSupreme_Real : ModuleRules
 			"GASCompanion",
 			"EngineSettings",
 			"GameplayAbilities",
-			"GameLiftServerSDK"
+			"GameLiftServerSDK",
 		});
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {

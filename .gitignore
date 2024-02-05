@@ -22,6 +22,9 @@
 *.dll
 !UnrealEditor-RLPlugin.dll
 !aws-cpp-sdk-gamelift-server.dll
+!libcrypto-3-x64.dll
+!libssl-3-x64.dll
+!Misc/*.*
 
 # Fortran module files
 *.mod
@@ -64,6 +67,7 @@ Plugins/*/Binaries/*
 # Builds
 Build/*
 BuildServer/*
+WindowsServer/*
 BuildClient/*
 
 # Whitelist PakBlacklist-<BuildConfiguration>.txt files
