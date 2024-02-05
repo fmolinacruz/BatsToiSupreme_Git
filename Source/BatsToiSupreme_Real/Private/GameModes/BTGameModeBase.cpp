@@ -147,6 +147,7 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 	ABTInputReceiver* InputReceiver = GetWorld()->SpawnActor<ABTInputReceiver>(InputReceiverClass, Location, Rotation);
 	if (InputReceiver)
 	{
+		InputReceiver->SetIRCharacterIndex(CurrentPlayerIndex);
 		PC->Possess(InputReceiver);
 		// PC->ClientSetViewTarget(MainCameraRef);
 

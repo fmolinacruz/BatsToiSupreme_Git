@@ -50,20 +50,21 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 	//	}
 	//}
 
-	//// Register any default input configs
-	//if (CharacterIndex == 0 && GamepadConfig.bShouldActivateAutomatically)
-	//{
-	//	// print CharacterID GEngine
-	//	if (GEngine)
-	//	{
-	//		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("GamepadConfig - CharacterIndex 0: %d"), CharacterIndex));
-	//	}
-	//	FModifyContextOptions Options = {};
-	//	Options.bIgnoreAllPressedKeysUntilRelease = false;
-	//	// Register gamepad config
-	//	Subsystem->AddPlayerMappableConfig(GamepadConfig.Config.LoadSynchronous(), Options);
-	//}
-	if (CharacterIndex == 1 && KeyboardConfig.bShouldActivateAutomatically)
+	// Register any default input configs
+	if (CharacterIndex == 0 && GamepadConfig.bShouldActivateAutomatically)
+	{
+		// print CharacterID GEngine
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("GamepadConfig - CharacterIndex 0: %d"), CharacterIndex));
+		}
+		FModifyContextOptions Options = {};
+		Options.bIgnoreAllPressedKeysUntilRelease = false;
+		// Register gamepad config
+		Subsystem->AddPlayerMappableConfig(GamepadConfig.Config.LoadSynchronous(), Options);
+	}
+
+	else if (CharacterIndex == 1 && KeyboardConfig.bShouldActivateAutomatically)
 	{
 		// print CharacterID GEngine
 		if (GEngine)

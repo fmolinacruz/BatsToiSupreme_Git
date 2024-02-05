@@ -136,11 +136,12 @@ void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 		InputReceiver = Cast<ABTInputReceiver>(InPawn);
 		if (InputReceiver)
 		{
+			int IRCharacterIndex = InputReceiver->GetIRCharacterIndex();
 			UBTUISelectInput* SelectionInputComponent = InputReceiver->GetBTUISelectionInputComponent();
 			if (SelectionInputComponent)
 			{
 				SelectionInputComponent->InitializeWithInputReceiver(InputReceiver);
-				SelectionInputComponent->InitializeInputComponent(InputComponent);
+				SelectionInputComponent->InitializeInputComponent(InputComponent, IRCharacterIndex);
 			}
 		}
 		else

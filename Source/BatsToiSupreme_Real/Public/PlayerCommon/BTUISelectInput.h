@@ -21,7 +21,7 @@ public:
 	UBTUISelectInput();
 
 	// Initialize input component with enhanced input actions
-	void InitializeInputComponent(UInputComponent* PlayerInputComponent);
+	void InitializeInputComponent(UInputComponent* PlayerInputComponent, int CharacterIndex);
 
 	// InitializeWithInputReceiver
 	void InitializeWithInputReceiver(ABTInputReceiver* NewInputReceiver);
@@ -79,7 +79,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
 	UInputAction* RestoreInputActionKB;
 
-	// Mappable input configurations for the UI Selection
-	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UISelectionInput")
-	TArray<FMappableConfig> MappableInputConfigs;
+	//// Mappable input configurations for the UI Selection
+	//UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UISelectionInput")
+	//TArray<FMappableConfig> MappableInputConfigs;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|KeyboardConfig")
+	FMappableConfig KeyboardConfig;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|GamepadConfig")
+	FMappableConfig GamepadConfig;
 };
