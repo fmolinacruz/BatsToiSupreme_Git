@@ -21,7 +21,7 @@ void UBTPlayerInput::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputComponent)
+void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputComponent, int CharacterIndex)
 {
 	check(PlayerInputComponent);
 	if (!PlayerCharacter)
@@ -38,16 +38,42 @@ void UBTPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputCompon
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 	check(Subsystem);
 
-	// Register any default input configs
-	for (const FMappableConfig& InputConfig : DefaultInputConfigs)
-	{
-		if (InputConfig.bShouldActivateAutomatically)
-		{
-			FModifyContextOptions Options = {};
-			Options.bIgnoreAllPressedKeysUntilRelease = false;
+	//// Register any default input configs
+	//for (const FMappableConfig& InputConfig : DefaultInputConfigs)
+	//{
+	//	if (InputConfig.bShouldActivateAutomatically)
+	//	{
+	//		FModifyContextOptions Options = {};
+	//		Options.bIgnoreAllPressedKeysUntilRelease = false;
 
-			Subsystem->AddPlayerMappableConfig(InputConfig.Config.LoadSynchronous(), Options);
+	//		Subsystem->AddPlayerMappableConfig(InputConfig.Config.LoadSynchronous(), Options);
+	//	}
+	//}
+
+	//// Register any default input configs
+	//if (CharacterIndex == 0 && GamepadConfig.bShouldActivateAutomatically)
+	//{
+	//	// print CharacterID GEngine
+	//	if (GEngine)
+	//	{
+	//		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("GamepadConfig - CharacterIndex 0: %d"), CharacterIndex));
+	//	}
+	//	FModifyContextOptions Options = {};
+	//	Options.bIgnoreAllPressedKeysUntilRelease = false;
+	//	// Register gamepad config
+	//	Subsystem->AddPlayerMappableConfig(GamepadConfig.Config.LoadSynchronous(), Options);
+	//}
+	if (CharacterIndex == 1 && KeyboardConfig.bShouldActivateAutomatically)
+	{
+		// print CharacterID GEngine
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("KeyboardConfig - CharacterIndex 1: %d"), CharacterIndex));
 		}
+		FModifyContextOptions Options = {};
+		Options.bIgnoreAllPressedKeysUntilRelease = false;
+		// Register keyboard config
+		Subsystem->AddPlayerMappableConfig(KeyboardConfig.Config.LoadSynchronous(), Options);
 	}
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
