@@ -1,8 +1,7 @@
 
-REM Set the folder name in a variable
-set "src=.\..\Misc"
+REM Copy dll to binaries
+set "src=.\..\ServerBuildResource\ToBinaries"
 set "des=.\..\WindowsServer\BatsToiSupreme_Real\Binaries\Win64"
-
 echo start Copy DLL
 for /r "%src%" %%f in (*) do (
   if not "%%~sf"=="%src%" (
@@ -10,16 +9,16 @@ for /r "%src%" %%f in (*) do (
   )
 )
 
-echo start Install.bat
-set "src=.\..\Misc\install.bat"
-set "des=.\..\WindowsServer\install.bat"
-copy /y "%src%" "%des%"
 
-echo start VC_redist.x64.exe
-set "src=.\..\Misc\VC_redist.x64.exe"
-set "des=.\..\WindowsServer\VC_redist.x64.exe"
-copy /y "%src%" "%des%"
-
+REM copy file to Root
+set "src=.\..\ServerBuildResource\ToRoot"
+set "des=.\..\WindowsServer"
+echo start Copy DLL
+for /r "%src%" %%f in (*) do (
+  if not "%%~sf"=="%src%" (
+    xcopy /y "%%f" "%des%"
+  )
+)
 echo end copy
 
 pause
