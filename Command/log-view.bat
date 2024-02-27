@@ -1,0 +1,1 @@
+Get-Content C:\game\logs\game-server.log -Tail 100 -Wait

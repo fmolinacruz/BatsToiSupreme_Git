@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: BatsToi Server GameLift Resources
+Parameters:
+  BuildId:
+    Type: String
+    Default: v1
+    Description: The build version identifier
+Resources:
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - gamelift.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  RootInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref InstanceRole
+  Fleet:
+    Type: AWS::GameLift::Fleet
+    Properties:
+      Name: BatsToiFleet
+      Description: An BatsToi Fleet
+      Locations:
+        - Location: !Ref AWS::Region
+          LocationCapacity:
+            DesiredEC2Instances: 1
+            MaxSize: 1
+            MinSize: 0
+      BuildId: !Ref BuildId
+      RuntimeConfiguration:
+        GameSessionActivationTimeoutSeconds: 300
+        MaxConcurrentGameSessionActivations: 1
+        ServerProcesses:
+          - ConcurrentExecutions: 10
+            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+            Parameters: '-AbsLog=c:\game\logs\game-server.log'
+      EC2InstanceType: m5.large
+      FleetType: SPOT
+      CertificateConfiguration:
+        CertificateType: GENERATED
+      NewGameSessionProtectionPolicy: NoProtection
+      InstanceRoleARN: !GetAtt InstanceRole.Arn
+      EC2InboundPermissions:
+        - FromPort: 7777
+          ToPort: 8777
+          IpRange: 0.0.0.0/0
+          Protocol: UDP
+      ScalingPolicies:
+        - Name: BatsToiFleetScalingPolicy
+          MetricName: PercentAvailableGameSessions
+          PolicyType: TargetBased
+          TargetConfiguration:
+            TargetValue: 50
+  Alias:
+    Type: AWS::GameLift::Alias
+    Properties:
+      Name: BatsToiGameServerAlias
+      Description: An alias routing traffic to the fleet
+      RoutingStrategy:
+        Type: SIMPLE
+        FleetId: !Ref Fleet
+        
+Outputs:
+  FleetID:
+    Description: The ID of the created GameLift Fleet
+    Value: !Ref Fleet
+    Export:
+      Name: !Sub ${AWS::StackName}-FleetID

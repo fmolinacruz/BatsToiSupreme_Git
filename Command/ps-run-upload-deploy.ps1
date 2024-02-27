@@ -1,0 +1,1 @@
+.\upload-build-and-deploy.ps1 -Path .\..\WindowsServer
