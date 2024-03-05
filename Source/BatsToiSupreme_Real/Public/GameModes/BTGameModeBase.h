@@ -8,9 +8,10 @@
 #include "Input/BTInputReceiver.h"
 #include "BTGameModeBase.generated.h"
 
+// Forward declarations
 class ABTBaseCharacter;
 
-// Define a structure to hold player data
+// Player datas
 USTRUCT()
 struct FPlayerData
 {
@@ -20,6 +21,9 @@ struct FPlayerData
 	ABTPlayerController* Controller;
 };
 
+/******************************************************************************
+ * Main GameMode API
+ ******************************************************************************/
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTGameModeBase : public AGameModeBase
 {
@@ -55,9 +59,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	bool bIsLocal = false;
 
-private:
-	void InitGameLift();
-	
+private: // Default game setup
 	void GetMainCameraRef();
 	void GetStartSpots();
 
@@ -67,10 +69,23 @@ private:
 	UPROPERTY(Transient)
 	TArray<AActor*> StartSpots;
 
+	UPROPERTY(Transient)
 	int CurrentPlayerIndex = 0;
 
-	// Create a map to store player data based on player index
+	UPROPERTY(Transient)
 	TMap<int, FPlayerData> PlayerMap;
-	
-	FProcessParameters GameLiftParams;
+
+private: // GameLift
+	void InitGameLift();
+	void InitSDKEC2();
+	void InitSDKAnyWhere();
+
+	void OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession);
+	void OnGameLiftSessionUpdate(Aws::GameLift::Server::Model::UpdateGameSession UpdatedSession);
+	void OnGameLiftProcessTerminate();
+	bool OnGameLiftServerHealthCheck();
+
+	FGameLiftServerSDKModule* GameLiftSDKModule;
+	FServerParameters GameLiftServerParams;
+	FProcessParameters GameLiftProcessParams;
 };

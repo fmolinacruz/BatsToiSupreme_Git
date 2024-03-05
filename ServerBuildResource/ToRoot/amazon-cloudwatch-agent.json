@@ -1,0 +1,20 @@
+{
+  "agent": {
+    "logfile": "C:\\Program Files\\Amazon\\AmazonCloudWatchAgent\\Logs\\amazon-cloudwatch-agent.log"
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "C:\\game\\logs\\game-server.log",
+            "log_group_name": "GameServerLogs",
+            "log_stream_name": "GameServerLogs-{ip_address}",
+            "timezone": "Local"
+          }
+        ]
+      }
+    },
+    "force_flush_interval" : 5
+  }
+}
