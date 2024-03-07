@@ -101,6 +101,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|Attribute")
 	void SetStaminaConsumption(float value);
+
+	// void SetCharacterID
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|CharacterIndex")
+	void SetCharacterIndex(int32 NewCharacterIndex) { MyCharacterIndexCPP = NewCharacterIndex; }
+
+	// int32 GetCharacterID
+	UFUNCTION(BlueprintCallable, Category = "BatstoiCharacter|CharacterIndex")
+	int32 GetCharacterIndex() const { return MyCharacterIndexCPP; }
 	
 protected:
 	virtual void BeginPlay() override;
@@ -158,6 +166,10 @@ protected:
 	// bool CanHold
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|Decision")
 	bool CanHoldCPP = true;
+
+	// int32 MyCharacterIndex
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "BatstoiCharacter|CharacterIndex")
+	int32 MyCharacterIndexCPP;
 
 
 protected:

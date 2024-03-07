@@ -120,7 +120,14 @@ void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 	PlayerCharacter = Cast<ABTPlayerCharacter>(GetCharacter());
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->GetBTInputComponent()->InitializeInputComponent(InputComponent);
+		int CharacterIndex = PlayerCharacter->GetCharacterIndex();
+		// print CharacterID GEngine
+		//if (GEngine)
+		//{
+		//	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("CharacterID: %d"), CharacterIndex));
+		//}
+
+		PlayerCharacter->GetBTInputComponent()->InitializeInputComponent(InputComponent, CharacterIndex);
 		bHasSetupInput = true;
 	}
 	else
@@ -129,11 +136,12 @@ void ABTPlayerController::AcknowledgePossession(APawn* InPawn)
 		InputReceiver = Cast<ABTInputReceiver>(InPawn);
 		if (InputReceiver)
 		{
+			int IRCharacterIndex = InputReceiver->GetIRCharacterIndex();
 			UBTUISelectInput* SelectionInputComponent = InputReceiver->GetBTUISelectionInputComponent();
 			if (SelectionInputComponent)
 			{
 				SelectionInputComponent->InitializeWithInputReceiver(InputReceiver);
-				SelectionInputComponent->InitializeInputComponent(InputComponent);
+				SelectionInputComponent->InitializeInputComponent(InputComponent, IRCharacterIndex);
 			}
 		}
 		else

@@ -200,6 +200,7 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 	ABTInputReceiver* InputReceiver = GetWorld()->SpawnActor<ABTInputReceiver>(InputReceiverClass, Location, Rotation);
 	if (InputReceiver)
 	{
+		InputReceiver->SetIRCharacterIndex(CurrentPlayerIndex);
 		PC->Possess(InputReceiver);
 		// PC->ClientSetViewTarget(MainCameraRef);
 
@@ -254,6 +255,9 @@ void ABTGameModeBase::CheckForSpawningPlayerCharacter(ABTPlayerController* PC, i
 
 void ABTGameModeBase::StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
 {
+	// CharacterID 0123456789
+	// PlayerIndex 01
+
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("SpawnPlayerCharacter with PlayerIndex: %d"), PlayerIndex));
@@ -269,6 +273,7 @@ void ABTGameModeBase::StartSpawningPlayerCharacter(ABTPlayerController* PC, int 
 	if (SpawnedCharacter)
 	{
 		// PC->UnPossess();
+		SpawnedCharacter->SetCharacterIndex(PlayerIndex);
 		PC->Possess(SpawnedCharacter);
 		PC->ClientSetViewTarget(MainCameraRef);
 

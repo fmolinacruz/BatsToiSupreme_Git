@@ -70,6 +70,14 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|UI")
 	TObjectPtr<UWBTCharacterSelect> CharacterMenuRefCPP;
 
+	// void SetIRCharacterID
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|SetIRCharacterID")
+	void SetIRCharacterIndex(int32 NewIRCharacterIndex) { MyIRCharacterIndexCPP = NewIRCharacterIndex; }
+
+	// int32 GetIRCharacterID
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|GetIRCharacterID")
+	int32 GetIRCharacterIndex() const { return MyIRCharacterIndexCPP; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -82,6 +90,11 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|PlayerIndex")
 	int32 CurrentPlayerIndex;
+
+	// int32 MyIRCharacterIndex
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Batstoi|MyIRCharacterIndex")
+	int32 MyIRCharacterIndexCPP;
+
 
 private:
 	bool bHasSpawnedPlayer = false;

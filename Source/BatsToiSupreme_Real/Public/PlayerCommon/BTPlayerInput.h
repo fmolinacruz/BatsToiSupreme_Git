@@ -47,7 +47,7 @@ class BATSTOISUPREME_REAL_API UBTPlayerInput : public UActorComponent
 public:
 	UBTPlayerInput();
 
-	void InitializeInputComponent(UInputComponent* PlayerInputComponent);
+	void InitializeInputComponent(UInputComponent* PlayerInputComponent, int CharacterIndex);
 
 protected:
 	virtual void BeginPlay() override;
@@ -61,8 +61,14 @@ protected:
 	void RequestRightHeavyAction(const FInputActionValue& Value);
 	void RequestSprawlAction(const FInputActionValue& Value);
 
-	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput")
-	TArray<FMappableConfig> DefaultInputConfigs;
+	//UPROPERTY(EditDefaultsOnly, Category = "PlayerInput")
+	//TArray<FMappableConfig> DefaultInputConfigs;
+
+	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput|KeyboardConfig")
+	FMappableConfig KeyboardConfig;
+
+	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput|GamepadConfig")
+	FMappableConfig GamepadConfig;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
 	UInputAction* MoveInputAction;
