@@ -47,20 +47,46 @@ class BATSTOISUPREME_REAL_API UBTPlayerInput : public UActorComponent
 public:
 	UBTPlayerInput();
 
-	void InitializeInputComponent(UInputComponent* PlayerInputComponent);
-
-	// Actions
-	void RequestStartMovement(const FInputActionValue& Value);
-	void RequestCancelMovement(const FInputActionValue& Value);
+	void InitializeInputComponent(UInputComponent* PlayerInputComponent, int CharacterIndex);
 
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput")
-	TArray<FMappableConfig> DefaultInputConfigs;
+	// Actions
+	void RequestStartMovement(const FInputActionValue& Value);
+	void RequestCancelMovement(const FInputActionValue& Value);
+	void RequestLeftLightAction(const FInputActionValue& Value);
+	void RequestLeftHeavyAction(const FInputActionValue& Value);
+	void RequestRightLightAction(const FInputActionValue& Value);
+	void RequestRightHeavyAction(const FInputActionValue& Value);
+	void RequestSprawlAction(const FInputActionValue& Value);
+
+	//UPROPERTY(EditDefaultsOnly, Category = "PlayerInput")
+	//TArray<FMappableConfig> DefaultInputConfigs;
+
+	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput|KeyboardConfig")
+	FMappableConfig KeyboardConfig;
+
+	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput|GamepadConfig")
+	FMappableConfig GamepadConfig;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
 	UInputAction* MoveInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* LeftLightInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* LeftHeavyInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* RightLightInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* RightHeavyInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
+	UInputAction* SprawlInputAction;
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Player")

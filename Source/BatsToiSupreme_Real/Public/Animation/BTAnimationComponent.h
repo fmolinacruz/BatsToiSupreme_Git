@@ -9,9 +9,10 @@
 #include "BTAnimationComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombinedAnimationStarted, const FGameplayTag&, animTag);
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombinedAnimationEnded, const FGameplayTag&, animTag);
 
+// Forward declaration
+class ABTBaseCharacter;
 struct FCombinedAnimsData;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -27,13 +28,14 @@ public:
 	 * this operation is successful
 	 * @param OtherCharacter - The other character to play the receiver animation
 	 * @param CombineAnimTag - The anim tag that need to be played.
+	 * @param Direction - Direction of the animation.
 	 * @return - Is this function successful in playing that animation
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|Animation Component")
-	bool TryPlayCombinedAnimation(class ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag);
+	bool TryPlayCombinedAnimation(class ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag, const ERelativeDirection& Direction);
 
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable, Category = "Batstoi|Animation Component")
-	void PlayCombinedAnimation(class ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag);
+	void PlayCombinedAnimation(class ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag, const ERelativeDirection& Direction);
 
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|Animation Component")
 	bool CanPlayCombinedAnimWithCharacter(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag);
@@ -45,7 +47,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintPure, Category = "Batstoi|Animation Component")
-	FORCEINLINE ACharacter* GetCharacterOwner() const
+	FORCEINLINE ABTBaseCharacter* GetCharacterOwner() const
 	{
 		return CharacterOwner;
 	}
@@ -54,6 +56,12 @@ public:
 	FORCEINLINE ACharacter* GetCharacterReceiver() const
 	{
 		return CurrentAnim.ReceiverCharacterRef;
+	}
+	
+	UFUNCTION(BlueprintPure, Category = "Batstoi|Animation Component")
+	FORCEINLINE FCombinedAnim& GetCurrentAnimationData()
+	{
+		return CurrentAnim;
 	}
 
 	UPROPERTY(BlueprintAssignable, Category = "Batstoi|Animation Component")
@@ -87,10 +95,13 @@ private:
 	UFUNCTION(NetMulticast, Reliable, WithValidation, Category = "Batstoi|Animation Component")
 	void DispatchAnimEnded(const FGameplayTag& AnimTag);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|Animation Component")
 	void HandleMontageFinished(UAnimMontage* InMontage, bool bIsInterrupted);
+	
+	UFUNCTION(Server, Unreliable, BlueprintCallable, Category = "Batstoi|Animation Component")
+	void SetAnimationTransformReference(ABTBaseCharacter* InCharacter);
 
-	FCombinedAnimsData* GetCombinedAnimData(const FGameplayTag& AnimTag) const;
+	FCombinedAnimsData* GetCombinedAnimData(const FGameplayTag& AnimTag, const ERelativeDirection Direction) const;
 	void StartAnimOnAttacker();
 	void StartAnimOnReceiver();
 
@@ -100,5 +111,5 @@ private:
 	UPROPERTY(Replicated)
 	bool bIsPlayingCombinedAnim = false;
 
-	TObjectPtr<ACharacter> CharacterOwner;
+	TObjectPtr<ABTBaseCharacter> CharacterOwner;
 };

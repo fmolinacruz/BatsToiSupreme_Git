@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Graph/BTGraph.h"
+#include "Utilities/Graph/BTGraph.h"
 #include "BTStateMachine.generated.h"
 
 class UBTStateMachineNode;
@@ -35,10 +35,11 @@ public:
 	}
 
 	void DispatchTick(float DeltaTime);
+	bool TransitionNode(const FGameplayTag& TransitionTag);
 
 protected:
 	virtual bool ActivateNode(UBTGraphNode* Node) override;
-
+	
 	void Internal_Start();
 
 private:
@@ -46,7 +47,7 @@ private:
 	TObjectPtr<AActor> StateMachineOwner;
 
 	UPROPERTY(VisibleAnywhere, Category = BTSM)
-	TObjectPtr<UBTStateMachineNode> CurrentState;
+	TObjectPtr<UBTStateMachineNode> CurrentNode;
 
 	bool bHasStarted = false;
 };

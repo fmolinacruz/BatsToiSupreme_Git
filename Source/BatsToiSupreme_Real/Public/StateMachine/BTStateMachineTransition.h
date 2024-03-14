@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "Graph/BTGraphEdge.h"
+#include "Utilities/Graph/BTGraphEdge.h"
 #include "BTStateMachineTransition.generated.h"
 
 class UBTGraphCondition;

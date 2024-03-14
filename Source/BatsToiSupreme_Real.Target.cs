@@ -10,5 +10,7 @@ public class BatsToiSupreme_RealTarget : TargetRules
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		ExtraModuleNames.Add("BatsToiSupreme_Real");
+
+		bUseUnityBuild = true;
 	}
 }

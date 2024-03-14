@@ -20,7 +20,7 @@ void UBTStateMachine::StartFSM(AActor* InOwner)
 		BTLOG_WARNING("StateMachine Owner cannot be null!");
 		return;
 	}
-	
+
 	StateMachineOwner = InOwner;
 	if (IsActive())
 	{
@@ -46,7 +46,7 @@ void UBTStateMachine::StopFSM()
 
 void UBTStateMachine::DispatchTick(float DeltaTime)
 {
-	if (CurrentState)
+	if (CurrentNode)
 	{
 		// TODO: Dispatch Tick for each state.
 	}
@@ -54,17 +54,58 @@ void UBTStateMachine::DispatchTick(float DeltaTime)
 
 bool UBTStateMachine::ActivateNode(UBTGraphNode* Node)
 {
-	CurrentState = Cast<UBTStateMachineNode>(Node);
-	if (!CurrentState)
+	CurrentNode = Cast<UBTStateMachineNode>(Node);
+	if (!CurrentNode)
 	{
 		BTLOG_ERROR("This StateMachine graph didn't have the correct node type!");
 		return false;
 	}
-	
+
 	return Super::ActivateNode(Node);
 }
 
 void UBTStateMachine::Internal_Start()
 {
-	// TODO: Start the state machine.
+	for (UBTGraphNode* Root : RootNodes)
+	{
+		UBTStateMachineNode* StateNode = Cast<UBTStateMachineNode>(Root);
+		if (StateNode && StateNode->GetNodeType() == EStateMachineNodeType::Start)
+		{
+			ActivateNode(StateNode);
+			bHasStarted = true;
+			return;
+		}
+	}
+}
+
+bool UBTStateMachine::TransitionNode(const FGameplayTag& TransitionTag)
+{
+	if (!IsActive())
+	{
+		BTLOG_ERROR("[UBTStateMachine] - TransitionNode: StateMachine didn't start yet!")
+		return false;
+	}
+
+	for (UBTGraphNode* Node : GetAllActiveNodes())
+	{
+		UBTStateMachineNode* StateNode = Cast<UBTStateMachineNode>(Node);
+		if (StateNode == CurrentNode)
+		{
+			for (auto EdgeData : StateNode->EdgeDatas)
+			{
+				UBTStateMachineTransition* Transition = Cast<UBTStateMachineTransition>(EdgeData.Value);
+				if (Transition && Transition->GetTransitionTag() == TransitionTag && Transition->VerifyTransitionConditions())
+				{
+					DeactivateNode(StateNode);
+					UBTStateMachineNode* NextNode = Cast<UBTStateMachineNode>(EdgeData.Key);
+					if (NextNode)
+					{
+						NextNode->Transition(StateNode->GetNodeState());
+						return ActivateNode(NextNode);
+					}
+				}
+			}
+		}
+	}
+	return false;
 }

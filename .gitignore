@@ -21,6 +21,10 @@
 
 *.dll
 !UnrealEditor-RLPlugin.dll
+!aws-cpp-sdk-gamelift-server.dll
+!libcrypto-3-x64.dll
+!libssl-3-x64.dll
+!Misc/*.*
 
 # Fortran module files
 *.mod
@@ -30,6 +34,7 @@
 *.la
 *.a
 *.lib
+!aws-cpp-sdk-gamelift-server.lib
 
 # Executables
 *.exe
@@ -47,6 +52,7 @@
 *.VC.opendb
 *.modules
 *.temp
+BatsToiSupreme_Real.sln
 
 # Precompiled Assets
 SourceArt/**/*.png
@@ -60,6 +66,10 @@ Plugins/*/Binaries/*
 
 # Builds
 Build/*
+BuildServer/*
+WindowsServer/*
+BuildClient/*
+Windows/
 
 # Whitelist PakBlacklist-<BuildConfiguration>.txt files
 !Build/*/
@@ -103,5 +113,5 @@ Plugins/**/Intermediate/*
 # Auto generated files / folder
 .idea/
 .vsconfig
-
+.DS_Store
 # End of https://www.toptal.com/developers/gitignore/api/unrealengine

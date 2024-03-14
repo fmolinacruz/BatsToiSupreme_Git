@@ -11,7 +11,7 @@ UENUM(BlueprintType)
 enum class ERelativePosition : uint8
 {
 	Any UMETA(DisplayName = "Any position"),
-	SyncBone UMETA(DisplayName = "Get references from the sync bone"),
+	SyncBone UMETA(DisplayName = "Sync bone's position"),
 };
 
 UENUM(BlueprintType)
@@ -19,6 +19,7 @@ enum class ERelativeDirection : uint8
 {
 	Left UMETA(DisplayName = "Left Direction"),
 	Right UMETA(DisplayName = "Right Direction"),
+	None UMETA(DisplayName = "No Direction")
 };
 
 USTRUCT(BlueprintType)
@@ -32,11 +33,11 @@ struct FCombinedAnimsData : public FTableRowBase
 
 	/* The montage to be played on attacker */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	class UAnimMontage* AttackerAnimMontage;
+	TObjectPtr<UAnimMontage> AttackerAnimMontage;
 
 	/* The montage to be played on receiver */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	class UAnimMontage* ReceiverAnimMontage;
+	TObjectPtr<UAnimMontage> ReceiverAnimMontage;
 
 	/* The direction of the anim to be played */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
@@ -45,6 +46,22 @@ struct FCombinedAnimsData : public FTableRowBase
 	/* The receiver will be move to this position when the animation start */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
 	ERelativePosition ReceiverForcePosition = ERelativePosition::Any;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	FName WarpSyncPoint = "Sync";
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	float WarpDuration = 0.2f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	float WarpRotationMultiplier = 0.5f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	FTransform ReceiverSyncPosition;
+
+	/* The stamina to trigger this ability */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
+	float StaminaUsage;
 };
 
 USTRUCT(BlueprintType)

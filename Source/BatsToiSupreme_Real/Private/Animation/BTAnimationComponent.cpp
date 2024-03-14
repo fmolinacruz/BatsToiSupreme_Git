@@ -2,6 +2,11 @@
 
 #include "Animation/BTAnimationComponent.h"
 
+#include "MotionWarpingComponent.h"
+#include "RootMotionModifier.h"
+#include "RootMotionModifier_SkewWarp.h"
+#include "Characters/BTBaseCharacter.h"
+#include "Characters/BTCharacterAttachmentRef.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 #include "Utilities/BTLogging.h"
@@ -16,10 +21,10 @@ void UBTAnimationComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CharacterOwner = Cast<ACharacter>(GetOwner());
+	CharacterOwner = Cast<ABTBaseCharacter>(GetOwner());
 	if (!CharacterOwner)
 	{
-		BTLOG_ERROR("Please ONLY assign this component to ACharacter !");
+		BTLOG_ERROR("Please ONLY assign this component to ABTBaseCharacter !");
 	}
 }
 
@@ -32,24 +37,34 @@ void UBTAnimationComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UBTAnimationComponent, CurrentAnim);
 }
 
-bool UBTAnimationComponent::TryPlayCombinedAnimation(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag)
+bool UBTAnimationComponent::TryPlayCombinedAnimation(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag, const ERelativeDirection& Direction)
 {
 	if (!CanPlayCombinedAnimWithCharacter(OtherCharacter, CombineAnimTag))
 	{
 		return false;
 	}
 
-	PlayCombinedAnimation(OtherCharacter, CombineAnimTag);
+	PlayCombinedAnimation(OtherCharacter, CombineAnimTag, Direction);
 	return true;
 }
 
-void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag)
+void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag, const ERelativeDirection& Direction)
 {
-	const FCombinedAnimsData* AnimsData = GetCombinedAnimData(CombineAnimTag);
+	const FCombinedAnimsData* AnimsData = GetCombinedAnimData(CombineAnimTag, Direction);
 	if (AnimsData && AnimsData->AttackerAnimMontage)
 	{
-		CurrentAnim = FCombinedAnim(*AnimsData, CombineAnimTag, OtherCharacter); // TODO: Polish code here
-		// TODO(Nghia Lam): Motion wrapping here
+		// TODO: Polish code here
+		CurrentAnim = FCombinedAnim(*AnimsData, CombineAnimTag, OtherCharacter);
+
+		// Motion Warp
+		if (CurrentAnim.AnimData.ReceiverForcePosition == ERelativePosition::SyncBone && CharacterOwner->GetMotionWarp())
+		{
+			SetAnimationTransformReference(CharacterOwner);
+			
+			//const FTransform TargetTransform = CharacterOwner->GetAnimTransformRef()->GetComponentTransform();
+			UMotionWarpingComponent* MotionComp = CharacterOwner->BTEnemy->GetMotionWarp();
+			MotionComp->AddOrUpdateWarpTargetFromComponent(CurrentAnim.AnimData.WarpSyncPoint, CharacterOwner->GetAnimTransformRef(), NAME_None, true);
+		}
 
 		StartAnimOnAttacker();
 		StartAnimOnReceiver();
@@ -57,7 +72,7 @@ void UBTAnimationComponent::PlayCombinedAnimation_Implementation(ACharacter* Oth
 	}
 }
 
-bool UBTAnimationComponent::PlayCombinedAnimation_Validate(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag)
+bool UBTAnimationComponent::PlayCombinedAnimation_Validate(ACharacter* OtherCharacter, const FGameplayTag& CombineAnimTag, const ERelativeDirection& Direction)
 {
 	return true;
 }
@@ -133,13 +148,19 @@ void UBTAnimationComponent::HandleMontageFinished(UAnimMontage* InMontage, bool 
 	}
 }
 
-FCombinedAnimsData* UBTAnimationComponent::GetCombinedAnimData(const FGameplayTag& AnimTag) const
+void UBTAnimationComponent::SetAnimationTransformReference_Implementation(ABTBaseCharacter* InCharacter)
+{
+	BTLOG_WARNING("Current Receiver Sync Position: %s", *CurrentAnim.AnimData.ReceiverSyncPosition.ToString());
+	InCharacter->GetAnimTransformRef()->SetRelativeTransform(CurrentAnim.AnimData.ReceiverSyncPosition);
+}
+
+FCombinedAnimsData* UBTAnimationComponent::GetCombinedAnimData(const FGameplayTag& AnimTag, const ERelativeDirection Direction) const
 {
 	const auto Anims = AnimsConfigDatabase->GetRowMap();
 	for (const auto Anim : Anims)
 	{
 		FCombinedAnimsData* CurrentData = reinterpret_cast<FCombinedAnimsData*>(Anim.Value);
-		if (CurrentData->AnimTag == AnimTag)
+		if (CurrentData->AnimTag == AnimTag && CurrentData->AnimDirection == Direction)
 		{
 			return CurrentData;
 		}
