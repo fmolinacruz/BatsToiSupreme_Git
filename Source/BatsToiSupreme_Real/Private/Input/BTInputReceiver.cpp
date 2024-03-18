@@ -29,7 +29,6 @@ void ABTInputReceiver::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTInputReceiver, OtherPlayerController);
 	DOREPLIFETIME(ABTInputReceiver, MenuWidgetRefCPP);
 	DOREPLIFETIME(ABTInputReceiver, CharacterMenuRefCPP);
-	DOREPLIFETIME(ABTInputReceiver, MyIRCharacterIndexCPP);
 }
 
 void ABTInputReceiver::BeginPlay()
