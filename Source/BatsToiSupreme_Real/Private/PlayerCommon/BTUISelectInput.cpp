@@ -21,7 +21,7 @@ void UBTUISelectInput::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UBTUISelectInput::InitializeInputComponent(UInputComponent* PlayerInputComponent, int CharacterIndex)
+void UBTUISelectInput::InitializeInputComponent(UInputComponent* PlayerInputComponent)
 {
 	if (!PlayerInputComponent)
 	{
@@ -73,44 +73,16 @@ void UBTUISelectInput::InitializeInputComponent(UInputComponent* PlayerInputComp
 		return;
 	}
 
-	//// Register any default input configs
-	//for (const FMappableConfig& InputConfig : MappableInputConfigs)
-	//{
-	//	if (InputConfig.bShouldActivateAutomatically)
-	//	{
-	//		FModifyContextOptions Options = {};
-	//		Options.bIgnoreAllPressedKeysUntilRelease = false;
-
-	//		Subsystem->AddPlayerMappableConfig(InputConfig.Config.LoadSynchronous(), Options);
-	//	}
-	//}
-
 	// Register any default input configs
-
-	if (CharacterIndex == 0 && GamepadConfig.bShouldActivateAutomatically)
+	for (const FMappableConfig& InputConfig : MappableInputConfigs)
 	{
-		// print CharacterID GEngine
-		if (GEngine)
+		if (InputConfig.bShouldActivateAutomatically)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("GamepadConfig - CharacterIndex 0: %d"), CharacterIndex));
-		}
-		FModifyContextOptions Options = {};
-		Options.bIgnoreAllPressedKeysUntilRelease = false;
-		// Register gamepad config
-		Subsystem->AddPlayerMappableConfig(GamepadConfig.Config.LoadSynchronous(), Options);
-	}
+			FModifyContextOptions Options = {};
+			Options.bIgnoreAllPressedKeysUntilRelease = false;
 
-	else if (CharacterIndex == 1 && KeyboardConfig.bShouldActivateAutomatically)
-	{
-		// print CharacterID GEngine
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("KeyboardConfig - CharacterIndex 1: %d"), CharacterIndex));
+			Subsystem->AddPlayerMappableConfig(InputConfig.Config.LoadSynchronous(), Options);
 		}
-		FModifyContextOptions Options = {};
-		Options.bIgnoreAllPressedKeysUntilRelease = false;
-		// Register keyboard config
-		Subsystem->AddPlayerMappableConfig(KeyboardConfig.Config.LoadSynchronous(), Options);
 	}
 
 	// Cast the PlayerInputComponent to UEnhancedInputComponent and bind actions
