@@ -92,15 +92,27 @@ void ABTGameModeBase::InitGameLift()
 	BTLOG_DISPLAY("Initialize GameLift Server 2!");
 	GameLiftProcessParams.OnHealthCheck.BindLambda(onHealthCheck);
 
-	GameLiftProcessParams.port = 7777;
-	BTLOG_DISPLAY("Initialize GameLift Server 3!");
+	
+	//Get log path and port
+	BTLOG_DISPLAY("OnPostLogin Test ! %s", FCommandLine::Get());
+	FString logpath;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-AbsLog="), logpath))
+	{
+		BTLOG_DISPLAY("GameLift Server LogPath: %s", *logpath);
+	}
+	FString port;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-Port="), port))
+	{
+		BTLOG_DISPLAY("GameLift Server Port: %s", *port);
+	}
+
+	GameLiftProcessParams.port = FCString::Atoi(*port);
 	TArray<FString> Logfiles;
-	Logfiles.Add(TEXT("GameLiftServer/Saved/Logs/GameLiftTest.log"));
+	Logfiles.Add(logpath);
 	GameLiftProcessParams.logParameters = Logfiles;
-	BTLOG_DISPLAY("Initialize GameLift Server 4!");
-	BTLOG_DISPLAY("Calling Process Ready");
 	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
-	BTLOG_DISPLAY("Initialize GameLift Server 5!");
 }
 
 void ABTGameModeBase::InitSDKEC2()
