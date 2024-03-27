@@ -25,6 +25,7 @@ void ABTGameModeBase::BeginPlay()
 #if WITH_GAMELIFT 
 	InitGameLift();
 #endif
+
 }
 
 void ABTGameModeBase::InitGameLift()
@@ -113,6 +114,17 @@ void ABTGameModeBase::InitGameLift()
 	Logfiles.Add(logpath);
 	GameLiftProcessParams.logParameters = Logfiles;
 	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
+
+	FString timeout;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-Timeout="), timeout))
+	{
+		BTLOG_DISPLAY("GameLift Server timeout: %s", *timeout);
+		ClientConnectTimeOut = FCString::Atoi(*timeout);
+	}
+	// Check Client Connection
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABTGameModeBase::OnServerTimeOut, ClientConnectTimeOut, false);
 }
 
 void ABTGameModeBase::InitSDKEC2()
@@ -180,6 +192,15 @@ bool ABTGameModeBase::OnGameLiftServerHealthCheck()
 	return true;
 }
 
+void ABTGameModeBase::OnServerTimeOut()
+{
+	BTLOG_DISPLAY("OnServerTimeOut");
+	if (PlayerMap.Num() == 0)
+	{
+		GameLiftSDKModule->ProcessEnding();
+	}
+}
+
 void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
@@ -205,6 +226,8 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 		BTLOG_WARNING("[ABTGameModeBase] - OnPostLogin: This is not a Player!");
 		return;
 	}
+
+	BTLOG_WARNING("[ABTGameModeBase] - OnPostLogin: This is a Player!");
 
 	const FVector& Location = StartSpots[CurrentPlayerIndex]->GetActorLocation();
 	const FRotator& Rotation = StartSpots[CurrentPlayerIndex]->GetActorRotation();

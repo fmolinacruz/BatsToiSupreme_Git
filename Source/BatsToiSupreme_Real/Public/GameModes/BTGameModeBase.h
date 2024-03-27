@@ -85,7 +85,11 @@ private: // GameLift
 	void OnGameLiftProcessTerminate();
 	bool OnGameLiftServerHealthCheck();
 
+	void OnServerTimeOut();
+
 	FGameLiftServerSDKModule* GameLiftSDKModule;
 	FServerParameters GameLiftServerParams;
 	FProcessParameters GameLiftProcessParams;
+	int ClientConnectTimeOut = 600;// in Seconds
+	bool HasClientConnected = false;
 };
