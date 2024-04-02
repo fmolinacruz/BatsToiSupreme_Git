@@ -39,6 +39,7 @@ void ABTBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ABTBaseCharacter, BTAnimTransformRef);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningRight);
 	DOREPLIFETIME(ABTBaseCharacter, bIsTurningLeft);
+	DOREPLIFETIME(ABTBaseCharacter, bCanAdjustRotation);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferX);
 	DOREPLIFETIME(ABTBaseCharacter, MovementBufferY);
 	DOREPLIFETIME(ABTBaseCharacter, PlayerIndex);
@@ -77,7 +78,6 @@ void ABTBaseCharacter::Tick(float DeltaSeconds)
 	{
 		RotateTowardEnemy(DeltaSeconds);
 	}
-	//StaminaAttribute = GetStaminaProgress();
 }
 
 float ABTBaseCharacter::GetStaminaProgress() const
@@ -138,7 +138,10 @@ void ABTBaseCharacter::RefreshMovementBuffer()
 
 void ABTBaseCharacter::SetCanAdjustRotation(const bool NewCanAdjust)
 {
-	bCanAdjustRotation = NewCanAdjust;
+	if (IsLocallyControlled() || HasAuthority())
+	{
+		Server_SetCanAdjustRotation(this, NewCanAdjust);
+	}
 }
 
 void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharacter* InCharacter)
@@ -147,13 +150,13 @@ void ABTBaseCharacter::Server_RefreshMovementBuffer_Implementation(ABTBaseCharac
 	InCharacter->MovementBufferY = 0.0f;
 }
 
+void ABTBaseCharacter::Server_SetCanAdjustRotation_Implementation(ABTBaseCharacter* InCharacter, const bool NewCanAdjust)
+{
+	InCharacter->bCanAdjustRotation = NewCanAdjust;
+}
+
 void ABTBaseCharacter::RotateTowardEnemy(float DeltaSeconds)
 {
-	if (!bCanAdjustRotation)
-	{
-		return;
-	}
-	
 	Internal_RotateTowardEnemy(this, DeltaSeconds);
 	if (IsLocallyControlled() && !HasAuthority())
 	{
@@ -189,11 +192,22 @@ void ABTBaseCharacter::SetCharacterID(int32 NewIndex)
 
 void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
-	Internal_RotateTowardEnemy(InCharacter, DeltaSeconds);
+	// print bCanAdjustRotation use GEngine in Screen
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("bCanAdjustRotation: %d"), InCharacter->bCanAdjustRotation));
+
+	Internal_RotateTowardEnemy(InCharacter, DeltaSeconds);	
 }
 
 void ABTBaseCharacter::Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
+	if (!InCharacter->bCanAdjustRotation)
+	{
+		// print "Cannot adjust rotation !!" use GEngine in Screen
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Cannot adjust rotation !!")));
+		BTLOG_WARNING("Cannot adjust rotation !!");
+		return;
+	}
+
 	if (InCharacter->BTEnemy == nullptr)
 	{
 		BTLOG_WARNING("BTEnemy is not set correctly !!");
