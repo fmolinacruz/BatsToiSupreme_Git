@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.2",
+	"EngineAssociation": "{AEA7D126-4DF4-4844-5D29-8A9138ED3695}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -74,6 +74,10 @@
 			"Name": "GASCompanion",
 			"Enabled": true,
 			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/d83c6f34c3fb4b7092dde195c37c7413"
+		},
+		{
+			"Name": "GASCompanionTests",
+			"Enabled": true
 		},
 		{
 			"Name": "MotionWarping",
