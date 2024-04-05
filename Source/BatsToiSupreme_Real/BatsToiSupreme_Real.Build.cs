@@ -21,7 +21,8 @@ public class BatsToiSupreme_Real : ModuleRules
 			"EngineSettings",
 			"GameplayAbilities",
 			"GameLiftServerSDK",
-		});
+            "VaRest",
+        });
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"CommonInput",
