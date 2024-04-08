@@ -37,6 +37,7 @@ public:
 	void CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 	void StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 	void RestorePlayerCharacter(int PlayerIndex);
+	bool HasGameSessionStarted() { return mGameSessionStarted; } 
 	
 protected:
 	virtual void BeginPlay() override;
@@ -92,4 +93,5 @@ private: // GameLift
 	FProcessParameters GameLiftProcessParams;
 	int ClientConnectTimeOut = 600;// in Seconds
 	bool HasClientConnected = false;
+	bool mGameSessionStarted;
 };
