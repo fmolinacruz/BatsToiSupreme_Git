@@ -12,6 +12,7 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
 {
 	GameLiftSDKModule = nullptr;
+	mGameSessionStarted = false;
 	/*GameLiftProcessParams.OnStartGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionStart);
 	GameLiftProcessParams.OnUpdateGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionUpdate);
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
@@ -61,6 +62,7 @@ void ABTGameModeBase::InitGameLift()
 	// When the game server is ready to receive incoming player connections,
 	// it invokes the server SDK call ActivateGameSession().
 	auto onGameSession = [=](Aws::GameLift::Server::Model::GameSession gameSession) {
+		mGameSessionStarted = true;
 		FString gameSessionId = FString(gameSession.GetGameSessionId());
 		BTLOG_DISPLAY("GameSession Initializing: %s", *gameSessionId);
 		GameLiftSDKModule->ActivateGameSession();
@@ -75,7 +77,11 @@ void ABTGameModeBase::InitGameLift()
 	// server SDK call ProcessEnding() to tell GameLift it is shutting down.
 	auto onProcessTerminate = [=]() {
 		BTLOG_DISPLAY("Game Server Process is terminating");
-		GameLiftSDKModule->ProcessEnding();
+		if (mGameSessionStarted)
+		{
+			GameLiftSDKModule->ProcessEnding();
+			mGameSessionStarted = false;
+		}
 	};
 
 	GameLiftProcessParams.OnTerminate.BindLambda(onProcessTerminate);
