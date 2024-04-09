@@ -2,7 +2,7 @@ param (
     [Parameter(Mandatory = $false)]
     [string]$Profile = "default",
     [Parameter(Mandatory = $false)]
-    [string]$Region = "ap-southeast-1",
+    [string]$Region = "ap-northeast-1",
     [Parameter(Mandatory = $false)]
     [string]$Path = ".\"
 )
@@ -23,8 +23,6 @@ if ($null -eq $BuildId -or $BuildId -eq "None") {
     Write-Host "Build not found"
     exit
 }
-
-# deploy fleet
 Write-Host "Deploying fleet with build $BuildId"
 $ScriptPath = $MyInvocation.MyCommand.Path
 $Deploy = Join-Path (Split-Path $ScriptPath) "deploy.ps1"

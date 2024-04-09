@@ -3,8 +3,11 @@ Description: BatsToi Server GameLift Resources
 Parameters:
   BuildId:
     Type: String
-    Default: v1
     Description: The build version identifier
+  BackendStackName:
+    Type: String
+    Description: The name of the backend stack
+    Default: batstoi-serverless
 Resources:
   InstanceRole:
     Type: AWS::IAM::Role
@@ -28,27 +31,140 @@ Resources:
       Path: /
       Roles:
         - !Ref InstanceRole
+
+  # Queue to pass sessions to the fleet through the alias
+  Queue:
+    Type: "AWS::GameLift::GameSessionQueue"
+    Properties:
+      Name: "BatsToiSessionQueue"
+      TimeoutInSeconds: 50
+      Destinations:
+        # DestinationArn can be either an Alias arn or Fleet arn that you own
+        - DestinationArn:
+            !Join
+              - ''
+              - - 'arn:aws:gamelift:'
+                - !Ref "AWS::Region"
+                - '::alias/'
+                - !Ref Alias
+      # We try for less than 80ms latency for 3 seconds and then accept anything
+      # FlexMatch already tries to group players with less than 80ms latency to a Region as well
+      PlayerLatencyPolicies:
+        - MaximumIndividualPlayerLatencyMilliseconds: 80
+          PolicyDurationSeconds: 3
+        - MaximumIndividualPlayerLatencyMilliseconds: 1000
+
+  MatchmakingRuleSet:
+    Type: "AWS::GameLift::MatchmakingRuleSet"
+    Properties:
+      Name: "BatsToiGameLiftRuleSetV3" # change name after update rule set
+      RuleSetBody: !Sub |
+        {
+            "name": "simplerule",
+            "ruleLanguageVersion": "1.0",
+            "playerAttributes": [{
+                "name": "skill",
+                "type": "number",
+                "default": 10
+            }],
+            "teams": [{
+                "name": "versus",
+                "maxPlayers": 2,
+                "minPlayers": 1
+            }],
+            "rules": [{
+                "name": "FairSkill",
+                "description": "The average skill of players is within 10 points from the average skill of all players in the match",
+                "type": "distance",
+                // get skill value for each player
+                "measurements": [ "teams[versus].players.attributes[skill]" ],
+                // get skill values for all players and average to produce an overall average
+                "referenceValue": "avg(teams[versus].players.attributes[skill])",
+                "maxDistance": 10
+            },{
+              "name": "FastConnection",
+              "description": "Prefer matches with fast player connections first",
+              "type": "latency",
+              "maxLatency": 80
+            }],
+            "expansions": [{
+                  "target": "rules[FastConnection].maxLatency",
+                  "steps": [{
+                      "waitTimeSeconds": 5,
+                      "value": 1000
+                }]
+            }]
+        }
+
+  # Configuration that uses the rule set
+  MatchMakingConfiguration:
+    Type: "AWS::GameLift::MatchmakingConfiguration"
+    Properties:
+      Name: "BatsToiGameConfiguration"
+      AcceptanceRequired: false
+      AdditionalPlayerCount: 0
+      RequestTimeoutSeconds: 250
+      BackfillMode: "AUTOMATIC"
+      Description: "A basic sns configuration for BatsToi"
+      # Just some example properties, not used in our game
+      GameProperties:
+        - Key: "gamemode"
+          Value: "classic"
+      GameSessionQueueArns:
+        - !GetAtt Queue.Arn
+      RuleSetName: !Ref MatchmakingRuleSet
+      NotificationTarget:
+        Fn::ImportValue:
+          !Sub "${BackendStackName}-MatchmakingEventsSNSTopic"
+
   Fleet:
     Type: AWS::GameLift::Fleet
     Properties:
       Name: BatsToiFleet
-      Description: An BatsToi Fleet
+      Description: BatsToi Fleet
       Locations:
         - Location: !Ref AWS::Region
           LocationCapacity:
             DesiredEC2Instances: 1
-            MaxSize: 1
-            MinSize: 0
+            MaxSize: 4
+            MinSize: 1
       BuildId: !Ref BuildId
       RuntimeConfiguration:
         GameSessionActivationTimeoutSeconds: 300
-        MaxConcurrentGameSessionActivations: 1
+#        MaxConcurrentGameSessionActivations: 1
         ServerProcesses:
-          - ConcurrentExecutions: 10
+          - ConcurrentExecutions: 1
             LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server.log'
+            Parameters: '-AbsLog=c:\game\logs\game-server-7777.log -Port=7777'
+          - ConcurrentExecutions: 1
+            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+            Parameters: '-AbsLog=c:\game\logs\game-server-7778.log -Port=7778'
+          - ConcurrentExecutions: 1
+            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+            Parameters: '-AbsLog=c:\game\logs\game-server-7779.log -Port=7779'
+#          - ConcurrentExecutions: 1
+#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+#            Parameters: '-AbsLog=c:\game\logs\game-server-7780.log -Port=7780'
+#          - ConcurrentExecutions: 1
+#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+#            Parameters: '-AbsLog=c:\game\logs\game-server-7781.log -Port=7781'
+#          - ConcurrentExecutions: 1
+#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+#            Parameters: '-AbsLog=c:\game\logs\game-server-7782.log -Port=7782'
+#          - ConcurrentExecutions: 1
+#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+#            Parameters: '-AbsLog=c:\game\logs\game-server-7783.log -Port=7783'
+#          - ConcurrentExecutions: 1
+#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+#            Parameters: '-AbsLog=c:\game\logs\game-server-7784.log -Port=7784'
+#          - ConcurrentExecutions: 1
+#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+#            Parameters: '-AbsLog=c:\game\logs\game-server-7785.log -Port=7785'
+#          - ConcurrentExecutions: 1
+#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+#            Parameters: '-AbsLog=c:\game\logs\game-server-7786.log -Port=7786'
       EC2InstanceType: m5.large
-      FleetType: SPOT
+      FleetType: ON_DEMAND
       CertificateConfiguration:
         CertificateType: GENERATED
       NewGameSessionProtectionPolicy: NoProtection
@@ -72,7 +188,6 @@ Resources:
       RoutingStrategy:
         Type: SIMPLE
         FleetId: !Ref Fleet
-        
 Outputs:
   FleetID:
     Description: The ID of the created GameLift Fleet
