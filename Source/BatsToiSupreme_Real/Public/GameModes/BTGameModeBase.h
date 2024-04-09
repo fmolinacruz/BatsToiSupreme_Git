@@ -86,6 +86,7 @@ private: // GameLift
 	void OnGameLiftProcessTerminate();
 	bool OnGameLiftServerHealthCheck();
 
+	void StartServerTimeOut();
 	void OnServerTimeOut();
 
 	FGameLiftServerSDKModule* GameLiftSDKModule;
