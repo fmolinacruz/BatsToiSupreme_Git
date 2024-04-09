@@ -12,6 +12,7 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
 {
 	GameLiftSDKModule = nullptr;
+	mGameSessionStarted = false;
 	/*GameLiftProcessParams.OnStartGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionStart);
 	GameLiftProcessParams.OnUpdateGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionUpdate);
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
@@ -25,6 +26,7 @@ void ABTGameModeBase::BeginPlay()
 #if WITH_GAMELIFT 
 	InitGameLift();
 #endif
+
 }
 
 void ABTGameModeBase::InitGameLift()
@@ -60,6 +62,7 @@ void ABTGameModeBase::InitGameLift()
 	// When the game server is ready to receive incoming player connections,
 	// it invokes the server SDK call ActivateGameSession().
 	auto onGameSession = [=](Aws::GameLift::Server::Model::GameSession gameSession) {
+		mGameSessionStarted = true;
 		FString gameSessionId = FString(gameSession.GetGameSessionId());
 		BTLOG_DISPLAY("GameSession Initializing: %s", *gameSessionId);
 		GameLiftSDKModule->ActivateGameSession();
@@ -74,7 +77,11 @@ void ABTGameModeBase::InitGameLift()
 	// server SDK call ProcessEnding() to tell GameLift it is shutting down.
 	auto onProcessTerminate = [=]() {
 		BTLOG_DISPLAY("Game Server Process is terminating");
-		GameLiftSDKModule->ProcessEnding();
+		if (mGameSessionStarted)
+		{
+			GameLiftSDKModule->ProcessEnding();
+			mGameSessionStarted = false;
+		}
 	};
 
 	GameLiftProcessParams.OnTerminate.BindLambda(onProcessTerminate);
@@ -92,15 +99,38 @@ void ABTGameModeBase::InitGameLift()
 	BTLOG_DISPLAY("Initialize GameLift Server 2!");
 	GameLiftProcessParams.OnHealthCheck.BindLambda(onHealthCheck);
 
-	GameLiftProcessParams.port = 7777;
-	BTLOG_DISPLAY("Initialize GameLift Server 3!");
+	
+	//Get log path and port
+	BTLOG_DISPLAY("OnPostLogin Test ! %s", FCommandLine::Get());
+	FString logpath;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-AbsLog="), logpath))
+	{
+		BTLOG_DISPLAY("GameLift Server LogPath: %s", *logpath);
+	}
+	FString port;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-Port="), port))
+	{
+		BTLOG_DISPLAY("GameLift Server Port: %s", *port);
+	}
+
+	GameLiftProcessParams.port = FCString::Atoi(*port);
 	TArray<FString> Logfiles;
-	Logfiles.Add(TEXT("GameLiftServer/Saved/Logs/GameLiftTest.log"));
+	Logfiles.Add(logpath);
 	GameLiftProcessParams.logParameters = Logfiles;
-	BTLOG_DISPLAY("Initialize GameLift Server 4!");
-	BTLOG_DISPLAY("Calling Process Ready");
 	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
-	BTLOG_DISPLAY("Initialize GameLift Server 5!");
+
+	FString timeout;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-Timeout="), timeout))
+	{
+		BTLOG_DISPLAY("GameLift Server timeout: %s", *timeout);
+		ClientConnectTimeOut = FCString::Atoi(*timeout);
+	}
+	// Check Client Connection
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABTGameModeBase::OnServerTimeOut, ClientConnectTimeOut, false);
 }
 
 void ABTGameModeBase::InitSDKEC2()
@@ -168,6 +198,15 @@ bool ABTGameModeBase::OnGameLiftServerHealthCheck()
 	return true;
 }
 
+void ABTGameModeBase::OnServerTimeOut()
+{
+	BTLOG_DISPLAY("OnServerTimeOut");
+	if (PlayerMap.Num() == 0)
+	{
+		GameLiftSDKModule->ProcessEnding();
+	}
+}
+
 void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
@@ -193,6 +232,8 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 		BTLOG_WARNING("[ABTGameModeBase] - OnPostLogin: This is not a Player!");
 		return;
 	}
+
+	BTLOG_WARNING("[ABTGameModeBase] - OnPostLogin: This is a Player!");
 
 	const FVector& Location = StartSpots[CurrentPlayerIndex]->GetActorLocation();
 	const FRotator& Rotation = StartSpots[CurrentPlayerIndex]->GetActorRotation();

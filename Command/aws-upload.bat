@@ -2,7 +2,7 @@
 REM Set the folder name in a variable
 set name=%1
 set BUILD_ROOT=.\..\WindowsServer
-set Region=ap-southeast-1
+set Region=ap-northeast-1
 
 if "%name%" == "" (
 	set name=BuildServer
