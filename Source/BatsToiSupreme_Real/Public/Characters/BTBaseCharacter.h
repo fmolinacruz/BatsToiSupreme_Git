@@ -69,6 +69,9 @@ public:
 		return BTAnimTransformRef;
 	}
 
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
+	bool bCanAdjustRotation = true;
+
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "BatstoiCharacter|Movement")
 	float MovementBufferX;
 
@@ -106,9 +109,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
-	bool bCanAdjustRotation = true;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BatstoiCharacter|Rotation")
 	float AutoTurningRate = 50.0f;
 
@@ -171,6 +171,9 @@ private:
 
 	UFUNCTION(Server, Unreliable)
 	void Server_RefreshMovementBuffer(ABTBaseCharacter* InCharacter);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_SetCanAdjustRotation(ABTBaseCharacter* InCharacter, const bool NewCanAdjust);
 
 	UFUNCTION(Server, Unreliable)
 	void Server_RotateTowardEnemy(ABTBaseCharacter* InCharacter, float DeltaSeconds);
