@@ -198,7 +198,7 @@ void ABTGameModeBase::StartServerTimeOut()
 	}
 	// Check Client Connection
 	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABTGameModeBase::OnServerTimeOut, ClientConnectTimeOut, true);
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABTGameModeBase::OnServerTimeOut, ClientConnectTimeOut, true, ClientConnectTimeOut);
 }
 
 void ABTGameModeBase::OnServerTimeOut()
@@ -206,6 +206,7 @@ void ABTGameModeBase::OnServerTimeOut()
 	BTLOG_DISPLAY("OnServerTimeOut");
 	if (PlayerMap.Num() == 0)
 	{
+		GameLiftSDKModule->ProcessEnding();
 		FGenericPlatformMisc::RequestExit(false);
 	}
 }
