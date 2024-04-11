@@ -66,7 +66,10 @@ void ABTGameModeBase::InitGameLift()
 		FString gameSessionId = FString(gameSession.GetGameSessionId());
 		BTLOG_DISPLAY("GameSession Initializing: %s", *gameSessionId);
 		GameLiftSDKModule->ActivateGameSession();
-		StartServerTimeOut();
+		//StartServerTimeOut();
+		AsyncTask(ENamedThreads::GameThread, [this] {
+			StartServerTimeOut();
+		});
 	};
 
 	GameLiftProcessParams.OnStartGameSession.BindLambda(onGameSession);

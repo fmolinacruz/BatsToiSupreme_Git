@@ -36,17 +36,24 @@ Resources:
   Queue:
     Type: "AWS::GameLift::GameSessionQueue"
     Properties:
-      Name: "BatsToiSessionQueue"
+      Name: "BatsToiSessionQueueV2"
       TimeoutInSeconds: 50
       Destinations:
         # DestinationArn can be either an Alias arn or Fleet arn that you own
         - DestinationArn:
             !Join
-              - ''
-              - - 'arn:aws:gamelift:'
-                - !Ref "AWS::Region"
-                - '::alias/'
-                - !Ref Alias
+            - ''
+            - - 'arn:aws:gamelift:'
+              - !Ref "AWS::Region"
+              - '::alias/'
+              - !Ref Alias
+        - DestinationArn:
+            !Join
+            - ''
+            - - 'arn:aws:gamelift:'
+              - !Ref "AWS::Region"
+              - '::fleet/'
+              - !Ref AnyWhereFleet
       # We try for less than 80ms latency for 3 seconds and then accept anything
       # FlexMatch already tries to group players with less than 80ms latency to a Region as well
       PlayerLatencyPolicies:
@@ -131,7 +138,7 @@ Resources:
       BuildId: !Ref BuildId
       RuntimeConfiguration:
         GameSessionActivationTimeoutSeconds: 300
-#        MaxConcurrentGameSessionActivations: 1
+        #        MaxConcurrentGameSessionActivations: 1
         ServerProcesses:
           - ConcurrentExecutions: 1
             LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
@@ -142,29 +149,30 @@ Resources:
           - ConcurrentExecutions: 1
             LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
             Parameters: '-AbsLog=c:\game\logs\game-server-7779.log -Port=7779'
-#          - ConcurrentExecutions: 1
-#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-#            Parameters: '-AbsLog=c:\game\logs\game-server-7780.log -Port=7780'
-#          - ConcurrentExecutions: 1
-#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-#            Parameters: '-AbsLog=c:\game\logs\game-server-7781.log -Port=7781'
-#          - ConcurrentExecutions: 1
-#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-#            Parameters: '-AbsLog=c:\game\logs\game-server-7782.log -Port=7782'
-#          - ConcurrentExecutions: 1
-#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-#            Parameters: '-AbsLog=c:\game\logs\game-server-7783.log -Port=7783'
-#          - ConcurrentExecutions: 1
-#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-#            Parameters: '-AbsLog=c:\game\logs\game-server-7784.log -Port=7784'
-#          - ConcurrentExecutions: 1
-#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-#            Parameters: '-AbsLog=c:\game\logs\game-server-7785.log -Port=7785'
-#          - ConcurrentExecutions: 1
-#            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-#            Parameters: '-AbsLog=c:\game\logs\game-server-7786.log -Port=7786'
+      #          - ConcurrentExecutions: 1
+      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+      #            Parameters: '-AbsLog=c:\game\logs\game-server-7780.log -Port=7780'
+      #          - ConcurrentExecutions: 1
+      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+      #            Parameters: '-AbsLog=c:\game\logs\game-server-7781.log -Port=7781'
+      #          - ConcurrentExecutions: 1
+      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+      #            Parameters: '-AbsLog=c:\game\logs\game-server-7782.log -Port=7782'
+      #          - ConcurrentExecutions: 1
+      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+      #            Parameters: '-AbsLog=c:\game\logs\game-server-7783.log -Port=7783'
+      #          - ConcurrentExecutions: 1
+      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+      #            Parameters: '-AbsLog=c:\game\logs\game-server-7784.log -Port=7784'
+      #          - ConcurrentExecutions: 1
+      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+      #            Parameters: '-AbsLog=c:\game\logs\game-server-7785.log -Port=7785'
+      #          - ConcurrentExecutions: 1
+      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
+      #            Parameters: '-AbsLog=c:\game\logs\game-server-7786.log -Port=7786'
       EC2InstanceType: m5.large
       FleetType: ON_DEMAND
+      #      ApplyCapacity: ON_CREATE_AND_UPDATE
       CertificateConfiguration:
         CertificateType: GENERATED
       NewGameSessionProtectionPolicy: NoProtection
@@ -180,6 +188,22 @@ Resources:
           PolicyType: TargetBased
           TargetConfiguration:
             TargetValue: 50
+
+  CustomLocation:
+    Type: AWS::GameLift::Location
+    Properties:
+      LocationName: custom-local-1
+
+  AnyWhereFleet:
+    Type: AWS::GameLift::Fleet
+    Properties:
+      ComputeType: ANYWHERE
+      Name: BatsToiAnyWhereFleet
+      Locations:
+        - Location: !Ref CustomLocation
+      AnywhereConfiguration:
+        Cost: "0.0"
+
   Alias:
     Type: AWS::GameLift::Alias
     Properties:
@@ -194,3 +218,8 @@ Outputs:
     Value: !Ref Fleet
     Export:
       Name: !Sub ${AWS::StackName}-FleetID
+  AnyWhereFleetID:
+    Description: The ID of the created GameLift Fleet
+    Value: !Ref AnyWhereFleet
+    Export:
+      Name: !Sub ${AWS::StackName}-AnywhereFleetID
