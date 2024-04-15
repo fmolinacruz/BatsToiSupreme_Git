@@ -2,7 +2,7 @@ param (
     [Parameter(Mandatory = $false)]
     [string]$Profile = "default",
     [Parameter(Mandatory = $false)]
-    [string]$Region = "ap-southeast-1",
+    [string]$Region = "ap-northeast-1",
     [Parameter(Mandatory = $false)]
     [string]$Template = "<default>",
     [Parameter(Mandatory = $true)]
@@ -15,22 +15,23 @@ if ($Template -eq "<default>") {
     $Template = Join-Path (Split-Path $ScriptPath) "gamelift.yaml"
 }
 
-$Name="batstoi-gamelift-deployment"
-$StackStatus=aws cloudformation describe-stacks --profile $Profile --region $Region --stack-name $Name --query Stacks[].StackStatus --output text 2>Out-Null
+$Name = "batstoi-gamelift"
+$StackStatus = aws cloudformation describe-stacks --profile $Profile --region $Region --stack-name $Name --query Stacks[].StackStatus --output text 2>$null
 if ($null -eq $StackStatus) {
     # create stack
     Write-Host "Stack $Name not found, creating stack"
     aws cloudformation create-stack --template-body file://$Template --stack-name $Name --profile $Profile --region $Region --parameters "ParameterKey=BuildId,ParameterValue=$BuildId" --capabilities CAPABILITY_IAM --on-failure DELETE
     # wait for stack creation
-    Write-Host "Waiting for stack creation"
+    Write-Host "Waiting for stack creation (up to 45 minutes)"
     aws cloudformation wait stack-create-complete --stack-name $Name --profile $Profile --region $Region
     # continue wait if timeout
-} else {
+}
+else {
     # update stack
     Write-Host "Stack $Name found, updating stack"
     aws cloudformation update-stack --template-body file://$Template --stack-name $Name --profile $Profile --region $Region --parameters "ParameterKey=BuildId,ParameterValue=$BuildId" --capabilities CAPABILITY_IAM
     # wait for stack update
-    Write-Host "Waiting for stack update"
+    Write-Host "Waiting for stack update (up to 45 minutes if the fleet is updated)"
     aws cloudformation wait stack-update-complete --stack-name $Name --profile $Profile --region $Region
 }
 Write-Host 'Done'

@@ -66,6 +66,10 @@ void ABTGameModeBase::InitGameLift()
 		FString gameSessionId = FString(gameSession.GetGameSessionId());
 		BTLOG_DISPLAY("GameSession Initializing: %s", *gameSessionId);
 		GameLiftSDKModule->ActivateGameSession();
+		//StartServerTimeOut();
+		AsyncTask(ENamedThreads::GameThread, [this] {
+			StartServerTimeOut();
+		});
 	};
 
 	GameLiftProcessParams.OnStartGameSession.BindLambda(onGameSession);
@@ -77,11 +81,8 @@ void ABTGameModeBase::InitGameLift()
 	// server SDK call ProcessEnding() to tell GameLift it is shutting down.
 	auto onProcessTerminate = [=]() {
 		BTLOG_DISPLAY("Game Server Process is terminating");
-		if (mGameSessionStarted)
-		{
-			GameLiftSDKModule->ProcessEnding();
-			mGameSessionStarted = false;
-		}
+		GameLiftSDKModule->ProcessEnding();
+		mGameSessionStarted = false;
 	};
 
 	GameLiftProcessParams.OnTerminate.BindLambda(onProcessTerminate);
@@ -121,16 +122,6 @@ void ABTGameModeBase::InitGameLift()
 	GameLiftProcessParams.logParameters = Logfiles;
 	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
 
-	FString timeout;
-	// Check Mode
-	if (FParse::Value(FCommandLine::Get(), TEXT("-Timeout="), timeout))
-	{
-		BTLOG_DISPLAY("GameLift Server timeout: %s", *timeout);
-		ClientConnectTimeOut = FCString::Atoi(*timeout);
-	}
-	// Check Client Connection
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABTGameModeBase::OnServerTimeOut, ClientConnectTimeOut, false);
 }
 
 void ABTGameModeBase::InitSDKEC2()
@@ -198,12 +189,28 @@ bool ABTGameModeBase::OnGameLiftServerHealthCheck()
 	return true;
 }
 
+void ABTGameModeBase::StartServerTimeOut()
+{
+
+	FString timeout;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-Timeout="), timeout))
+	{
+		BTLOG_DISPLAY("GameLift Server timeout: %s", *timeout);
+		ClientConnectTimeOut = FCString::Atoi(*timeout);
+	}
+	// Check Client Connection
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABTGameModeBase::OnServerTimeOut, ClientConnectTimeOut, true, ClientConnectTimeOut);
+}
+
 void ABTGameModeBase::OnServerTimeOut()
 {
 	BTLOG_DISPLAY("OnServerTimeOut");
 	if (PlayerMap.Num() == 0)
 	{
 		GameLiftSDKModule->ProcessEnding();
+		FGenericPlatformMisc::RequestExit(false);
 	}
 }
 

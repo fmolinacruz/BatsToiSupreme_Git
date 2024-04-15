@@ -3,7 +3,7 @@ param (
     [string]$Profile = "default",
 
     [Parameter(Mandatory = $false)]
-    [string]$Region = "ap-southeast-1"
+    [string]$Region = "ap-northeast-1"
 )
 
 # Get Fleet list
@@ -24,7 +24,7 @@ if ($FleetList.FleetAttributes.Count -eq 1) {
     Write-Host "Only one fleet found, using fleet: $FleetId"
 }
 else {
-    # Require user choose one
+    # Require user choose one by input or tab
     $FleetId = Read-Host "Choose fleet id"
 }
 
@@ -41,7 +41,7 @@ Write-Host "Instance list"
 $ComputeList.ComputeList
 
 
-$ActiveComputelist = $ComputeList.ComputeList | Where-Object { $_.ComputeStatus -eq "Active"} | Measure-Object
+$ActiveComputelist = $ComputeList.ComputeList | Where-Object { $_.ComputeStatus -eq "Active" } | Measure-Object
 
 if ($ActiveComputelist.Count -eq 0) {
     Write-Host "No active instance found"
@@ -53,7 +53,7 @@ if ($ActiveComputelist.Count -eq 1) {
     Write-Host "Only one active instance found, using compute: $ComputeName"
 }
 else {
-    # Require use choose one
+    # Require user choose one
     $ComputeName = Read-Host "Choose compute name"
 }
 
