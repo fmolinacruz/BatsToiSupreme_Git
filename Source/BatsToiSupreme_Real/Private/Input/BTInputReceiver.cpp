@@ -154,6 +154,7 @@ void ABTInputReceiver::OnRestore()
 
 void ABTInputReceiver::Server_CharacterSelected_Implementation()
 {
+	BTLOG_DISPLAY("[ABTInputReceiver] - Server_CharacterSelected_Implementation");
 	CurrentPlayerController->PlayCharacterSelectedAnimation(CurrentPlayerIndex);
 	
 	// Update UI of other clients
@@ -165,6 +166,7 @@ void ABTInputReceiver::Server_CharacterSelected_Implementation()
 
 void ABTInputReceiver::Server_CharacterDecided_Implementation(int32 CharacterChoice)
 {
+	BTLOG_DISPLAY("[ABTInputReceiver] - Server_CharacterDecided_Implementation");
 	CurrentPlayerController->PlayCharacterDecidedAnimation(CurrentPlayerIndex);
 
 	// Update UI of other clients

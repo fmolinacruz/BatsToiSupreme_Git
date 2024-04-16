@@ -1,0 +1,1 @@
+.\anywhere_process.ps1 -ExecutePath .\..\WindowsServer\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe -Port 9998 -IP 192.168.35.64
