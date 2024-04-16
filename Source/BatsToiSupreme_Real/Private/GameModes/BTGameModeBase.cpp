@@ -266,6 +266,7 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 void ABTGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	BTLOG_DISPLAY("[ABTGameModeBase] - PostLogin: ");
+	Super::PostLogin(NewPlayer);
 }
 
 void ABTGameModeBase::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
