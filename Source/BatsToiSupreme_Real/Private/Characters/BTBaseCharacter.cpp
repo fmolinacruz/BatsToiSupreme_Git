@@ -193,7 +193,7 @@ void ABTBaseCharacter::SetCharacterID(int32 NewIndex)
 void ABTBaseCharacter::Server_RotateTowardEnemy_Implementation(ABTBaseCharacter* InCharacter, float DeltaSeconds)
 {
 	// print bCanAdjustRotation use GEngine in Screen
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("bCanAdjustRotation: %d"), InCharacter->bCanAdjustRotation));
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("bCanAdjustRotation: %d"), InCharacter->bCanAdjustRotation));
 
 	Internal_RotateTowardEnemy(InCharacter, DeltaSeconds);	
 }
@@ -203,7 +203,7 @@ void ABTBaseCharacter::Internal_RotateTowardEnemy(ABTBaseCharacter* InCharacter,
 	if (!InCharacter->bCanAdjustRotation)
 	{
 		// print "Cannot adjust rotation !!" use GEngine in Screen
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Cannot adjust rotation !!")));
+		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Cannot adjust rotation !!")));
 		BTLOG_WARNING("Cannot adjust rotation !!");
 		return;
 	}
