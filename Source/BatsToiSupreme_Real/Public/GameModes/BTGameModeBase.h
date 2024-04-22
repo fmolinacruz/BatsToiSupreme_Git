@@ -33,6 +33,8 @@ public:
 	ABTGameModeBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	virtual void OnPostLogin(AController* NewPlayer) override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 
 	void CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 	void StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
@@ -92,7 +94,7 @@ private: // GameLift
 	FGameLiftServerSDKModule* GameLiftSDKModule;
 	FServerParameters GameLiftServerParams;
 	FProcessParameters GameLiftProcessParams;
-	int ClientConnectTimeOut = 600;// in Seconds
+	int ClientConnectTimeOut = 20;// in Seconds
 	bool HasClientConnected = false;
 	bool mGameSessionStarted;
 };
