@@ -19,7 +19,6 @@
 *.so
 *.dylib
 
-*.dll
 !UnrealEditor-RLPlugin.dll
 !aws-cpp-sdk-gamelift-server.dll
 !libcrypto-3-x64.dll
