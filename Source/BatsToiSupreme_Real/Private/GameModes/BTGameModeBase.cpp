@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Characters/BTBaseCharacter.h"
 #include "GameFramework/PlayerStart.h"
+#include "Gameplay/BTGameplayManager.h"
 #include "PlayerCommon/BTPlayerController.h"
 #include "Utilities/BTLogging.h"
 
@@ -27,6 +28,7 @@ void ABTGameModeBase::BeginPlay()
 	InitGameLift();
 #endif
 
+	InitGameplaySettings();
 }
 
 void ABTGameModeBase::InitGameLift()
@@ -164,6 +166,18 @@ void ABTGameModeBase::InitSDKAnyWhere()
 	BTLOG_DISPLAY("InitSDKAnyWhere DONE");
 }
 
+void ABTGameModeBase::InitGameplaySettings()
+{
+	if (GameplayManagerRef != nullptr)
+		return;
+	
+	GameplayManagerRef = GetWorld()->SpawnActor<ABTGameplayManager>(GameplayManagerClass);
+	if (GameplayManagerRef != nullptr)
+	{
+		BTLOG_ERROR("ABTGameplayManager cannot be spawned!");
+	}
+}
+
 void ABTGameModeBase::OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession)
 {
 	const FString GameSessionId = FString(ActivatedSession.GetGameSessionId());
@@ -222,6 +236,10 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 	{
 		return;
 	}
+	if (GameplayManagerRef == nullptr)
+	{
+		InitGameplaySettings();
+	}
 
 	BTLOG_DISPLAY("[ABTGameModeBase] - OnPostLogin: Login New Player %s", *NewPlayer->GetName());
 	if (MainCameraRef == nullptr)
@@ -259,6 +277,9 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 		{
 			InputReceivers[0]->OtherPlayerController = InputReceivers[1]->CurrentPlayerController;
 			InputReceivers[1]->OtherPlayerController = InputReceivers[0]->CurrentPlayerController;
+
+			GameplayManagerRef->Player01 = Cast<ABTBaseCharacter>(InputReceivers[0]->CurrentPlayerController->GetCharacter());
+			GameplayManagerRef->Player02 = Cast<ABTBaseCharacter>(InputReceivers[1]->CurrentPlayerController->GetCharacter());
 		}
 	}
 	CurrentPlayerIndex++;

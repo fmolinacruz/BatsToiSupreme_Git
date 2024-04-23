@@ -9,6 +9,7 @@
 #include "BTGameModeBase.generated.h"
 
 // Forward declarations
+class ABTGameplayManager;
 class ABTBaseCharacter;
 
 // Player datas
@@ -37,7 +38,13 @@ public:
 	void CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 	void StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 	void RestorePlayerCharacter(int PlayerIndex);
-	bool HasGameSessionStarted() { return mGameSessionStarted; } 
+	bool HasGameSessionStarted() { return mGameSessionStarted; }
+
+	UFUNCTION(BlueprintCallable, Category = "BatstoiGamemode|Component")
+	FORCEINLINE ABTGameplayManager* GetGameplayManager() const
+	{
+		return GameplayManagerRef;
+	}
 	
 protected:
 	virtual void BeginPlay() override;
@@ -54,6 +61,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTInputReceiver> InputReceiverClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	TSubclassOf<ABTGameplayManager> GameplayManagerClass;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
 	TArray<ABTInputReceiver*> InputReceivers;
 
@@ -76,10 +86,14 @@ private: // Default game setup
 	UPROPERTY(Transient)
 	TMap<int, FPlayerData> PlayerMap;
 
+	UPROPERTY(Transient)
+	TObjectPtr<ABTGameplayManager> GameplayManagerRef;
+	
 private: // GameLift
 	void InitGameLift();
 	void InitSDKEC2();
 	void InitSDKAnyWhere();
+	void InitGameplaySettings();
 
 	void OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession);
 	void OnGameLiftSessionUpdate(Aws::GameLift::Server::Model::UpdateGameSession UpdatedSession);
