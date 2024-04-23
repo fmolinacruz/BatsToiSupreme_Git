@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerCommon/BTPlayerController.h"
-
+#include "GameFramework/PlayerState.h"
 #include "Input/BTInputReceiver.h"
 #include "PlayerCommon/BTUISelectInput.h"
 
@@ -47,8 +47,10 @@ void ABTPlayerController::TurnOffMenuWidget()
 	if (!IsClient)
 		return;
 
+	BTLOG_DISPLAY("[ABTPlayerController] - TurnOffMenuWidget");
 	if (CharacterSelectionWidgetRef)
 	{
+		BTLOG_DISPLAY("[ABTPlayerController] - TurnOffMenuWidget 1");
 		CharacterSelectionWidgetRef->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
