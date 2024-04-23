@@ -14,3 +14,12 @@ Run
    Cathy Local Map: Cathy_ModernArenaWithCrowd
 
 Need 2 gamepad to play game
+
+** Build Server
+1. Open c++ project
+2. Build config: Development Server, Win64
+3. Run Config: Development editor Win64
+4. Open Editor
+5. Package with config: Windows, Development, BatsToiSupreme_RealServer, 
+
+** Deploy to AWS

@@ -14,6 +14,7 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 {
 	GameLiftSDKModule = nullptr;
 	mGameSessionStarted = false;
+	ClientConnectTimeOut = 20;
 	/*GameLiftProcessParams.OnStartGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionStart);
 	GameLiftProcessParams.OnUpdateGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionUpdate);
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
@@ -102,9 +103,6 @@ void ABTGameModeBase::InitGameLift()
 	BTLOG_DISPLAY("Initialize GameLift Server 2!");
 	GameLiftProcessParams.OnHealthCheck.BindLambda(onHealthCheck);
 
-	
-	//Get log path and port
-	BTLOG_DISPLAY("OnPostLogin Test ! %s", FCommandLine::Get());
 	FString logpath;
 	// Check Mode
 	if (FParse::Value(FCommandLine::Get(), TEXT("-AbsLog="), logpath))
@@ -181,7 +179,7 @@ void ABTGameModeBase::InitGameplaySettings()
 void ABTGameModeBase::OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession)
 {
 	const FString GameSessionId = FString(ActivatedSession.GetGameSessionId());
-	BTLOG_DISPLAY("GameSession Initializing: %s", *GameSessionId);
+	BTLOG_DISPLAY("OnGameLiftSessionStart: %s", *GameSessionId);
 
 	GameLiftSDKModule->ActivateGameSession();
 }
@@ -205,7 +203,6 @@ bool ABTGameModeBase::OnGameLiftServerHealthCheck()
 
 void ABTGameModeBase::StartServerTimeOut()
 {
-
 	FString timeout;
 	// Check Mode
 	if (FParse::Value(FCommandLine::Get(), TEXT("-Timeout="), timeout))
@@ -220,18 +217,20 @@ void ABTGameModeBase::StartServerTimeOut()
 
 void ABTGameModeBase::OnServerTimeOut()
 {
-	BTLOG_DISPLAY("OnServerTimeOut");
-	if (PlayerMap.Num() == 0)
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerController::StaticClass(), FoundActors);
+	BTLOG_DISPLAY("OnServerTimeOut %d", FoundActors.Num());
+	/*if (PlayerMap.Num() == 0)
 	{
 		GameLiftSDKModule->ProcessEnding();
 		FGenericPlatformMisc::RequestExit(false);
-	}
+	}*/
 }
 
 void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
-
+	BTLOG_DISPLAY("[ABTGameModeBase] - OnPostLogin: Login New Player %s", *NewPlayer->GetName());
 	if (bIsLocal)
 	{
 		return;
@@ -285,8 +284,21 @@ void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 	CurrentPlayerIndex++;
 }
 
+void ABTGameModeBase::PostLogin(APlayerController* NewPlayer)
+{
+	BTLOG_DISPLAY("[ABTGameModeBase] - PostLogin: ");
+	Super::PostLogin(NewPlayer);
+}
+
+void ABTGameModeBase::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	BTLOG_DISPLAY("[ABTGameModeBase] - PostLogin: ");
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+}
+
 void ABTGameModeBase::CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex)
 {
+	BTLOG_DISPLAY("[ABTGameModeBase] - CheckForSpawningPlayerCharacter: ");
 	if (!PC)
 	{
 		if (GEngine)
