@@ -170,7 +170,7 @@ void ABTGameModeBase::InitGameplaySettings()
 		return;
 	
 	GameplayManagerRef = GetWorld()->SpawnActor<ABTGameplayManager>(GameplayManagerClass);
-	if (GameplayManagerRef != nullptr)
+	if (GameplayManagerRef == nullptr)
 	{
 		BTLOG_ERROR("ABTGameplayManager cannot be spawned!");
 	}
