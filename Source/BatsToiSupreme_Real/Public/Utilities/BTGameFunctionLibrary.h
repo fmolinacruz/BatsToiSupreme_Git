@@ -14,4 +14,7 @@ class BATSTOISUPREME_REAL_API UBTGameFunctionLibrary : public UBlueprintFunction
 public:
 	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContextObject"), Category = BatstoiLibrary)
 	static class ABTGameState* GetBTGameState(const UObject* WorldContextObject);
+	
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContextObject"), Category = BatstoiLibrary)
+	static class ABTGameplayManager* GetBTGameplayManager(const UObject* WorldContextObject);
 };
