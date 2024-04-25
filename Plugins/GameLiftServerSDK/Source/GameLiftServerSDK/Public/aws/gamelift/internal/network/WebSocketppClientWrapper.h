@@ -42,6 +42,8 @@ private:
     const int WEBSOCKET_OPEN_HANDSHAKE_TIMEOUT_MILLIS = 20000; // 20 seconds
     const int SERVICE_CALL_TIMEOUT_MILLIS = 20000;             // 20 seconds
     const int OK_STATUS_CODE = 200;
+    const int WAIT_FOR_RECONNECT_RETRY_DELAY_SECONDS = 5;
+    const int WAIT_FOR_RECONNECT_MAX_RETRIES = 180 / WAIT_FOR_RECONNECT_RETRY_DELAY_SECONDS; // retry up to 3 minutes
 
     // The WebSocketpp objects this class wraps
     std::shared_ptr<WebSocketppClientType> m_webSocketClient;
@@ -59,6 +61,7 @@ private:
     std::map<std::string, std::function<GenericOutcome(std::string)>> m_eventHandlers;
     std::mutex m_requestToPromiseLock;
     std::map<std::string, std::promise<GenericOutcome>> m_requestIdToPromise;
+    Uri m_uri;
 
     // Helper methods
     WebSocketppClientType::connection_ptr PerformConnect(const Uri &uri, websocketpp::lib::error_code &error);

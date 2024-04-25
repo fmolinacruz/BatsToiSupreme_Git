@@ -229,7 +229,7 @@ private:
             case GAMELIFT_ERROR_TYPE::WEBSOCKET_SEND_MESSAGE_FAILURE:
                 return "WebSocket Send Message Failed.";
             default:
-                return "Uknown Error";
+                return "Unknown Error";
         }
     }
 
