@@ -20,16 +20,15 @@ $StackStatus = aws cloudformation describe-stacks --profile $Profile --region $R
 if ($null -eq $StackStatus) {
     # create stack
     Write-Host "Stack $Name not found, creating stack"
-    aws cloudformation create-stack --template-body file://$Template --stack-name $Name --profile $Profile --region $Region --parameters "ParameterKey=BuildId,ParameterValue=$BuildId" --capabilities CAPABILITY_IAM --on-failure DELETE
+    aws cloudformation create-stack --template-body file://$Template --stack-name $Name --profile $Profile --region $Region --parameters "ParameterKey=BuildId,ParameterValue=$BuildId" --on-failure DELETE
     # wait for stack creation
     Write-Host "Waiting for stack creation (up to 45 minutes)"
     aws cloudformation wait stack-create-complete --stack-name $Name --profile $Profile --region $Region
-    # continue wait if timeout
 }
 else {
     # update stack
     Write-Host "Stack $Name found, updating stack"
-    aws cloudformation update-stack --template-body file://$Template --stack-name $Name --profile $Profile --region $Region --parameters "ParameterKey=BuildId,ParameterValue=$BuildId" --capabilities CAPABILITY_IAM
+    aws cloudformation update-stack --template-body file://$Template --stack-name $Name --profile $Profile --region $Region --parameters "ParameterKey=BuildId,ParameterValue=$BuildId"
     # wait for stack update
     Write-Host "Waiting for stack update (up to 45 minutes if the fleet is updated)"
     aws cloudformation wait stack-update-complete --stack-name $Name --profile $Profile --region $Region

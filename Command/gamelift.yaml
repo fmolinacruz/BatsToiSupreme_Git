@@ -9,62 +9,32 @@ Parameters:
     Description: The name of the backend stack
     Default: batstoi-serverless
 Resources:
-  InstanceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-                - gamelift.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-  RootInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Path: /
-      Roles:
-        - !Ref InstanceRole
-
-  # Queue to pass sessions to the fleet through the alias
   Queue:
-    Type: "AWS::GameLift::GameSessionQueue"
+    Type: AWS::GameLift::GameSessionQueue
     Properties:
-      Name: "BatsToiSessionQueueV2"
+      Name: BatsToiSessionQueue
       TimeoutInSeconds: 50
       Destinations:
-        # DestinationArn can be either an Alias arn or Fleet arn that you own
-        - DestinationArn:
-            !Join
+        - DestinationArn: !Join
             - ''
             - - 'arn:aws:gamelift:'
-              - !Ref "AWS::Region"
+              - !Ref AWS::Region
               - '::alias/'
               - !Ref Alias
-        - DestinationArn:
-            !Join
+        - DestinationArn: !Join
             - ''
             - - 'arn:aws:gamelift:'
-              - !Ref "AWS::Region"
+              - !Ref AWS::Region
               - '::fleet/'
               - !Ref AnyWhereFleet
-      # We try for less than 80ms latency for 3 seconds and then accept anything
-      # FlexMatch already tries to group players with less than 80ms latency to a Region as well
       PlayerLatencyPolicies:
         - MaximumIndividualPlayerLatencyMilliseconds: 80
           PolicyDurationSeconds: 3
         - MaximumIndividualPlayerLatencyMilliseconds: 1000
-
   MatchmakingRuleSet:
-    Type: "AWS::GameLift::MatchmakingRuleSet"
+    Type: AWS::GameLift::MatchmakingRuleSet
     Properties:
-      Name: "BatsToiGameLiftRuleSetV3" # change name after update rule set
+      Name: BatsToiGameLiftRuleSet
       RuleSetBody: !Sub |
         {
             "name": "simplerule",
@@ -102,28 +72,23 @@ Resources:
                 }]
             }]
         }
-
-  # Configuration that uses the rule set
   MatchMakingConfiguration:
-    Type: "AWS::GameLift::MatchmakingConfiguration"
+    Type: AWS::GameLift::MatchmakingConfiguration
     Properties:
-      Name: "BatsToiGameConfiguration"
+      Name: BatsToiGameConfiguration
       AcceptanceRequired: false
       AdditionalPlayerCount: 0
       RequestTimeoutSeconds: 250
-      BackfillMode: "AUTOMATIC"
-      Description: "A basic sns configuration for BatsToi"
-      # Just some example properties, not used in our game
+      BackfillMode: AUTOMATIC
+      Description: A basic sns configuration for BatsToi
       GameProperties:
-        - Key: "gamemode"
-          Value: "classic"
+        - Key: gamemode
+          Value: classic
       GameSessionQueueArns:
         - !GetAtt Queue.Arn
       RuleSetName: !Ref MatchmakingRuleSet
-      NotificationTarget:
-        Fn::ImportValue:
-          !Sub "${BackendStackName}-MatchmakingEventsSNSTopic"
-
+      NotificationTarget: !ImportValue
+        Fn::Sub: ${BackendStackName}-MatchmakingEventsSNSTopic
   Fleet:
     Type: AWS::GameLift::Fleet
     Properties:
@@ -138,7 +103,6 @@ Resources:
       BuildId: !Ref BuildId
       RuntimeConfiguration:
         GameSessionActivationTimeoutSeconds: 300
-        #        MaxConcurrentGameSessionActivations: 1
         ServerProcesses:
           - ConcurrentExecutions: 1
             LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
@@ -149,34 +113,9 @@ Resources:
           - ConcurrentExecutions: 1
             LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
             Parameters: '-AbsLog=c:\game\logs\game-server-7779.log -Port=7779'
-      #          - ConcurrentExecutions: 1
-      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-      #            Parameters: '-AbsLog=c:\game\logs\game-server-7780.log -Port=7780'
-      #          - ConcurrentExecutions: 1
-      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-      #            Parameters: '-AbsLog=c:\game\logs\game-server-7781.log -Port=7781'
-      #          - ConcurrentExecutions: 1
-      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-      #            Parameters: '-AbsLog=c:\game\logs\game-server-7782.log -Port=7782'
-      #          - ConcurrentExecutions: 1
-      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-      #            Parameters: '-AbsLog=c:\game\logs\game-server-7783.log -Port=7783'
-      #          - ConcurrentExecutions: 1
-      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-      #            Parameters: '-AbsLog=c:\game\logs\game-server-7784.log -Port=7784'
-      #          - ConcurrentExecutions: 1
-      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-      #            Parameters: '-AbsLog=c:\game\logs\game-server-7785.log -Port=7785'
-      #          - ConcurrentExecutions: 1
-      #            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-      #            Parameters: '-AbsLog=c:\game\logs\game-server-7786.log -Port=7786'
       EC2InstanceType: m5.large
       FleetType: ON_DEMAND
-      #      ApplyCapacity: ON_CREATE_AND_UPDATE
-      CertificateConfiguration:
-        CertificateType: GENERATED
       NewGameSessionProtectionPolicy: NoProtection
-      InstanceRoleARN: !GetAtt InstanceRole.Arn
       EC2InboundPermissions:
         - FromPort: 7777
           ToPort: 8777
@@ -188,12 +127,10 @@ Resources:
           PolicyType: TargetBased
           TargetConfiguration:
             TargetValue: 50
-
   CustomLocation:
     Type: AWS::GameLift::Location
     Properties:
       LocationName: custom-local-1
-
   AnyWhereFleet:
     Type: AWS::GameLift::Fleet
     Properties:
@@ -202,8 +139,7 @@ Resources:
       Locations:
         - Location: !Ref CustomLocation
       AnywhereConfiguration:
-        Cost: "0.0"
-
+        Cost: '0.0'
   Alias:
     Type: AWS::GameLift::Alias
     Properties:

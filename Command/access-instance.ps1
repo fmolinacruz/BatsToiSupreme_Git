@@ -54,23 +54,13 @@ if ($ActiveComputelist.Count -eq 1) {
 }
 else {
     # Require user choose one
-    $ComputeName = Read-Host "Choose compute name"
+    $ComputeName = Read-Host "Choose compute name"a
 }
 
 $Access = aws --profile $Profile --region $Region --output json gamelift get-compute-access --fleet-id $FleetId --compute-name $ComputeName | ConvertFrom-Json
-
-# Store initial values of environment variables
-$initial_AWS_ACCESS_KEY_ID = $env:AWS_ACCESS_KEY_ID
-$initial_AWS_SECRET_ACCESS_KEY = $env:AWS_SECRET_ACCESS_KEY
-$initial_AWS_SESSION_TOKEN = $env:AWS_SESSION_TOKEN
 
 # ssm start session and run the command inside the instance
 $env:AWS_ACCESS_KEY_ID = $Access.Credentials.AccessKeyId
 $env:AWS_SECRET_ACCESS_KEY = $Access.Credentials.SecretAccessKey
 $env:AWS_SESSION_TOKEN = $Access.Credentials.SessionToken
 aws --region $Region --output json ssm start-session --target $Access.ComputeName
-
-# Restore initial values of environment variables
-$env:AWS_ACCESS_KEY_ID = $initial_AWS_ACCESS_KEY_ID
-$env:AWS_SECRET_ACCESS_KEY = $initial_AWS_SECRET_ACCESS_KEY
-$env:AWS_SESSION_TOKEN = $initial_AWS_SESSION_TOKEN
