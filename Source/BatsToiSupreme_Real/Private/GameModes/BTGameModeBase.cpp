@@ -5,16 +5,18 @@
 #include "Kismet/GameplayStatics.h"
 #include "Characters/BTBaseCharacter.h"
 #include "GameFramework/PlayerStart.h"
+#include "GameFramework/PlayerState.h"
 #include "Gameplay/BTGameplayManager.h"
 #include "PlayerCommon/BTPlayerController.h"
 #include "Utilities/BTLogging.h"
+#include <GameModes/BTGameState.h>
 
 ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
 {
 	GameLiftSDKModule = nullptr;
 	mGameSessionStarted = false;
-	ClientConnectTimeOut = 20;
+	ClientConnectTimeOut = 60;
 	/*GameLiftProcessParams.OnStartGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionStart);
 	GameLiftProcessParams.OnUpdateGameSession.BindUObject(this, &ABTGameModeBase::OnGameLiftSessionUpdate);
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
@@ -220,11 +222,24 @@ void ABTGameModeBase::OnServerTimeOut()
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerController::StaticClass(), FoundActors);
 	BTLOG_DISPLAY("OnServerTimeOut %d", FoundActors.Num());
-	/*if (PlayerMap.Num() == 0)
+
+	AGameStateBase* CurGameState = UGameplayStatics::GetGameState(GetWorld());
+	if (CurGameState != nullptr)
 	{
-		GameLiftSDKModule->ProcessEnding();
-		FGenericPlatformMisc::RequestExit(false);
-	}*/
+		ABTGameState* BtGameState = Cast<ABTGameState>(CurGameState);
+		if (BtGameState != nullptr)
+		{
+			// Get the player count
+			int32 PlayerCount = CurGameState->PlayerArray.Num();
+			if (PlayerCount == 0)
+			{
+				FGenericPlatformMisc::RequestExit(false);
+				GameLiftSDKModule->ProcessEnding();
+			}
+			// Print the player count
+			UE_LOG(LogTemp, Warning, TEXT("Player Count: %d"), PlayerCount);
+		}
+	}
 }
 
 void ABTGameModeBase::OnPostLogin(AController* NewPlayer)

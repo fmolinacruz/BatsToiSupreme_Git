@@ -108,7 +108,7 @@ private: // GameLift
 	FGameLiftServerSDKModule* GameLiftSDKModule;
 	FServerParameters GameLiftServerParams;
 	FProcessParameters GameLiftProcessParams;
-	int ClientConnectTimeOut = 20;// in Seconds
+	int ClientConnectTimeOut = 60;// in Seconds
 	bool HasClientConnected = false;
 	bool mGameSessionStarted;
 };
