@@ -24,7 +24,10 @@ param (
     [Parameter(Mandatory = $false)]
     [string]$Stack = "batstoi-gamelift",
     [Parameter(Mandatory = $false)]
-    [string]$AnyWhereFleetIDOuput = "AnyWhereFleetID"
+    [string]$AnyWhereFleetIDOuput = "AnyWhereFleetID",
+
+    [Parameter(Mandatory = $false)]
+    [string]$EnvName = "<default>"
 )
 
 if ($ComputerName -eq "<default>") {
@@ -33,6 +36,11 @@ if ($ComputerName -eq "<default>") {
     # replace . by -
     $IPStr = $IP -replace "\.", "-"
     $ComputerName = "$ComputerName-$IPStr"
+}
+
+if ($EnvName -ne "<default>") {
+    $Stack = "$Stack-debug-$EnvName"
+    $Location = "custom-$EnvName-1"
 }
 
 if ($FleetId -eq "<default>") {

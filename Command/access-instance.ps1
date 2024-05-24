@@ -54,7 +54,7 @@ if ($ActiveComputelist.Count -eq 1) {
 }
 else {
     # Require user choose one
-    $ComputeName = Read-Host "Choose compute name"a
+    $ComputeName = Read-Host "Choose compute name"
 }
 
 $Access = aws --profile $Profile --region $Region --output json gamelift get-compute-access --fleet-id $FleetId --compute-name $ComputeName | ConvertFrom-Json
