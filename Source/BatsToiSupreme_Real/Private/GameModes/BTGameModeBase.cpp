@@ -10,6 +10,7 @@
 #include "PlayerCommon/BTPlayerController.h"
 #include "Utilities/BTLogging.h"
 #include <GameModes/BTGameState.h>
+#include <GameModes/BTGameSession.h>
 
 ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
@@ -22,6 +23,7 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
 	GameLiftProcessParams.OnHealthCheck.BindUObject(this, &ABTGameModeBase::OnGameLiftServerHealthCheck);
 	*/
+	GameSessionClass = ABTGameSession::StaticClass();
 }
 
 void ABTGameModeBase::BeginPlay()
