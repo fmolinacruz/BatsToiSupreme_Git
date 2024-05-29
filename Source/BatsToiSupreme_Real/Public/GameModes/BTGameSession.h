@@ -7,7 +7,9 @@
 #include "BTGameSession.generated.h"
 
 /**
- * 
+ * Acts as a game-specific wrapper around the session interface. 
+ The game code makes calls to this when it needs to interact with the session interface. 
+ A game session exists only the server, while running an online game
  */
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTGameSession : public AGameSession
@@ -35,7 +37,7 @@ protected:
 	// Function called when players leave the dedicated server. Trigger UnregisterPlayer from base class and used to End Sesion.
 	virtual void NotifyLogout(const APlayerController* ExitingPlayer);
 
-	// Hardcoding the session name for this tutorial.
+	//TODO: Hardcoding the session name
 	FName SessionName = "SessionName";
 
 	// Hardcoding the max number of players in a session.
