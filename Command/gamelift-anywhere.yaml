@@ -1,31 +1,27 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: BatsToi Server GameLift Resources
 Parameters:
-  BuildId:
+  EnvName:
     Type: String
-    Description: The build version identifier
+    Description: Environment of the deployment
+    Default: debug
   BackendStackName:
     Type: String
     Description: The name of the backend stack
     Default: batstoi-serverless
-  SecondaryLocation:
-    Type: String
-    Description: The region identifier for the secondary location for the Fleet
-    Default: us-east-1
 Resources:
   Queue:
     Type: AWS::GameLift::GameSessionQueue
     Properties:
-      Name: BatsToiSessionQueue
+      Name: !Sub BatsToiSessionQueue-DEBUG-${EnvName}
       TimeoutInSeconds: 50
       Destinations:
         - DestinationArn: !Join
             - ''
             - - 'arn:aws:gamelift:'
               - !Ref AWS::Region
-              - '::alias/'
-              - !Ref Alias
-        
+              - '::fleet/'
+              - !Ref AnyWhereFleet
       PlayerLatencyPolicies:
         - MaximumIndividualPlayerLatencyMilliseconds: 80
           PolicyDurationSeconds: 3
@@ -33,7 +29,7 @@ Resources:
   MatchmakingRuleSet:
     Type: AWS::GameLift::MatchmakingRuleSet
     Properties:
-      Name: BatsToiGameLiftRuleSet
+      Name: !Sub BatsToiGameLiftRuleSet-DEBUG-${EnvName}
       RuleSetBody: !Sub |
         {
             "name": "simplerule",
@@ -74,7 +70,7 @@ Resources:
   MatchMakingConfiguration:
     Type: AWS::GameLift::MatchmakingConfiguration
     Properties:
-      Name: BatsToiGameConfiguration
+      Name: !Sub BatsToiGameConfiguration-DEBUG-${EnvName}
       AcceptanceRequired: false
       AdditionalPlayerCount: 0
       RequestTimeoutSeconds: 250
@@ -88,60 +84,22 @@ Resources:
       RuleSetName: !Ref MatchmakingRuleSet
       NotificationTarget: !ImportValue
         Fn::Sub: ${BackendStackName}-MatchmakingEventsSNSTopic
-  Fleet:
+  CustomLocation:
+    Type: AWS::GameLift::Location
+    Properties:
+      LocationName: !Sub custom-${EnvName}-1
+  AnyWhereFleet:
     Type: AWS::GameLift::Fleet
     Properties:
-      Name: BatsToiFleet
-      Description: BatsToi Fleet
+      ComputeType: ANYWHERE
+      Name: !Sub BatsToiAnyWhereFleet-DEBUG-${EnvName}
       Locations:
-        - Location: !Ref AWS::Region
-          LocationCapacity:
-            DesiredEC2Instances: 1
-            MaxSize: 4
-            MinSize: 1
-        - Location: !Ref SecondaryLocation
-          LocationCapacity:
-            DesiredEC2Instances: 1
-            MaxSize: 1
-            MinSize: 1
-      BuildId: !Ref BuildId
-      RuntimeConfiguration:
-        GameSessionActivationTimeoutSeconds: 300
-        ServerProcesses:
-          - ConcurrentExecutions: 1
-            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7777.log -Port=7777'
-          - ConcurrentExecutions: 1
-            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7778.log -Port=7778'
-          - ConcurrentExecutions: 1
-            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7779.log -Port=7779'
-      EC2InstanceType: m5.large
-      FleetType: ON_DEMAND
-      NewGameSessionProtectionPolicy: NoProtection
-      EC2InboundPermissions:
-        - FromPort: 7777
-          ToPort: 8777
-          IpRange: 0.0.0.0/0
-          Protocol: UDP
-      ScalingPolicies:
-        - Name: BatsToiFleetScalingPolicy
-          MetricName: PercentAvailableGameSessions
-          PolicyType: TargetBased
-          TargetConfiguration:
-            TargetValue: 50
-  Alias:
-    Type: AWS::GameLift::Alias
-    Properties:
-      Name: BatsToiGameServerAlias
-      Description: An alias routing traffic to the fleet
-      RoutingStrategy:
-        Type: SIMPLE
-        FleetId: !Ref Fleet
+        - Location: !Ref CustomLocation
+      AnywhereConfiguration:
+        Cost: '0.0'
 Outputs:
-  FleetID:
+  AnyWhereFleetID:
     Description: The ID of the created GameLift Fleet
-    Value: !Ref Fleet
+    Value: !Ref AnyWhereFleet
     Export:
-      Name: !Sub ${AWS::StackName}-FleetID
+      Name: !Sub ${AWS::StackName}-AnywhereFleetID
