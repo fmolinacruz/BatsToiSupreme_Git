@@ -8,7 +8,12 @@
 #include "OnlineSubsystemUtils.h"
 #include "OnlineSubsystemTypes.h"
 #include "Interfaces/OnlineIdentityInterface.h"
-
+#include "Containers/Array.h"
+#include "Kismet/GameplayStatics.h"
+#include "Serialization/BufferArchive.h"
+#include "Serialization/MemoryReader.h"
+#include "Serialization/MemoryWriter.h"
+#include "Serialization/ArchiveLoadCompressedProxy.h"
 
 void ABTLobbyPlayerController::BeginPlay()
 {
@@ -18,6 +23,7 @@ void ABTLobbyPlayerController::BeginPlay()
 
 	if (!IsRunningDedicatedServer())
 	{
+		UE_LOG(LogTemp, Log, TEXT("EOSLogin into EOS..."));
 		EOSLogin(); // Call login function only on the client
 	}
 }
@@ -85,6 +91,11 @@ void ABTLobbyPlayerController::EOSLogin()
 
 	if (NetId != nullptr && Identity->GetLoginStatus(0) == ELoginStatus::LoggedIn)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Already Login into EOS..."));
+		//LoadTitleData();  // Load any game related data (in this case a string output to logs)
+		//LoadPlayerData(); // Load save game data
+		FindSessions();	  // For convenience a session is found in sequence here. In a real game this would be done via game UI. Goal here is to show EOS functionality, not game design.
+	
 		return;
 	}
 
@@ -151,8 +162,8 @@ void ABTLobbyPlayerController::OnEOSLoginCompleted(int32 LocalUserNum, bool bWas
 		UE_LOG(LogTemp, Log, TEXT("Login callback completed!"));
 		UE_LOG(LogTemp, Log, TEXT("Loading cloud data and searching for a session..."));
 
-		LoadTitleData();  // Load any game related data (in this case a string output to logs)
-		LoadPlayerData(); // Load save game data
+		//LoadTitleData();  // Load any game related data (in this case a string output to logs)
+		//LoadPlayerData(); // Load save game data
 		FindSessions();	  // For convenience a session is found in sequence here. In a real game this would be done via game UI. Goal here is to show EOS functionality, not game design.
 	}
 	else // Login failed
@@ -181,27 +192,18 @@ void ABTLobbyPlayerController::FindSessions(FName SearchKey, FString SearchValue
 	Search->QuerySettings.SearchParams.Empty();
 
 	Search->QuerySettings.Set(SearchKey, SearchValue, EOnlineComparisonOp::Equals); // Seach using our Key/Value pair
-#if P2PMODE
-	Search->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
-#endif
+
 	FindSessionsDelegateHandle =
 		Session->AddOnFindSessionsCompleteDelegate_Handle(FOnFindSessionsCompleteDelegate::CreateUObject(
 			this,
 			&ThisClass::HandleFindSessionsCompleted,
 			Search));
-#if P2PMODE
-	UE_LOG(LogTemp, Log, TEXT("Finding lobby."));
-#else
+
 	UE_LOG(LogTemp, Log, TEXT("Finding session."));
-#endif
 
 	if (!Session->FindSessions(0, Search))
 	{
-#if P2PMODE
-		UE_LOG(LogTemp, Log, TEXT("Finding lobby failed."));
-#else
 		UE_LOG(LogTemp, Warning, TEXT("Finding session failed."));
-#endif
 		// Clear our handle and reset the delegate.
 		Session->ClearOnFindSessionsCompleteDelegate_Handle(FindSessionsDelegateHandle);
 		FindSessionsDelegateHandle.Reset();
@@ -221,17 +223,10 @@ void ABTLobbyPlayerController::HandleFindSessionsCompleted(bool bWasSuccessful, 
 		// added code here to not run into issues when searching for sessions is succesfull, but the number of sessions is 0
 		if (Search->SearchResults.Num() == 0)
 		{
-#if P2PMODE
-			// If we're in P2P mode and we can't find a lobby on startup, create one.
-			CreateLobby();
-#endif
+			UE_LOG(LogTemp, Warning, TEXT("Found session. Search session = 0"))
 			return;
 		}
-#if P2PMODE
-		UE_LOG(LogTemp, Log, TEXT("Found lobby."));
-#else
 		UE_LOG(LogTemp, Warning, TEXT("Found session."));
-#endif
 		for (auto SessionInSearchResult : Search->SearchResults)
 		{
 			// Typically you want to check if the session is valid before joining. There is a bug in the EOS OSS where IsValid() returns false when the session is created on a DS.
@@ -257,11 +252,7 @@ void ABTLobbyPlayerController::HandleFindSessionsCompleted(bool bWasSuccessful, 
 	}
 	else
 	{
-#if P2PMODE
-		UE_LOG(LogTemp, Log, TEXT("Find lobby failed."));
-#else
 		UE_LOG(LogTemp, Warning, TEXT("Find session failed."));
-#endif
 	}
 
 	// Clear our handle and reset the delegate.
@@ -281,18 +272,10 @@ void ABTLobbyPlayerController::JoinSession()
 		Session->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(
 			this,
 			&ThisClass::HandleJoinSessionCompleted));
-#if P2PMODE
-	UE_LOG(LogTemp, Log, TEXT("Joining Lobby."));
-#else
 	UE_LOG(LogTemp, Log, TEXT("Joining session."));
-#endif
 	if (!Session->JoinSession(0, "SessionName", *SessionToJoin))
 	{
-#if P2PMODE
-		UE_LOG(LogTemp, Log, TEXT("Join Lobby failed."));
-#else
 		UE_LOG(LogTemp, Log, TEXT("Join session failed."));
-#endif
 
 		// Clear our handle and reset the delegate.
 		Session->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionDelegateHandle);
@@ -306,14 +289,6 @@ void ABTLobbyPlayerController::HandleJoinSessionCompleted(FName SessionName, EOn
 
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
-#if P2PMODE
-	if (Result == EOnJoinSessionCompleteResult::Success)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Joined lobby."));
-		ClientTravel(ConnectString, TRAVEL_Absolute);
-		SetupNotifications(); // Setup our listeners for lobby event notifications
-	}
-#else
 	if (Result == EOnJoinSessionCompleteResult::Success)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Joined session."));
@@ -334,7 +309,6 @@ void ABTLobbyPlayerController::HandleJoinSessionCompleted(FName SessionName, EOn
 			// As we are testing locally, and for the purposes of keeping this tutorial simple, this is omitted.
 		}
 	}
-#endif
 
 	// Clear our handle and reset the delegate.
 	Session->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionDelegateHandle);
