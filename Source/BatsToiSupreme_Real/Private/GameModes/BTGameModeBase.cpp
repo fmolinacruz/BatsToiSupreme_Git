@@ -30,7 +30,7 @@ void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 #if WITH_GAMELIFT 
-	InitGameLift();
+	//InitGameLift();
 #endif
 
 	InitGameplaySettings();
