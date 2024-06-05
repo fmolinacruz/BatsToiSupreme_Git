@@ -86,16 +86,12 @@ void ABTLobbyPlayerController::EOSLogin()
 
 	// If you're logged in, don't try to login again.
 	// This can happen if your player travels to a dedicated server or different maps as BeginPlay() will be called each time.
-
+	UE_LOG(LogTemp, Log, TEXT("EOSLogin..."));
 	FUniqueNetIdPtr NetId = Identity->GetUniquePlayerId(0);
 
 	if (NetId != nullptr && Identity->GetLoginStatus(0) == ELoginStatus::LoggedIn)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Already Login into EOS..."));
-		//LoadTitleData();  // Load any game related data (in this case a string output to logs)
-		//LoadPlayerData(); // Load save game data
-		FindSessions();	  // For convenience a session is found in sequence here. In a real game this would be done via game UI. Goal here is to show EOS functionality, not game design.
-	
 		return;
 	}
 
@@ -112,14 +108,14 @@ void ABTLobbyPlayerController::EOSLogin()
 	// Grab command line parameters. If empty call hardcoded login function - Hardcoded login function useful for Play In Editor.
 	FString AuthType;
 	FParse::Value(FCommandLine::Get(), TEXT("AUTH_TYPE="), AuthType);
-
+	UE_LOG(LogTemp, Log, TEXT("Start Logging ..."));
 	if (!AuthType.IsEmpty()) // If parameter is NOT empty we can autologin.
 	{
 		/*
 		In most situations you will want to automatically log a player in using the parameters passed via CLI.
 		For example, using the exchange code for the Epic Games Store.
 		*/
-		UE_LOG(LogTemp, Log, TEXT("Logging into EOS...")); // Log to the UE logs that we are trying to log in.
+		UE_LOG(LogTemp, Log, TEXT("Logging into EOS... AuthType")); // Log to the UE logs that we are trying to log in.
 
 		if (!Identity->AutoLogin(0))
 		{
@@ -137,7 +133,7 @@ void ABTLobbyPlayerController::EOSLogin()
 		*/
 		FOnlineAccountCredentials Credentials("AccountPortal", "", "");
 
-		UE_LOG(LogTemp, Log, TEXT("Logging into EOS...")); // Log to the UE logs that we are trying to log in.
+		UE_LOG(LogTemp, Log, TEXT("Logging into EOS... AuthType NULL")); // Log to the UE logs that we are trying to log in.
 
 		if (!Identity->Login(0, Credentials))
 		{
@@ -170,7 +166,7 @@ void ABTLobbyPlayerController::OnEOSLoginCompleted(int32 LocalUserNum, bool bWas
 	{
 		// If your game is online only, you may want to return an errror to the user and return to a menu that uses a different GameMode/PlayerController.
 
-		UE_LOG(LogTemp, Warning, TEXT("EOS login failed.")); // Print sign in failure in logs as a warning.
+		UE_LOG(LogTemp, Warning, TEXT("EOS login failed. %s"), *Error); // Print sign in failure in logs as a warning.
 	}
 
 	// Clear our handle and reset the delegate.
@@ -226,7 +222,7 @@ void ABTLobbyPlayerController::HandleFindSessionsCompleted(bool bWasSuccessful, 
 			UE_LOG(LogTemp, Warning, TEXT("Found session. Search session = 0"))
 			return;
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Found session."));
+		UE_LOG(LogTemp, Warning, TEXT("Found session. %i"), Search->SearchResults.Num());
 		for (auto SessionInSearchResult : Search->SearchResults)
 		{
 			// Typically you want to check if the session is valid before joining. There is a bug in the EOS OSS where IsValid() returns false when the session is created on a DS.
