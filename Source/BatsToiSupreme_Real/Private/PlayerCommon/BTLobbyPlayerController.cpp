@@ -291,7 +291,7 @@ void ABTLobbyPlayerController::HandleJoinSessionCompleted(FName SessionName, EOn
 		if (GEngine)
 		{
 			// For the purposes of this tutorial overriding the ConnectString to point to localhost as we are testing locally. In a real game no need to override. Make sure you can connect over UDP to the ip:port of your server!
-			ConnectString = "127.0.0.1:7777";
+			ConnectString = "192.168.35.62:7788";
 			FURL DedicatedServerURL(nullptr, *ConnectString, TRAVEL_Absolute);
 			FString DedicatedServerJoinError;
 			auto DedicatedServerJoinStatus = GEngine->Browse(GEngine->GetWorldContextFromWorldChecked(GetWorld()), DedicatedServerURL, DedicatedServerJoinError);
