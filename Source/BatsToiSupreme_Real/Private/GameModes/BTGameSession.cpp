@@ -46,6 +46,7 @@ void ABTGameSession::BeginPlay()
 	if (IsRunningDedicatedServer() && !bSessionExists) // Only create a session if running as a dedicated server and session doesn't exist
 	{
 		CreateSession("KeyName", "KeyValue"); // Should parametrized Key/Value pair for custom attribute
+
 	}
 }
 
@@ -151,10 +152,8 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 		UWorld* World = GetWorld();
 		if (World)
 		{
-			FString NewLevelName = "Game/_BatstoiRefactor/Maps/LVMap_TimeSquare_Multi";
-
-			// Initiate the server travel to the new level
-			World->ServerTravel(NewLevelName, true, false);
+			FString NewLevelName = TEXT("LVMap_TimeSquare_Multi");
+			World->SeamlessTravel(NewLevelName, true);
 		}
 	}
 	else
