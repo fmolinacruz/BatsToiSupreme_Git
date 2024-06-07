@@ -13,7 +13,10 @@ UCLASS()
 class BATSTOISUPREME_REAL_API ABTLobbyServerGM : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+protected:
+	ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	virtual void BeginPlay() override;
+
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	int32 GetPlayerCount() const;

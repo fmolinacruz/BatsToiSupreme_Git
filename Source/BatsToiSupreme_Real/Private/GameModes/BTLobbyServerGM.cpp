@@ -4,6 +4,20 @@
 #include "GameModes/BTLobbyServerGM.h"
 #include "Engine/World.h"
 #include <Utilities/BTLogging.h>
+#include <GameModes/BTGameSession.h>
+#include "Kismet/GameplayStatics.h"
+
+ABTLobbyServerGM::ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer)
+{
+	GameSessionClass = ABTGameSession::StaticClass();
+}
+
+void ABTLobbyServerGM::BeginPlay()
+{
+	BTLOG_DISPLAY("[ABTLobbyServerGM] -BeginPlay");
+
+	Super::BeginPlay();
+}
 
 void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)
 {
@@ -15,7 +29,7 @@ void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)
 		UWorld* World = GetWorld();
 		if (World)
 		{
-			FString NewLevelName = "Game\\_BatstoiRefactor\\Maps\\LVMap_TimeSquare_Multi.umap";
+			FString NewLevelName = FString::Printf(TEXT("%s?game=%s"), "LVMap_TimeSquare_Multi", *GetClass()->GetName());
 
 			// Initiate the server travel to the new level
 			World->ServerTravel(NewLevelName);

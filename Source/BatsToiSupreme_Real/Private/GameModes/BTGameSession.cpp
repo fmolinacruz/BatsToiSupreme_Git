@@ -42,7 +42,7 @@ void ABTGameSession::BeginPlay()
 {
 	// Tutorial 3: Overide base function to create session when running as dedicated server
 	Super::BeginPlay();
-
+	UE_LOG(LogTemp, Warning, TEXT("ABTGameSession::BeginPlay"));
 	if (IsRunningDedicatedServer() && !bSessionExists) // Only create a session if running as a dedicated server and session doesn't exist
 	{
 		CreateSession("KeyName", "KeyValue"); // Should parametrized Key/Value pair for custom attribute
@@ -125,7 +125,7 @@ void ABTGameSession::CreateSession(FName KeyName, FString KeyValue) // Dedicated
 	SessionSettings->Settings.Add(KeyName, FOnlineSessionSetting((KeyValue), EOnlineDataAdvertisementType::ViaOnlineService));
 
 	// Create session.
-	UE_LOG(LogTemp, Log, TEXT("Creating session..."));
+	UE_LOG(LogTemp, Warning, TEXT("Creating session..."));
 
 	if (!Session->CreateSession(0, SessionName, *SessionSettings))
 	{
@@ -145,7 +145,17 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 	if (bWasSuccessful)
 	{
 		bSessionExists = true;
-		UE_LOG(LogTemp, Log, TEXT("Session: %s Created!"), *EOSSessionName.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created!"), *EOSSessionName.ToString());
+
+		
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			FString NewLevelName = "Game/_BatstoiRefactor/Maps/LVMap_TimeSquare_Multi";
+
+			// Initiate the server travel to the new level
+			World->ServerTravel(NewLevelName, true, false);
+		}
 	}
 	else
 	{

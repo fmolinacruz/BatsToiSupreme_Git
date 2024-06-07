@@ -23,7 +23,6 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
 	GameLiftProcessParams.OnHealthCheck.BindUObject(this, &ABTGameModeBase::OnGameLiftServerHealthCheck);
 	*/
-	GameSessionClass = ABTGameSession::StaticClass();
 }
 
 void ABTGameModeBase::BeginPlay()

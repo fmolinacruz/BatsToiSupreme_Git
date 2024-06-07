@@ -1,1 +1,1 @@
-"D:\UnrealEngine-5.2.1-release\Engine\Binaries\Win64\UnrealEditor.exe" "D:\Prj\BatsToiSupreme_250124\BatsToiSupreme_Git\BatsToiSupreme_Real.uproject" LV_TestMap -server -log -epicapp="Tekfall Supreme Dev"
+"D:\UnrealEngine-5.2.1-release\Engine\Binaries\Win64\UnrealEditor.exe" "D:\Prj\BatsToiSupreme_250124\BatsToiSupreme_Git\BatsToiSupreme_Real.uproject" LV_LobbyServer -server -log -epicapp="Tekfall Supreme Dev" -Port=7788
