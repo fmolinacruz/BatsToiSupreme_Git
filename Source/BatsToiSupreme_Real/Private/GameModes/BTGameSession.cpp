@@ -46,7 +46,6 @@ void ABTGameSession::BeginPlay()
 	if (IsRunningDedicatedServer() && !bSessionExists) // Only create a session if running as a dedicated server and session doesn't exist
 	{
 		CreateSession("KeyName", "KeyValue"); // Should parametrized Key/Value pair for custom attribute
-
 	}
 }
 
@@ -147,14 +146,6 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 	{
 		bSessionExists = true;
 		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created!"), *EOSSessionName.ToString());
-
-		
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			FString NewLevelName = TEXT("LVMap_TimeSquare_Multi");
-			World->SeamlessTravel(NewLevelName, true);
-		}
 	}
 	else
 	{

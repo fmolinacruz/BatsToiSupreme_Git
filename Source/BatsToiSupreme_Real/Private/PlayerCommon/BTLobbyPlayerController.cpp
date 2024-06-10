@@ -287,18 +287,18 @@ void ABTLobbyPlayerController::HandleJoinSessionCompleted(FName SessionName, EOn
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
 	if (Result == EOnJoinSessionCompleteResult::Success)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Joined session."));
+		UE_LOG(LogTemp, Log, TEXT("Joined session. %s"), *SessionName.ToString()); 
 		if (GEngine)
 		{
 			// For the purposes of this tutorial overriding the ConnectString to point to localhost as we are testing locally. In a real game no need to override. Make sure you can connect over UDP to the ip:port of your server!
-			ConnectString = "192.168.35.62:7788";
+			/*ConnectString = "192.168.35.62:7788";
 			FURL DedicatedServerURL(nullptr, *ConnectString, TRAVEL_Absolute);
 			FString DedicatedServerJoinError;
 			auto DedicatedServerJoinStatus = GEngine->Browse(GEngine->GetWorldContextFromWorldChecked(GetWorld()), DedicatedServerURL, DedicatedServerJoinError);
 			if (DedicatedServerJoinStatus == EBrowseReturnVal::Failure)
 			{
 				UE_LOG(LogTemp, Error, TEXT("Failed to browse for dedicated server. Error is: %s"), *DedicatedServerJoinError);
-			}
+			}*/
 
 			// To be thorough here you should modify your derived UGameInstance to handle the NetworkError and TravelError events.
 			// This should also be done to handle the error "FULL" returned by the server.

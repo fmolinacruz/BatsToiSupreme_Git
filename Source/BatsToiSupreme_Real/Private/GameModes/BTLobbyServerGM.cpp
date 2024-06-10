@@ -26,14 +26,12 @@ void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)
 
 	if (GetPlayerCount() == 1)
 	{
-		UWorld* World = GetWorld();
+		/*UWorld* World = GetWorld();
 		if (World)
 		{
-			FString NewLevelName = FString::Printf(TEXT("%s?game=%s"), "LVMap_TimeSquare_Multi", *GetClass()->GetName());
-
-			// Initiate the server travel to the new level
-			World->ServerTravel(NewLevelName);
-		}
+			FString NewLevelName = TEXT("LVMap_TimeSquare_Multi");
+			World->SeamlessTravel(NewLevelName, true);
+		}*/
 	}
 }
 
