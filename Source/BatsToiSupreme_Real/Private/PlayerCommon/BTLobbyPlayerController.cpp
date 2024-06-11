@@ -290,6 +290,9 @@ void ABTLobbyPlayerController::HandleJoinSessionCompleted(FName SessionName, EOn
 		UE_LOG(LogTemp, Log, TEXT("Joined session. %s"), *SessionName.ToString()); 
 		if (GEngine)
 		{
+			FString sessionId = Session->GetNamedSession(SessionName)->GetSessionIdStr();
+			UE_LOG(LogTemp, Warning, TEXT("Session: Joined! %s"), *sessionId);
+	
 			// For the purposes of this tutorial overriding the ConnectString to point to localhost as we are testing locally. In a real game no need to override. Make sure you can connect over UDP to the ip:port of your server!
 			/*ConnectString = "192.168.35.62:7788";
 			FURL DedicatedServerURL(nullptr, *ConnectString, TRAVEL_Absolute);

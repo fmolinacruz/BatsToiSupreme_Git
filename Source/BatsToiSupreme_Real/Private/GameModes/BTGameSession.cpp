@@ -144,8 +144,9 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 	// Nothing special here, simply log that the session is created.
 	if (bWasSuccessful)
 	{
+		FString sessionId = Session->GetNamedSession(EOSSessionName)->GetSessionIdStr();
 		bSessionExists = true;
-		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created!"), *EOSSessionName.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created! %s"), *EOSSessionName.ToString(), *sessionId);
 	}
 	else
 	{
@@ -155,13 +156,14 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 	// Clear our handle and reset the delegate.
 	Session->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
 	CreateSessionDelegateHandle.Reset();
+
 }
 
 void ABTGameSession::RegisterPlayer(APlayerController* NewPlayer, const FUniqueNetIdRepl& UniqueId, bool bWasFromInvite)
 {
 	// Tutorial 3: Override base function to register player in EOS Session
 	Super::RegisterPlayer(NewPlayer, UniqueId, bWasFromInvite);
-
+	UE_LOG(LogTemp, Warning, TEXT("Player registered in EOS Session! -- %s"), *NewPlayer->GetName());
 	if (IsRunningDedicatedServer()) // Only run this on the dedicated server
 	{
 		IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
