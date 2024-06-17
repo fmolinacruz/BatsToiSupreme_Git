@@ -8,6 +8,10 @@ Parameters:
     Type: String
     Description: The name of the backend stack
     Default: batstoi-serverless
+  SecondaryLocation:
+    Type: String
+    Description: The region identifier for the secondary location for the Fleet
+    Default: us-east-1
 Resources:
   Queue:
     Type: AWS::GameLift::GameSessionQueue
@@ -21,12 +25,7 @@ Resources:
               - !Ref AWS::Region
               - '::alias/'
               - !Ref Alias
-        - DestinationArn: !Join
-            - ''
-            - - 'arn:aws:gamelift:'
-              - !Ref AWS::Region
-              - '::fleet/'
-              - !Ref AnyWhereFleet
+        
       PlayerLatencyPolicies:
         - MaximumIndividualPlayerLatencyMilliseconds: 80
           PolicyDurationSeconds: 3
@@ -100,6 +99,11 @@ Resources:
             DesiredEC2Instances: 1
             MaxSize: 4
             MinSize: 1
+        - Location: !Ref SecondaryLocation
+          LocationCapacity:
+            DesiredEC2Instances: 1
+            MaxSize: 1
+            MinSize: 1
       BuildId: !Ref BuildId
       RuntimeConfiguration:
         GameSessionActivationTimeoutSeconds: 300
@@ -127,19 +131,6 @@ Resources:
           PolicyType: TargetBased
           TargetConfiguration:
             TargetValue: 50
-  CustomLocation:
-    Type: AWS::GameLift::Location
-    Properties:
-      LocationName: custom-local-1
-  AnyWhereFleet:
-    Type: AWS::GameLift::Fleet
-    Properties:
-      ComputeType: ANYWHERE
-      Name: BatsToiAnyWhereFleet
-      Locations:
-        - Location: !Ref CustomLocation
-      AnywhereConfiguration:
-        Cost: '0.0'
   Alias:
     Type: AWS::GameLift::Alias
     Properties:
@@ -154,8 +145,3 @@ Outputs:
     Value: !Ref Fleet
     Export:
       Name: !Sub ${AWS::StackName}-FleetID
-  AnyWhereFleetID:
-    Description: The ID of the created GameLift Fleet
-    Value: !Ref AnyWhereFleet
-    Export:
-      Name: !Sub ${AWS::StackName}-AnywhereFleetID

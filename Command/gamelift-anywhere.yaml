@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: BatsToi Server GameLift Resources
+Parameters:
+  EnvName:
+    Type: String
+    Description: Environment of the deployment
+    Default: debug
+  BackendStackName:
+    Type: String
+    Description: The name of the backend stack
+    Default: batstoi-serverless
+Resources:
+  Queue:
+    Type: AWS::GameLift::GameSessionQueue
+    Properties:
+      Name: !Sub BatsToiSessionQueue-DEBUG-${EnvName}
+      TimeoutInSeconds: 50
+      Destinations:
+        - DestinationArn: !Join
+            - ''
+            - - 'arn:aws:gamelift:'
+              - !Ref AWS::Region
+              - '::fleet/'
+              - !Ref AnyWhereFleet
+      PlayerLatencyPolicies:
+        - MaximumIndividualPlayerLatencyMilliseconds: 80
+          PolicyDurationSeconds: 3
+        - MaximumIndividualPlayerLatencyMilliseconds: 1000
+  MatchmakingRuleSet:
+    Type: AWS::GameLift::MatchmakingRuleSet
+    Properties:
+      Name: !Sub BatsToiGameLiftRuleSet-DEBUG-${EnvName}
+      RuleSetBody: !Sub |
+        {
+            "name": "simplerule",
+            "ruleLanguageVersion": "1.0",
+            "playerAttributes": [{
+                "name": "skill",
+                "type": "number",
+                "default": 10
+            }],
+            "teams": [{
+                "name": "versus",
+                "maxPlayers": 2,
+                "minPlayers": 1
+            }],
+            "rules": [{
+                "name": "FairSkill",
+                "description": "The average skill of players is within 10 points from the average skill of all players in the match",
+                "type": "distance",
+                // get skill value for each player
+                "measurements": [ "teams[versus].players.attributes[skill]" ],
+                // get skill values for all players and average to produce an overall average
+                "referenceValue": "avg(teams[versus].players.attributes[skill])",
+                "maxDistance": 10
+            },{
+              "name": "FastConnection",
+              "description": "Prefer matches with fast player connections first",
+              "type": "latency",
+              "maxLatency": 80
+            }],
+            "expansions": [{
+                  "target": "rules[FastConnection].maxLatency",
+                  "steps": [{
+                      "waitTimeSeconds": 5,
+                      "value": 1000
+                }]
+            }]
+        }
+  MatchMakingConfiguration:
+    Type: AWS::GameLift::MatchmakingConfiguration
+    Properties:
+      Name: !Sub BatsToiGameConfiguration-DEBUG-${EnvName}
+      AcceptanceRequired: false
+      AdditionalPlayerCount: 0
+      RequestTimeoutSeconds: 250
+      BackfillMode: AUTOMATIC
+      Description: A basic sns configuration for BatsToi
+      GameProperties:
+        - Key: gamemode
+          Value: classic
+      GameSessionQueueArns:
+        - !GetAtt Queue.Arn
+      RuleSetName: !Ref MatchmakingRuleSet
+      NotificationTarget: !ImportValue
+        Fn::Sub: ${BackendStackName}-MatchmakingEventsSNSTopic
+  CustomLocation:
+    Type: AWS::GameLift::Location
+    Properties:
+      LocationName: !Sub custom-${EnvName}-1
+  AnyWhereFleet:
+    Type: AWS::GameLift::Fleet
+    Properties:
+      ComputeType: ANYWHERE
+      Name: !Sub BatsToiAnyWhereFleet-DEBUG-${EnvName}
+      Locations:
+        - Location: !Ref CustomLocation
+      AnywhereConfiguration:
+        Cost: '0.0'
+Outputs:
+  AnyWhereFleetID:
+    Description: The ID of the created GameLift Fleet
+    Value: !Ref AnyWhereFleet
+    Export:
+      Name: !Sub ${AWS::StackName}-AnywhereFleetID
