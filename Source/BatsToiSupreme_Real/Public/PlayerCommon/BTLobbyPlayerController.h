@@ -92,6 +92,12 @@ protected:
 	// Delegate to bind callback event for player data file storage file read.
 	FDelegateHandle ReadPlayerDataFileDelegateHandle;
 
+	FOnUpdateSessionCompleteDelegate OnUpdateSessionCompleteDelegate;
+	FDelegateHandle OnUpdateSessionCompleteDelegateHandle;
+	FOnlineSessionSettings* HostSettings;
+	void UpdateSession();
+	void OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful);
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|Utils")
 	FString GetDeviceId();

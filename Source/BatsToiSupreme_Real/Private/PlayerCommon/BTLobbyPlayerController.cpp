@@ -28,6 +28,24 @@ void ABTLobbyPlayerController::BeginPlay()
 	}
 }
 
+void ABTLobbyPlayerController::UpdateSession()
+{
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+	OnUpdateSessionCompleteDelegate = FOnUpdateSessionCompleteDelegate::CreateUObject(this, &ABTLobbyPlayerController::OnUpdateSessionComplete);
+	HostSettings = new FOnlineSessionSettings();
+	HostSettings->Set(FName(TEXT("UPDATESETTING2")), 99, EOnlineDataAdvertisementType::ViaOnlineService);
+	Session->UpdateSession("SessionName", *HostSettings, true);
+}
+
+void ABTLobbyPlayerController::OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+	BTLOG_DISPLAY("OnUpdateSessionComplete %s bSuccess: %d", *SessionName.ToString(), bWasSuccessful);
+	Session->ClearOnUpdateSessionCompleteDelegate_Handle(OnUpdateSessionCompleteDelegateHandle);
+}
+
 FString ABTLobbyPlayerController::GetDeviceId()
 {
 	FString DeviceId = FPlatformProcess::ComputerName(); 
@@ -161,6 +179,7 @@ void ABTLobbyPlayerController::OnEOSLoginCompleted(int32 LocalUserNum, bool bWas
 		//LoadTitleData();  // Load any game related data (in this case a string output to logs)
 		//LoadPlayerData(); // Load save game data
 		FindSessions();	  // For convenience a session is found in sequence here. In a real game this would be done via game UI. Goal here is to show EOS functionality, not game design.
+
 	}
 	else // Login failed
 	{
