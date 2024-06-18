@@ -7,6 +7,19 @@
 #include <GameModes/BTGameSession.h>
 #include "Kismet/GameplayStatics.h"
 
+int ABTLobbyServerGM::GetBEPort() const
+{
+	FString port;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-Port="), port))
+	{
+		BTLOG_DISPLAY("BE Port: %s", *port);
+	}
+
+	int result = FCString::Atoi(*port);
+	return result;
+}
+
 ABTLobbyServerGM::ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer)
 {
 	GameSessionClass = ABTGameSession::StaticClass();
@@ -17,6 +30,8 @@ void ABTLobbyServerGM::BeginPlay()
 	BTLOG_DISPLAY("[ABTLobbyServerGM] -BeginPlay");
 
 	Super::BeginPlay();
+
+	BEPort = GetBEPort();
 }
 
 void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)
