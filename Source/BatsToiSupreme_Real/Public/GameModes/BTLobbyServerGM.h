@@ -17,6 +17,9 @@ private:
 	//Get BE Port
 	int GetBEPort() const;
 
+	UFUNCTION()
+	void OnEOSSessionCreated();
+
 protected:
 	ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	virtual void BeginPlay() override;

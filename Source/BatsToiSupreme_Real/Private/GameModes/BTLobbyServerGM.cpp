@@ -13,11 +13,16 @@ int ABTLobbyServerGM::GetBEPort() const
 	// Check Mode
 	if (FParse::Value(FCommandLine::Get(), TEXT("-Port="), port))
 	{
-		BTLOG_DISPLAY("BE Port: %s", *port);
+		BTLOG_WARNING("BE Port: %s", *port);
 	}
 
 	int result = FCString::Atoi(*port);
 	return result;
+}
+
+void ABTLobbyServerGM::OnEOSSessionCreated()
+{
+	BTLOG_WARNING("[ABTLobbyServerGM] -OnEOSSessionCreated");
 }
 
 ABTLobbyServerGM::ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer)
@@ -27,11 +32,14 @@ ABTLobbyServerGM::ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer)
 
 void ABTLobbyServerGM::BeginPlay()
 {
-	BTLOG_DISPLAY("[ABTLobbyServerGM] -BeginPlay");
+	BTLOG_WARNING("[ABTLobbyServerGM] -BeginPlay");
 
 	Super::BeginPlay();
 
 	BEPort = GetBEPort();
+
+	ABTGameSession* TempGameSession = Cast<ABTGameSession>(GameSession);
+	TempGameSession->OnSessionCreated.AddDynamic(this, &ABTLobbyServerGM::OnEOSSessionCreated);
 }
 
 void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)

@@ -6,6 +6,7 @@
 #include "GameFramework/GameSession.h"
 #include "BTGameSession.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSessionCreated);
 /**
  * Acts as a game-specific wrapper around the session interface. 
  The game code makes calls to this when it needs to interact with the session interface. 
@@ -102,4 +103,10 @@ protected:
 
 	// Delegate to bind callback event for destroy session.
 	FDelegateHandle DestroySessionDelegateHandle;
+
+public:
+	UPROPERTY(BlueprintAssignable, Category = "GameSession")
+	FOnSessionCreated OnSessionCreated;
+
+	void OnTest();
 };

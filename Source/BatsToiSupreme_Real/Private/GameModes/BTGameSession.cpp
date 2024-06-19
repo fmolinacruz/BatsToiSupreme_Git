@@ -97,7 +97,7 @@ void ABTGameSession::NotifyLogout(const APlayerController* ExitingPlayer)
 void ABTGameSession::CreateSession(FName KeyName, FString KeyValue) // Dedicated Server Only
 {
 	// Tutorial 3: This function will create an EOS Session.
-
+	UE_LOG(LogTemp, Warning, TEXT("ABTGameSession::CreateSession"));
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface(); // Retrieve the generic session interface.
 
@@ -146,7 +146,10 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 	{
 		FString sessionId = Session->GetNamedSession(EOSSessionName)->GetSessionIdStr();
 		bSessionExists = true;
-		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created! %s"), *EOSSessionName.ToString(), *sessionId);
+		OnSessionCreated.Broadcast();
+		OnSessionCreated.Clear();
+		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created 1! %s"), *EOSSessionName.ToString(), *sessionId);
+
 	}
 	else
 	{
@@ -381,4 +384,9 @@ void ABTGameSession::HandleDestroySessionCompleted(FName EOSSessionName, bool bW
 
 	Session->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
 	DestroySessionDelegateHandle.Reset();
+}
+
+void ABTGameSession::OnTest()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Test Session."));
 }
