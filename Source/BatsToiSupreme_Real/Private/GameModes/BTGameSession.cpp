@@ -146,7 +146,7 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 	{
 		FString sessionId = Session->GetNamedSession(EOSSessionName)->GetSessionIdStr();
 		bSessionExists = true;
-		OnSessionCreated.Broadcast();
+		OnSessionCreated.Broadcast(sessionId);
 		OnSessionCreated.Clear();
 		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created 1! %s"), *EOSSessionName.ToString(), *sessionId);
 

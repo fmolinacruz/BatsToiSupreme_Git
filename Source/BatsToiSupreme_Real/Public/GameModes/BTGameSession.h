@@ -6,7 +6,7 @@
 #include "GameFramework/GameSession.h"
 #include "BTGameSession.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSessionCreated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSessionCreated, FString, sessionId);
 /**
  * Acts as a game-specific wrapper around the session interface. 
  The game code makes calls to this when it needs to interact with the session interface. 

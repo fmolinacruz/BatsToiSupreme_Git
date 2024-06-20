@@ -6,6 +6,8 @@
 #include <Utilities/BTLogging.h>
 #include <GameModes/BTGameSession.h>
 #include "Kismet/GameplayStatics.h"
+#include "Utilities/BTGameFunctionLibrary.h"
+#include <VaRestSubsystem.h>
 
 int ABTLobbyServerGM::GetBEPort() const
 {
@@ -20,9 +22,24 @@ int ABTLobbyServerGM::GetBEPort() const
 	return result;
 }
 
-void ABTLobbyServerGM::OnEOSSessionCreated()
+void ABTLobbyServerGM::OnEOSSessionCreated(FString sessionId)
 {
-	BTLOG_WARNING("[ABTLobbyServerGM] -OnEOSSessionCreated");
+	BTLOG_WARNING("[ABTLobbyServerGM] -OnEOSSessionCreated: %s", *sessionId);
+	EosSessionId = sessionId;
+
+	FString BEUrl = BEIp + ":" + BEPort;
+	UVaRestJsonObject* JsonObj = NewObject<UVaRestJsonObject>();
+	JsonObj->SetStringField(TEXT("sesssionId"), EosSessionId);
+	JsonObj->SetStringField(TEXT("BEUrl"), BEUrl);
+	UpdateEosSessionData(JsonObj);
+}
+
+void ABTLobbyServerGM::Init()
+{
+	BEPort = FString::FromInt(GetBEPort());
+	AccountId = UBTGameFunctionLibrary::GetAccountId();
+	ABTGameSession* TempGameSession = Cast<ABTGameSession>(GameSession);
+	TempGameSession->OnSessionCreated.AddDynamic(this, &ABTLobbyServerGM::OnEOSSessionCreated);
 }
 
 ABTLobbyServerGM::ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer)
@@ -35,11 +52,8 @@ void ABTLobbyServerGM::BeginPlay()
 	BTLOG_WARNING("[ABTLobbyServerGM] -BeginPlay");
 
 	Super::BeginPlay();
-
-	BEPort = GetBEPort();
-
-	ABTGameSession* TempGameSession = Cast<ABTGameSession>(GameSession);
-	TempGameSession->OnSessionCreated.AddDynamic(this, &ABTLobbyServerGM::OnEOSSessionCreated);
+	Init();
+	
 }
 
 void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)

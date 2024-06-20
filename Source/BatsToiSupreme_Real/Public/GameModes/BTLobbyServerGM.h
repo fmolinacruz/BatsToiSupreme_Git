@@ -18,21 +18,37 @@ private:
 	int GetBEPort() const;
 
 	UFUNCTION()
-	void OnEOSSessionCreated();
+	void OnEOSSessionCreated(FString sessionId);
+
+	UFUNCTION()
+	void Init();
 
 protected:
 	ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	virtual void BeginPlay() override;
 
 	//BE Port
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|LobbyServer")
-	int BEPort;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Batstoi|LobbyServer")
+	FString BEPort;
 
 	//BE IP
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi|LobbyServer")
 	FString BEIp;
 
+	//EOS session ID
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Batstoi|LobbyServer")
+	FString EosSessionId;
+
+	// Account Id for serverless api
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Batstoi|LobbyServer")
+	FString AccountId;
+
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	UFUNCTION()
 	int32 GetPlayerCount() const;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Batstoi|LobbyServer")
+	void UpdateEosSessionData(UVaRestJsonObject* Data);
 };
