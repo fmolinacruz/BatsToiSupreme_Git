@@ -14,6 +14,7 @@
 #include "Serialization/MemoryReader.h"
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/ArchiveLoadCompressedProxy.h"
+#include <Utilities/BTGameFunctionLibrary.h>
 
 void ABTLobbyPlayerController::BeginPlay()
 {
@@ -88,6 +89,24 @@ void ABTLobbyPlayerController::SaveGame()
 	WritePlayerDataStorage("CharacterPawnLocation", SaveData);
 }
 
+void ABTLobbyPlayerController::OnGetEosSessionDataCompleted(UVaRestJsonObject* Result)
+{
+	UVaRestJsonObject* Data = Result->GetObjectField(TEXT("data"));
+	if (Data)
+	{
+		FString BEUrl = Data->GetStringField(TEXT("BEUrl"));
+		BTLOG_WARNING("[ABTLobbyPlayerController] [OnGetEosSessionDataCompleted] %s", *BEUrl);
+		
+		UGameplayStatics::OpenLevel(GetWorld(), *BEUrl);
+		/*FURL DedicatedServerURL(nullptr, *BEUrl, TRAVEL_Absolute);
+		FString DedicatedServerJoinError;
+		auto DedicatedServerJoinStatus = GEngine->Browse(GEngine->GetWorldContextFromWorldChecked(GetWorld()), DedicatedServerURL, DedicatedServerJoinError);
+		if (DedicatedServerJoinStatus == EBrowseReturnVal::Failure)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to browse for dedicated server. Error is: %s"), *DedicatedServerJoinError);
+		}*/
+	}
+}
 
 void ABTLobbyPlayerController::EOSLogin()
 {
@@ -311,7 +330,10 @@ void ABTLobbyPlayerController::HandleJoinSessionCompleted(FName SessionName, EOn
 		{
 			FString sessionId = Session->GetNamedSession(SessionName)->GetSessionIdStr();
 			UE_LOG(LogTemp, Warning, TEXT("Session: Joined! %s"), *sessionId);
-	
+			FString url = UBTGameFunctionLibrary::GetGetSessionDataURL();
+			//Get Eos Session Data
+			GetEosSessionData(*url ,* sessionId);
+
 			// For the purposes of this tutorial overriding the ConnectString to point to localhost as we are testing locally. In a real game no need to override. Make sure you can connect over UDP to the ip:port of your server!
 			/*ConnectString = "192.168.35.62:7788";
 			FURL DedicatedServerURL(nullptr, *ConnectString, TRAVEL_Absolute);

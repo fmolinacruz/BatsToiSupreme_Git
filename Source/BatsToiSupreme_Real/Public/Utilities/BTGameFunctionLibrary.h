@@ -37,7 +37,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
 	static FString GetGetSessionDataURL();
 
+	// Get AWS Serverless URL for Update Session Data
+	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
+	static FString GetAPIKey();
+
 	static const FString ServerlessURL;
 	static const FString UpdateSessionDataAPI;
 	static const FString GetSessionDataAPI;
+	static const FString XAPIKey;
 };

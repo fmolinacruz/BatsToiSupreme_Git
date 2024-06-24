@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "Interfaces/OnlineSessionInterface.h" //Don't like declaring this here but getting weird compiler error with EOnJoinSessionCompleteResult
+#include <VaRestSubsystem.h>
+
 #include "BTLobbyPlayerController.generated.h"
 
 /**
@@ -107,4 +109,17 @@ public:
 
 	// Save the position of the character to Player Data Storage - Should use USaveGame.
 	void SaveGame();
+
+	// Store BE Data
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Batstoi|LobbyServer")
+	UVaRestJsonObject* EosSessionData;
+
+	// Get BE Data
+	UFUNCTION(BlueprintImplementableEvent, Category = "Batstoi|LobbyPlayer")
+	void GetEosSessionData(const FString& url, const FString& SessionId);
+
+	// Function to sign into EOS Game Services
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyPlayer")
+	void OnGetEosSessionDataCompleted(UVaRestJsonObject* Result);
+
 };

@@ -29,8 +29,10 @@ void ABTLobbyServerGM::OnEOSSessionCreated(FString sessionId)
 
 	FString BEUrl = BEIp + ":" + BEPort;
 	UVaRestJsonObject* JsonObj = NewObject<UVaRestJsonObject>();
-	JsonObj->SetStringField(TEXT("sesssionId"), EosSessionId);
-	JsonObj->SetStringField(TEXT("BEUrl"), BEUrl);
+	JsonObj->SetStringField(TEXT("sessionId"), EosSessionId);
+	UVaRestJsonObject* JsonDataObj = NewObject<UVaRestJsonObject>();
+	JsonDataObj->SetStringField(TEXT("BEUrl"), BEUrl);
+	JsonObj->SetObjectField(TEXT("data"), JsonDataObj);
 	UpdateEosSessionData(JsonObj);
 }
 

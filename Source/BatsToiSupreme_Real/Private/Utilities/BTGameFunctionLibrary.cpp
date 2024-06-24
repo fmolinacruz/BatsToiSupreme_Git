@@ -6,9 +6,10 @@
 #include "GameModes/BTGameState.h"
 #include "Kismet/GameplayStatics.h"
 
-const FString UBTGameFunctionLibrary::ServerlessURL = TEXT("https://mnb85lqzo0.execute-api.ap-northeast-1.amazonaws.com/Dev");
+const FString UBTGameFunctionLibrary::ServerlessURL = TEXT("https://5ln56m6qu8.execute-api.ap-northeast-1.amazonaws.com/Dev");
 const FString UBTGameFunctionLibrary::UpdateSessionDataAPI = TEXT("/internal/session/data");
 const FString UBTGameFunctionLibrary::GetSessionDataAPI = TEXT("/session/data");
+const FString UBTGameFunctionLibrary::XAPIKey = TEXT("UzpmMSlfazp8UXFrZ0pfTCI9P25Pa3BFQl1RZ0hPVEhSZ3plJ11qZHIwJTp3aktrJkl0JislZVMzbEd2cyNxbEBBJThiXCI0RSlzeVlkeSNvcCc6ZVA+QWwgSSJQclM8");
 
 ABTGameState* UBTGameFunctionLibrary::GetBTGameState(const UObject* WorldContextObject)
 {
@@ -45,4 +46,9 @@ FString UBTGameFunctionLibrary::GetUpdateSessionDataURL()
 FString UBTGameFunctionLibrary::GetGetSessionDataURL()
 {
 	return ServerlessURL + GetSessionDataAPI;
+}
+
+FString UBTGameFunctionLibrary::GetAPIKey()
+{
+	return XAPIKey;
 }
