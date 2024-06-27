@@ -22,11 +22,11 @@ void ABTLobbyPlayerController::BeginPlay()
 
 	Super::BeginPlay();
 
-	if (!IsRunningDedicatedServer())
-	{
-		UE_LOG(LogTemp, Log, TEXT("EOSLogin into EOS..."));
-		EOSLogin(); // Call login function only on the client
-	}
+	//if (!IsRunningDedicatedServer())
+	//{
+	//	UE_LOG(LogTemp, Log, TEXT("EOSLogin into EOS..."));
+	//	EOSLogin(); // Call login function only on the client
+	//}
 }
 
 void ABTLobbyPlayerController::UpdateSession()
