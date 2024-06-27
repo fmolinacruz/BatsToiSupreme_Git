@@ -10,6 +10,7 @@
 #include "PlayerCommon/BTPlayerController.h"
 #include "Utilities/BTLogging.h"
 #include <GameModes/BTGameState.h>
+#include <GameModes/BTGameSession.h>
 
 ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
@@ -28,7 +29,7 @@ void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 #if WITH_GAMELIFT 
-	InitGameLift();
+	//InitGameLift();
 #endif
 
 	InitGameplaySettings();
