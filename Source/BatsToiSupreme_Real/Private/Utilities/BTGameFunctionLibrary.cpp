@@ -5,6 +5,7 @@
 #include "GameModes/BTGameModeBase.h"
 #include "GameModes/BTGameState.h"
 #include "Kismet/GameplayStatics.h"
+#include <SocketSubsystem.h>
 
 const FString UBTGameFunctionLibrary::ServerlessURL = TEXT("https://5ln56m6qu8.execute-api.ap-northeast-1.amazonaws.com/Dev");
 const FString UBTGameFunctionLibrary::UpdateSessionDataAPI = TEXT("/internal/session/data");
@@ -51,4 +52,19 @@ FString UBTGameFunctionLibrary::GetGetSessionDataURL()
 FString UBTGameFunctionLibrary::GetAPIKey()
 {
 	return XAPIKey;
+}
+
+FString UBTGameFunctionLibrary::GetLocalIP()
+{
+	bool bCanBindAll;
+	TSharedRef<FInternetAddr> Addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->GetLocalHostAddr(*GLog, bCanBindAll);
+
+	if (Addr->IsValid())
+	{
+		return Addr->ToString(false);
+	}
+	else
+	{
+		return FString(TEXT(""));
+	}
 }

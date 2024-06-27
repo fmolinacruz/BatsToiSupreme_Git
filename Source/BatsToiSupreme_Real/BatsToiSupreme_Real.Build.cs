@@ -24,7 +24,8 @@ public class BatsToiSupreme_Real : ModuleRules
             "VaRest",
 			"OnlineSubsystem", 
 			"OnlineSubsystemUtils",
-			"OnlineSubsystemEOS"
+			"OnlineSubsystemEOS", 
+			"Sockets"
         });
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {
