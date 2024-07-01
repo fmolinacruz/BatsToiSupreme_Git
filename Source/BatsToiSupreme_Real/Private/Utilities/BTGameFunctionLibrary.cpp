@@ -11,6 +11,8 @@ const FString UBTGameFunctionLibrary::ServerlessURL = TEXT("https://5ln56m6qu8.e
 const FString UBTGameFunctionLibrary::UpdateSessionDataAPI = TEXT("/internal/session/data");
 const FString UBTGameFunctionLibrary::GetSessionDataAPI = TEXT("/session/data");
 const FString UBTGameFunctionLibrary::XAPIKey = TEXT("UzpmMSlfazp8UXFrZ0pfTCI9P25Pa3BFQl1RZ0hPVEhSZ3plJ11qZHIwJTp3aktrJkl0JislZVMzbEd2cyNxbEBBJThiXCI0RSlzeVlkeSNvcCc6ZVA+QWwgSSJQclM8");
+const FString UBTGameFunctionLibrary::CustomConfigPath = FPaths::ProjectConfigDir() / TEXT("CustomConfig.ini");
+
 
 ABTGameState* UBTGameFunctionLibrary::GetBTGameState(const UObject* WorldContextObject)
 {
@@ -67,4 +69,18 @@ FString UBTGameFunctionLibrary::GetLocalIP()
 	{
 		return FString(TEXT(""));
 	}
+}
+
+FString UBTGameFunctionLibrary::GetPIEHOST()
+{
+	if (FPlatformFileManager::Get().GetPlatformFile().FileExists(*CustomConfigPath))
+	{
+		FString PIELanHost;
+		if (GConfig->GetString(TEXT("CustomSection"), TEXT("PIELanHost"), PIELanHost, CustomConfigPath))
+		{
+			UE_LOG(LogTemp, Log, TEXT("PIELanHost: %s"), *PIELanHost);
+			return PIELanHost;
+		}
+	}
+	return FString();
 }

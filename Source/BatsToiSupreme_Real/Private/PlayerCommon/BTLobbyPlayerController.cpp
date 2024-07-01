@@ -27,6 +27,13 @@ void ABTLobbyPlayerController::BeginPlay()
 	//	UE_LOG(LogTemp, Log, TEXT("EOSLogin into EOS..."));
 	//	EOSLogin(); // Call login function only on the client
 	//}
+
+	CppInit();
+}
+
+void ABTLobbyPlayerController::CppInit()
+{
+	
 }
 
 void ABTLobbyPlayerController::UpdateSession()
@@ -106,6 +113,22 @@ void ABTLobbyPlayerController::OnGetEosSessionDataCompleted(UVaRestJsonObject* R
 			UE_LOG(LogTemp, Error, TEXT("Failed to browse for dedicated server. Error is: %s"), *DedicatedServerJoinError);
 		}*/
 	}
+}
+
+FString ABTLobbyPlayerController::GetLanHostUrl()
+{
+	// Get Lan Host from command line arguments
+	if (FParse::Value(FCommandLine::Get(), TEXT("-LANHOST="), LanHostUrl))
+	{
+		BTLOG_WARNING("LAN HOST: %s", *LanHostUrl);
+	}
+	else
+	{
+		LanHostUrl = UBTGameFunctionLibrary::GetPIEHOST();
+		BTLOG_WARNING("GetPIEHOST: %s", *LanHostUrl);
+	}
+
+	return LanHostUrl;
 }
 
 void ABTLobbyPlayerController::EOSLogin()
