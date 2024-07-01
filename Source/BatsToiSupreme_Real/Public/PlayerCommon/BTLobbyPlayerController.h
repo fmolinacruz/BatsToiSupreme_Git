@@ -21,6 +21,9 @@ protected:
 	// Function called when play begins.
 	virtual void BeginPlay();
 
+	UFUNCTION()
+	void CppInit();
+
 	// Function to sign into EOS Game Services
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|EOS")
 	void EOSLogin();
@@ -122,4 +125,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyPlayer")
 	void OnGetEosSessionDataCompleted(UVaRestJsonObject* Result);
 
+	// Function Get Lan Host Url
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyPlayer")
+	FString GetLanHostUrl();
+
+private:
+	FString LanHostUrl;
 };

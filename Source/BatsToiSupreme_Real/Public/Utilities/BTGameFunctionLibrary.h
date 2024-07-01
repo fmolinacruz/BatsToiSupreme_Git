@@ -45,8 +45,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
 	static FString GetLocalIP();
 
+	// Get Local IP
+	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
+	static FString GetPIEHOST();
+
 	static const FString ServerlessURL;
 	static const FString UpdateSessionDataAPI;
 	static const FString GetSessionDataAPI;
 	static const FString XAPIKey;
+	static const FString CustomConfigPath;
 };
