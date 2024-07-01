@@ -22,6 +22,10 @@ public class BatsToiSupreme_Real : ModuleRules
 			"GameplayAbilities",
 			"GameLiftServerSDK",
             "VaRest",
+			"OnlineSubsystem", 
+			"OnlineSubsystemUtils",
+			"OnlineSubsystemEOS", 
+			"Sockets"
         });
 		
 		PrivateDependencyModuleNames.AddRange(new string[] {
