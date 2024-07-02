@@ -67,7 +67,7 @@ FString UBTGameFunctionLibrary::GetLocalIP()
 	}
 	else
 	{
-		return FString(TEXT(""));
+		return FString();
 	}
 }
 
@@ -83,4 +83,25 @@ FString UBTGameFunctionLibrary::GetPIEHOST()
 		}
 	}
 	return FString();
+}
+
+bool UBTGameFunctionLibrary::IsLanHost()
+{
+	FString HostType;
+	// Get Lan Host from command line arguments
+	if (FParse::Value(FCommandLine::Get(), TEXT("-HOSTTYPE="), HostType))
+	{
+		if (HostType == "LAN")
+		{
+			UE_LOG(LogTemp, Warning, TEXT("IsLanHost: LAN"));
+			return true;
+		}
+		if (HostType == "CLOUD")
+		{
+			UE_LOG(LogTemp, Warning, TEXT("IsLanHost: CLOUD"));
+			return false;
+		}
+	}
+	UE_LOG(LogTemp, Warning, TEXT("IsLanHost: PIE"));
+	return true;
 }

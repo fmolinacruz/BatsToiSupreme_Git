@@ -49,6 +49,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
 	static FString GetPIEHOST();
 
+	// Check host type will connect
+	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
+	static bool IsLanHost();
+
 	static const FString ServerlessURL;
 	static const FString UpdateSessionDataAPI;
 	static const FString GetSessionDataAPI;

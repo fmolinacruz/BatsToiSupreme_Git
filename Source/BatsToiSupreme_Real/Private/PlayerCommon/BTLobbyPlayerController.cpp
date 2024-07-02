@@ -117,15 +117,18 @@ void ABTLobbyPlayerController::OnGetEosSessionDataCompleted(UVaRestJsonObject* R
 
 FString ABTLobbyPlayerController::GetLanHostUrl()
 {
-	// Get Lan Host from command line arguments
-	if (FParse::Value(FCommandLine::Get(), TEXT("-LANHOST="), LanHostUrl))
+	if (LanHostUrl.IsEmpty())
 	{
-		BTLOG_WARNING("LAN HOST: %s", *LanHostUrl);
-	}
-	else
-	{
-		LanHostUrl = UBTGameFunctionLibrary::GetPIEHOST();
-		BTLOG_WARNING("GetPIEHOST: %s", *LanHostUrl);
+		// Get Lan Host from command line arguments
+		if (FParse::Value(FCommandLine::Get(), TEXT("-LANHOST="), LanHostUrl))
+		{
+			BTLOG_WARNING("LAN HOST: %s", *LanHostUrl);
+		}
+		else
+		{
+			LanHostUrl = UBTGameFunctionLibrary::GetPIEHOST();
+			BTLOG_WARNING("GetPIEHOST: %s", *LanHostUrl);
+		}
 	}
 
 	return LanHostUrl;
