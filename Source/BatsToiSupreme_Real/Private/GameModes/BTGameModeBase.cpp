@@ -15,6 +15,7 @@
 ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
 {
+#if WITH_GAMELIFT
 	GameLiftSDKModule = nullptr;
 	mGameSessionStarted = false;
 	ClientConnectTimeOut = 60;
@@ -23,18 +24,20 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
 	GameLiftProcessParams.OnHealthCheck.BindUObject(this, &ABTGameModeBase::OnGameLiftServerHealthCheck);
 	*/
+#endif
 }
 
 void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 #if WITH_GAMELIFT 
-	//InitGameLift();
+	InitGameLift();
 #endif
 
 	InitGameplaySettings();
 }
 
+#if WITH_GAMELIFT
 void ABTGameModeBase::InitGameLift()
 {
 	BTLOG_DISPLAY("Initialize GameLift Server !");
@@ -124,7 +127,6 @@ void ABTGameModeBase::InitGameLift()
 	Logfiles.Add(logpath);
 	GameLiftProcessParams.logParameters = Logfiles;
 	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
-
 }
 
 void ABTGameModeBase::InitSDKEC2()
@@ -167,17 +169,6 @@ void ABTGameModeBase::InitSDKAnyWhere()
 	BTLOG_DISPLAY("InitSDKAnyWhere DONE");
 }
 
-void ABTGameModeBase::InitGameplaySettings()
-{
-	if (GameplayManagerRef != nullptr)
-		return;
-	
-	GameplayManagerRef = GetWorld()->SpawnActor<ABTGameplayManager>(GameplayManagerClass);
-	if (GameplayManagerRef == nullptr)
-	{
-		BTLOG_ERROR("ABTGameplayManager cannot be spawned!");
-	}
-}
 
 void ABTGameModeBase::OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession)
 {
@@ -242,6 +233,7 @@ void ABTGameModeBase::OnServerTimeOut()
 		}
 	}
 }
+#endif
 
 void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 {
@@ -405,4 +397,16 @@ void ABTGameModeBase::GetMainCameraRef()
 void ABTGameModeBase::GetStartSpots()
 {
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), StartSpots);
+}
+
+void ABTGameModeBase::InitGameplaySettings()
+{
+	if (GameplayManagerRef != nullptr)
+		return;
+
+	GameplayManagerRef = GetWorld()->SpawnActor<ABTGameplayManager>(GameplayManagerClass);
+	if (GameplayManagerRef == nullptr)
+	{
+		BTLOG_ERROR("ABTGameplayManager cannot be spawned!");
+	}
 }

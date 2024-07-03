@@ -40,7 +40,7 @@ public class GameLiftServerSDK : ModuleRules
         {
             if (Target.Type == TargetRules.TargetType.Server)
             {
-                PublicDefinitions.Add("WITH_GAMELIFT=1");    
+                PublicDefinitions.Add("WITH_GAMELIFT=0");    
                 if (Target.Platform == UnrealTargetPlatform.Linux)
                 {
                     SDKDirectory = System.IO.Path.Combine(SDKDirectory, "x86_64-unknown-linux-gnu");
