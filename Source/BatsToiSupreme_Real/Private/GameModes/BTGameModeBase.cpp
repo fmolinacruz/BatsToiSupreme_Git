@@ -300,7 +300,7 @@ void ABTGameModeBase::PostLogin(APlayerController* NewPlayer)
 
 void ABTGameModeBase::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
-	BTLOG_DISPLAY("[ABTGameModeBase] - PostLogin: ");
+	BTLOG_DISPLAY("[ABTGameModeBase] - PreLogin: ");
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
 }
 

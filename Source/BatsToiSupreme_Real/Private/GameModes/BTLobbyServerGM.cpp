@@ -36,7 +36,7 @@ void ABTLobbyServerGM::OnEOSSessionCreated(FString sessionId)
 	UpdateEosSessionData(JsonObj);
 }
 
-void ABTLobbyServerGM::Init()
+void ABTLobbyServerGM::InitEOS()
 {
 	BEPort = FString::FromInt(GetBEPort());
 	AccountId = UBTGameFunctionLibrary::GetAccountId();
@@ -54,16 +54,17 @@ void ABTLobbyServerGM::BeginPlay()
 	BTLOG_WARNING("[ABTLobbyServerGM] -BeginPlay");
 
 	Super::BeginPlay();
-	Init();
-	
+#if WITH_EOS_SESSION
+	InitEOS();
+#endif	
 }
 
 void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
-	BTLOG_DISPLAY("[ABTLobbyServerGM] - OnPostLogin: Login New Player %s %i", *NewPlayer->GetName(), GetPlayerCount());
+	BTLOG_DISPLAY("[ABTLobbyServerGM] - PostLogin: Login New Player %s %i", *NewPlayer->GetName(), GetPlayerCount());
 
-	if (GetPlayerCount() == 1)
+	//if (GetPlayerCount() == 1)
 	{
 		/*UWorld* World = GetWorld();
 		if (World)
@@ -72,6 +73,12 @@ void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)
 			World->SeamlessTravel(NewLevelName, true);
 		}*/
 	}
+}
+
+void ABTLobbyServerGM::OnPostLogin(AController* NewPlayer)
+{
+	Super::OnPostLogin(NewPlayer);
+	BTLOG_DISPLAY("[ABTLobbyServerGM] - OnPostLogin: Login New Player %s %i", *NewPlayer->GetName(), GetPlayerCount());
 }
 
 int32 ABTLobbyServerGM::GetPlayerCount() const

@@ -8,8 +8,8 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSessionCreated, FString, sessionId);
 /**
- * Acts as a game-specific wrapper around the session interface. 
- The game code makes calls to this when it needs to interact with the session interface. 
+ * Acts as a game-specific wrapper around the session interface.
+ The game code makes calls to this when it needs to interact with the session interface.
  A game session exists only the server, while running an online game
  */
 UCLASS()
@@ -38,14 +38,15 @@ protected:
 	// Function called when players leave the dedicated server. Trigger UnregisterPlayer from base class and used to End Sesion.
 	virtual void NotifyLogout(const APlayerController* ExitingPlayer);
 
-	//TODO: Hardcoding the session name
+
+	// TODO: Hardcoding the session name
 	FName SessionName = "SessionName";
 
 	// Hardcoding the max number of players in a session.
 	const int MaxNumberOfPlayersInSession = 2;
 
 	// Variable to keep track of the number of players in a session.
-	int NumberOfPlayersInSession;
+	int NumberOfPlayersInSession = 0;
 
 	// Function to create an EOS session.
 	void CreateSession(FName KeyName = "KeyName", FString KeyValue = "KeyValue");
@@ -108,5 +109,4 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "GameSession")
 	FOnSessionCreated OnSessionCreated;
 
-	void OnTest();
 };

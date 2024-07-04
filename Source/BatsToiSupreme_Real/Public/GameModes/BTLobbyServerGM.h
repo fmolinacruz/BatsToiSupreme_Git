@@ -21,7 +21,7 @@ private:
 	void OnEOSSessionCreated(FString sessionId);
 
 	UFUNCTION()
-	void Init();
+	void InitEOS();
 
 protected:
 	ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
@@ -45,7 +45,7 @@ protected:
 
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
-
+	virtual void OnPostLogin(AController* NewPlayer) override;
 	UFUNCTION()
 	int32 GetPlayerCount() const;
 
