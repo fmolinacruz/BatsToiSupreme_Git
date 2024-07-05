@@ -39,7 +39,7 @@ public class BatsToiSupreme_Real : ModuleRules
 
 		bEnableExceptions = true;
 
-        PublicDefinitions.Add("WITH_EOS_SESSION=0");
+        PublicDefinitions.Add("WITH_EOS_SESSION=1");
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 

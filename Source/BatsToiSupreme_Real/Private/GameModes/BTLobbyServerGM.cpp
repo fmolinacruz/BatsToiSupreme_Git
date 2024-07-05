@@ -38,7 +38,17 @@ void ABTLobbyServerGM::OnEOSSessionCreated(FString sessionId)
 
 void ABTLobbyServerGM::InitEOS()
 {
+	//Init Port
 	BEPort = FString::FromInt(GetBEPort());
+	if (UBTGameFunctionLibrary::IsLanHost())
+	{
+		BEIp = UBTGameFunctionLibrary::GetLocalIP();		
+	}
+	else
+	{
+		//Get Cloud Host IP
+	}
+
 	AccountId = UBTGameFunctionLibrary::GetAccountId();
 	ABTGameSession* TempGameSession = Cast<ABTGameSession>(GameSession);
 	TempGameSession->OnSessionCreated.AddDynamic(this, &ABTLobbyServerGM::OnEOSSessionCreated);
