@@ -12,6 +12,7 @@ const FString UBTGameFunctionLibrary::UpdateSessionDataAPI = TEXT("/internal/ses
 const FString UBTGameFunctionLibrary::GetSessionDataAPI = TEXT("/session/data");
 const FString UBTGameFunctionLibrary::XAPIKey = TEXT("UzpmMSlfazp8UXFrZ0pfTCI9P25Pa3BFQl1RZ0hPVEhSZ3plJ11qZHIwJTp3aktrJkl0JislZVMzbEd2cyNxbEBBJThiXCI0RSlzeVlkeSNvcCc6ZVA+QWwgSSJQclM8");
 const FString UBTGameFunctionLibrary::CustomConfigPath = FPaths::ProjectConfigDir() / TEXT("CustomConfig.ini");
+const FString UBTGameFunctionLibrary::Ipifp = TEXT("http://api.ipify.org");
 
 
 ABTGameState* UBTGameFunctionLibrary::GetBTGameState(const UObject* WorldContextObject)
@@ -104,4 +105,16 @@ bool UBTGameFunctionLibrary::IsLanHost()
 	}
 	UE_LOG(LogTemp, Warning, TEXT("IsLanHost: PIE"));
 	return true;
+}
+
+AActor* UBTGameFunctionLibrary::GetOrCreateWorldActor(UWorld* World, UClass* Class)
+{
+	AActor* Actor = UGameplayStatics::GetActorOfClass(World, Class);
+	if (!Actor)
+	{
+		// Spawn
+		FActorSpawnParameters SpawnParams;
+		Actor = World->SpawnActor<AActor>(Class, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
+	return Actor;
 }

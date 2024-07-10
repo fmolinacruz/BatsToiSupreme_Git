@@ -23,6 +23,17 @@ private:
 	UFUNCTION()
 	void InitEOS();
 
+	UFUNCTION()
+	void RequestCloudHostIp();
+
+	UFUNCTION()
+	void OnGetCloudHostIpCompleted(UVaRestRequestJSON* Request);
+
+	UFUNCTION()
+	void OnUpdateEosSessionDataCompleted(UVaRestRequestJSON* Request);
+
+	ABTHttpRequest* HttpRequestActor;
+
 protected:
 	ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	virtual void BeginPlay() override;
@@ -49,6 +60,9 @@ public:
 	UFUNCTION()
 	int32 GetPlayerCount() const;
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Batstoi|LobbyServer")
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyServer")
 	void UpdateEosSessionData(UVaRestJsonObject* Data);
+
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyServer")
+	ABTHttpRequest* GetHttpRequestActor();
 };

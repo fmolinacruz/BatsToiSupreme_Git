@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Utilities/BTGameFunctionLibrary.h"
 #include <VaRestSubsystem.h>
+#include <Utilities/BTHttpRequest.h>
 
 int ABTLobbyServerGM::GetBEPort() const
 {
@@ -46,12 +47,35 @@ void ABTLobbyServerGM::InitEOS()
 	}
 	else
 	{
-		//Get Cloud Host IP
+		RequestCloudHostIp();
 	}
 
 	AccountId = UBTGameFunctionLibrary::GetAccountId();
 	ABTGameSession* TempGameSession = Cast<ABTGameSession>(GameSession);
 	TempGameSession->OnSessionCreated.AddDynamic(this, &ABTLobbyServerGM::OnEOSSessionCreated);
+}
+
+void ABTLobbyServerGM::RequestCloudHostIp()
+{
+	// Get Cloud Host IP
+	UVaRestRequestJSON* Request = GetHttpRequestActor()->CreateRequest(EVaRestRequestVerb::GET, EVaRestRequestContentType::x_www_form_urlencoded_url);
+	Request->OnRequestComplete.AddDynamic(this, &ABTLobbyServerGM::OnGetCloudHostIpCompleted);
+	Request->ProcessURL(UBTGameFunctionLibrary::Ipifp);
+}
+
+void ABTLobbyServerGM::OnGetCloudHostIpCompleted(UVaRestRequestJSON* Request)
+{
+	if (Request->GetStatus() == EVaRestRequestStatus::Succeeded)
+	{
+		// Parse the response JSON
+		FString ResponseContent = Request->GetResponseContentAsString();
+		UE_LOG(LogTemp, Warning, TEXT("HandleGetDataCompleted Response: %s"), *ResponseContent);
+		BEIp = Request->GetResponseObject()->GetString();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("OnGetCloudHostIpCompleted: Request failed"));
+	}
 }
 
 ABTLobbyServerGM::ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer)
@@ -102,4 +126,37 @@ int32 ABTLobbyServerGM::GetPlayerCount() const
 
 	// If the world is not available, return 0
 	return 0;
+}
+
+void ABTLobbyServerGM::UpdateEosSessionData(UVaRestJsonObject* Data)
+{
+	// Get Cloud Host IP
+	UVaRestRequestJSON* Request = GetHttpRequestActor()->CreateRequest(EVaRestRequestVerb::POST, EVaRestRequestContentType::json);
+	Request->OnRequestComplete.AddDynamic(this, &ABTLobbyServerGM::OnUpdateEosSessionDataCompleted);
+	Request->SetHeader(TEXT("x-api-key"), UBTGameFunctionLibrary::XAPIKey);
+	Request->GetRequestObject()->MergeJsonObject(Data, true);
+	Request->ProcessURL(UBTGameFunctionLibrary::GetUpdateSessionDataURL());
+}
+
+void ABTLobbyServerGM::OnUpdateEosSessionDataCompleted(UVaRestRequestJSON* Request)
+{
+	if (Request->GetStatus() == EVaRestRequestStatus::Succeeded)
+	{
+		// Parse the response JSON
+		FString ResponseContent = Request->GetResponseContentAsString();
+		UE_LOG(LogTemp, Warning, TEXT("OnUpdateEosSessionDataCompleted Response: %s"), *ResponseContent);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("OnUpdateEosSessionDataCompleted: Request failed"));
+	}
+}
+
+ABTHttpRequest* ABTLobbyServerGM::GetHttpRequestActor()
+{
+	if (HttpRequestActor)
+		return HttpRequestActor;
+
+	HttpRequestActor = Cast<ABTHttpRequest>(UBTGameFunctionLibrary::GetOrCreateWorldActor(GetWorld(), ABTHttpRequest::StaticClass()));
+	return HttpRequestActor;
 }
