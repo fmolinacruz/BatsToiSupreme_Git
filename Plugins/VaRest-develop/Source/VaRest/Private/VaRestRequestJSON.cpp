@@ -507,10 +507,9 @@ void UVaRestRequestJSON::OnProcessRequestComplete(FHttpRequestPtr Request, FHttp
 		return;
 	}
 
-	FString ContentAsString = Response->GetContentAsString();
 #if PLATFORM_DESKTOP
 	// Log response state
-	UE_LOG(LogVaRest, Log, TEXT("Response (%d): %sJSON(%s%s%s)JSON"), ResponseCode, LINE_TERMINATOR, LINE_TERMINATOR, *ContentAsString, LINE_TERMINATOR);
+	UE_LOG(LogVaRest, Log, TEXT("Response (%d): %sJSON(%s%s%s)JSON"), ResponseCode, LINE_TERMINATOR, LINE_TERMINATOR, *Response->GetContentAsString(), LINE_TERMINATOR);
 #endif
 
 	// Process response headers
@@ -542,7 +541,7 @@ void UVaRestRequestJSON::OnProcessRequestComplete(FHttpRequestPtr Request, FHttp
 	else
 	{
 		// Use default unreal one
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(*ContentAsString);
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(*Response->GetContentAsString());
 		TSharedPtr<FJsonValue> OutJsonValue;
 		if (FJsonSerializer::Deserialize(Reader, OutJsonValue))
 		{
@@ -551,7 +550,6 @@ void UVaRestRequestJSON::OnProcessRequestComplete(FHttpRequestPtr Request, FHttp
 			if (ResponseJsonValue->GetType() == EVaJson::Object)
 			{
 				ResponseJsonObj->SetRootObject(ResponseJsonValue->GetRootValue()->AsObject());
-				ResponseJsonObj->SetString(ContentAsString);
 				ResponseSize = Response->GetContentLength();
 			}
 		}
@@ -563,13 +561,11 @@ void UVaRestRequestJSON::OnProcessRequestComplete(FHttpRequestPtr Request, FHttp
 	if (!bIsValidJsonResponse)
 	{
 		// Save response data as a string
-		ResponseContent = ContentAsString;
+		ResponseContent = Response->GetContentAsString();
 		ResponseSize = ResponseContent.GetAllocatedSize();
 
 		ResponseBytes = Response->GetContent();
 		ResponseContentLength = Response->GetContentLength();
-		ResponseJsonObj->SetString(ContentAsString);
-
 	}
 
 	// Broadcast the result events on next tick

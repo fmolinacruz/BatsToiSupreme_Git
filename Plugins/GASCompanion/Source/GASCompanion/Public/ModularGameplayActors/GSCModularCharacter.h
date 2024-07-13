@@ -22,7 +22,7 @@ class GASCOMPANION_API AGSCModularCharacter : public ACharacter, public IAbility
 
 
 public:
-	AGSCModularCharacter(const FObjectInitializer& ObjectInitializer);
+	AGSCModularCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/**
 	* Ability System Replication Mode: How gameplay effects will be replicated to clients

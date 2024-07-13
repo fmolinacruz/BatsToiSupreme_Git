@@ -135,27 +135,33 @@ float UGSCUserWidget::GetPercentForAttributes(const FGameplayAttribute Attribute
 	return AttributeValue / MaxAttributeValue;
 }
 
-float UGSCUserWidget::GetAttributeValue(FGameplayAttribute Attribute) const
+float UGSCUserWidget::GetAttributeValue(const FGameplayAttribute Attribute) const
 {
 	if (!AbilitySystemComponent)
 	{
-		GSC_LOG(Error, TEXT("UGSCUserWidget::GetAttributeValue() The owner AbilitySystemComponent seems to be invalid. GetAttributeValue() will return 0.f."))
-		return 0.0f;
+		GSC_WLOG(Error, TEXT("The owner AbilitySystemComponent seems to be invalid. Will return 0.f."))
+		return 0.f;
+	}
+
+	if (!Attribute.IsValid())
+	{
+		GSC_WLOG(Error, TEXT("Passed in Attribute is invalid (None). Will return 0.f."))
+		return 0.f;
 	}
 
 	if (!AbilitySystemComponent->HasAttributeSetForAttribute(Attribute))
 	{
 		const UClass* AttributeSet = Attribute.GetAttributeSetClass();
-		GSC_LOG(
+		GSC_WLOG(
 			Error,
-			TEXT("UGSCUserWidget::GetAttributeValue() Trying to get value of attribute [%s.%s]. %s doesn't seem to be granted to %s. Returning 0.f"),
+			TEXT("Trying to get value of attribute [%s.%s]. %s doesn't seem to be granted to %s. Returning 0.f"),
 			*GetNameSafe(AttributeSet),
 			*Attribute.GetName(),
 			*GetNameSafe(AttributeSet),
 			*GetNameSafe(AbilitySystemComponent)
 		);
 		
-		return 0.0f;
+		return 0.f;
 	}
 
 	return AbilitySystemComponent->GetNumericAttribute(Attribute);
@@ -180,8 +186,15 @@ void UGSCUserWidget::OnActiveGameplayEffectAdded(UAbilitySystemComponent* Target
 
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->OnGameplayEffectStackChangeDelegate(ActiveHandle)->AddUObject(this, &UGSCUserWidget::OnActiveGameplayEffectStackChanged);
-		AbilitySystemComponent->OnGameplayEffectTimeChangeDelegate(ActiveHandle)->AddUObject(this, &UGSCUserWidget::OnActiveGameplayEffectTimeChanged);
+		if (FOnActiveGameplayEffectStackChange* Delegate = AbilitySystemComponent->OnGameplayEffectStackChangeDelegate(ActiveHandle))
+		{
+			Delegate->AddUObject(this, &UGSCUserWidget::OnActiveGameplayEffectStackChanged);
+		}
+
+		if (FOnActiveGameplayEffectTimeChange* Delegate = AbilitySystemComponent->OnGameplayEffectTimeChangeDelegate(ActiveHandle))
+		{
+			Delegate->AddUObject(this, &UGSCUserWidget::OnActiveGameplayEffectTimeChanged);
+		}
 
 		// Store active handles to clear out bound delegates when shutting down listeners
 		GameplayEffectAddedHandles.AddUnique(ActiveHandle);
