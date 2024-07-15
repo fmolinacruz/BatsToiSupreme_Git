@@ -30,6 +30,9 @@ public:
 	/** Set the root Json object */
 	void SetRootObject(const TSharedPtr<FJsonObject>& JsonObject);
 
+	/** Set string in case response not in Json format */
+	void SetString(FString string);
+
 	//////////////////////////////////////////////////////////////////////////
 	// Serialization
 
@@ -160,6 +163,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "VaRest|Json")
 	void SetMapFields_bool(const TMap<FString, bool>& Fields);
 
+	/** Get response string */
+	UFUNCTION(BlueprintCallable, Category = "VaRest|Json")
+	FString GetString() const;
+
+
 private:
 	/** Internal implementation for setting map fields. */
 	template <typename T>
@@ -286,4 +294,6 @@ public:
 private:
 	/** Internal JSON data */
 	TSharedRef<FJsonObject> JsonObj;
+	//Data InString
+	FString DataString;
 };

@@ -44,6 +44,11 @@ void UVaRestJsonObject::SetRootObject(const TSharedPtr<FJsonObject>& JsonObject)
 	}
 }
 
+void UVaRestJsonObject::SetString(FString string)
+{
+	DataString = string;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Serialization
 
@@ -457,6 +462,11 @@ void UVaRestJsonObject::SetMapFields_int64(const TMap<FString, int64>& Fields)
 void UVaRestJsonObject::SetMapFields_bool(const TMap<FString, bool>& Fields)
 {
 	SetMapFields_Impl(Fields);
+}
+
+FString UVaRestJsonObject::GetString() const
+{
+	return DataString;
 }
 
 //////////////////////////////////////////////////////////////////////////
