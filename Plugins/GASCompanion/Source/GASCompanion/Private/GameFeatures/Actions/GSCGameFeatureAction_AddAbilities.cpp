@@ -16,7 +16,7 @@
 #include "Engine/Engine.h" // for FWorldContext
 #include "Engine/GameInstance.h"
 #include "Engine/World.h" // for FWorldDelegates::OnStartGameInstance
-#include "Runtime/Launch/Resources/Version.h"
+#include "Misc/DataValidation.h"
 
 #define LOCTEXT_NAMESPACE "GASCompanion"
 
@@ -52,10 +52,17 @@ void UGSCGameFeatureAction_AddAbilities::OnGameFeatureDeactivating(FGameFeatureD
 #if WITH_EDITORONLY_DATA
 void UGSCGameFeatureAction_AddAbilities::AddAdditionalAssetBundleData(FAssetBundleData& AssetBundleData)
 {
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+	if (!UAssetManager::IsInitialized())
+	{
+		return;
+	}
+#else
 	if (!UAssetManager::IsValid())
 	{
 		return;
 	}
+#endif
 
 	auto AddBundleAsset = [&AssetBundleData](const FSoftObjectPath& SoftObjectPath)
 	{
@@ -97,9 +104,13 @@ void UGSCGameFeatureAction_AddAbilities::AddAdditionalAssetBundleData(FAssetBund
 #endif
 
 #if WITH_EDITOR
-EDataValidationResult UGSCGameFeatureAction_AddAbilities::IsDataValid(TArray<FText>& ValidationErrors)
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+EDataValidationResult UGSCGameFeatureAction_AddAbilities::IsDataValid(FDataValidationContext& Context) const
+#else
+EDataValidationResult UGSCGameFeatureAction_AddAbilities::IsDataValid(FDataValidationContext& Context)
+#endif
 {
-	EDataValidationResult Result = CombineDataValidationResults(Super::IsDataValid(ValidationErrors), EDataValidationResult::Valid);
+	EDataValidationResult Result = CombineDataValidationResults(Super::IsDataValid(Context), EDataValidationResult::Valid);
 
 	int32 EntryIndex = 0;
 	for (const FGSCGameFeatureAbilitiesEntry& Entry : AbilitiesList)
@@ -107,13 +118,13 @@ EDataValidationResult UGSCGameFeatureAction_AddAbilities::IsDataValid(TArray<FTe
 		if (Entry.ActorClass.IsNull())
 		{
 			Result = EDataValidationResult::Invalid;
-			ValidationErrors.Add(FText::Format(LOCTEXT("EntryHasNullActor", "Null ActorClass at index {0} in AbilitiesList"), FText::AsNumber(EntryIndex)));
+			Context.AddError(FText::Format(LOCTEXT("EntryHasNullActor", "Null ActorClass at index {0} in AbilitiesList"), FText::AsNumber(EntryIndex)));
 		}
 
 		if (Entry.GrantedAbilities.IsEmpty() && Entry.GrantedAttributes.IsEmpty() && Entry.GrantedEffects.IsEmpty())
 		{
 			Result = EDataValidationResult::Invalid;
-			ValidationErrors.Add(LOCTEXT("EntryHasNoAddOns", "Granted Abilities / Attributes / Effects are all empty. This action should grant at least one of these."));
+			Context.AddError(LOCTEXT("EntryHasNoAddOns", "Granted Abilities / Attributes / Effects are all empty. This action should grant at least one of these."));
 		}
 
 		int32 AbilityIndex = 0;
@@ -122,7 +133,7 @@ EDataValidationResult UGSCGameFeatureAction_AddAbilities::IsDataValid(TArray<FTe
 			if (Ability.AbilityType.IsNull())
 			{
 				Result = EDataValidationResult::Invalid;
-				ValidationErrors.Add(FText::Format(LOCTEXT("EntryHasNullAbility", "Null AbilityType at index {0} in AbilitiesList[{1}].GrantedAbilities"), FText::AsNumber(AbilityIndex), FText::AsNumber(EntryIndex)));
+				Context.AddError(FText::Format(LOCTEXT("EntryHasNullAbility", "Null AbilityType at index {0} in AbilitiesList[{1}].GrantedAbilities"), FText::AsNumber(AbilityIndex), FText::AsNumber(EntryIndex)));
 			}
 			++AbilityIndex;
 		}
@@ -133,7 +144,7 @@ EDataValidationResult UGSCGameFeatureAction_AddAbilities::IsDataValid(TArray<FTe
 			if (Attributes.AttributeSet.IsNull())
 			{
 				Result = EDataValidationResult::Invalid;
-				ValidationErrors.Add(FText::Format(LOCTEXT("EntryHasNullAttributeSet", "Null AttributeSetType at index {0} in AbilitiesList[{1}].GrantedAttributes"), FText::AsNumber(AttributesIndex), FText::AsNumber(EntryIndex)));
+				Context.AddError(FText::Format(LOCTEXT("EntryHasNullAttributeSet", "Null AttributeSetType at index {0} in AbilitiesList[{1}].GrantedAttributes"), FText::AsNumber(AttributesIndex), FText::AsNumber(EntryIndex)));
 			}
 			++AttributesIndex;
 		}
@@ -144,7 +155,7 @@ EDataValidationResult UGSCGameFeatureAction_AddAbilities::IsDataValid(TArray<FTe
 			if (Effect.EffectType.IsNull())
 			{
 				Result = EDataValidationResult::Invalid;
-				ValidationErrors.Add(FText::Format(LOCTEXT("EntryHasNullEffect", "Null GameplayEffectType at index {0} in AbilitiesList[{1}].GrantedEffects"), FText::AsNumber(EffectsIndex), FText::AsNumber(EntryIndex)));
+				Context.AddError(FText::Format(LOCTEXT("EntryHasNullEffect", "Null GameplayEffectType at index {0} in AbilitiesList[{1}].GrantedEffects"), FText::AsNumber(EffectsIndex), FText::AsNumber(EntryIndex)));
 			}
 			++EffectsIndex;
 		}

@@ -1,9 +1,9 @@
 // Copyright 2022 The Reallusion Authors. All Rights Reserved.
 
 #include "RLLiveLinkSource.h"
+#include "RLLiveLinkDef.h"
 #include "ILiveLinkClient.h"
 #include "Interfaces/IPluginManager.h"
-#include "RLLiveLinkDef.h"
 #include "Runtime/Core/Public/Async/ParallelFor.h"
 
 #if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION >= 5
@@ -11,8 +11,6 @@
 #include "Roles/LiveLinkAnimationTypes.h"
 #include "Roles/LiveLinkBasicTypes.h"
 #include "Roles/LiveLinkBasicTypes.h"
-#include "Misc/FileHelper.h"
-#include "Async/Async.h"
 #endif
 
 #define LOCTEXT_NAMESPACE "RLLiveLinkSource"
@@ -29,6 +27,17 @@
 #define RLJawMoveZ 11
 #define RL_NEW_CSUTOM_BEGIN 24
 #define IC8_VERSION_CODE 800
+
+#define IC_EXTEND_FACAIL_PROFILE_EYE_BLINK_LEFT "Eye_Blink_L"
+#define IC_EXTEND_FACAIL_PROFILE_EYE_BLINK_RIGHT "Eye_Blink_R"
+#define IC_TRANDITIONAL_FACAIL_PROFILE_EYES_BLINK "Eyes_Blink"
+
+TMap<ELightColor, FName> LightColorMap =
+{
+    { ELightColor::Red,   "Red" },
+    { ELightColor::Green, "Green" },
+    { ELightColor::Blue,  "Blue" }
+};
 
 int BytesToInt( unsigned char* pBytes, int nLength )
 {
@@ -786,6 +795,9 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
             }
             if ( pExpWeightRoot->TryGetArrayField( TEXT( "Weights" ), pExpData ) && kExpNames.Num() > 0 )
             {
+                int uEyeBlinkLeftIndex = -1;
+                int uEyeBlinkRightIndex = -1;
+                int uEyeBlinkBothIndex = -1;
                 for ( int i = 0; i < pExpData->Num(); ++i )
                 {
                     const FName& strExpName = kExpNames[ i ];
@@ -797,7 +809,31 @@ void FRLLiveLinkSource::ProcessAvatarData( const TSharedPtr<FJsonObject>& spData
                     kNewElement.CurveName = strExpName;
                     kNewElement.CurveValue = fWeight;
 #endif
+                    if ( strExpName == IC_EXTEND_FACAIL_PROFILE_EYE_BLINK_LEFT )
+                    {
+                        uEyeBlinkLeftIndex = i;
+                    }
+                    else if ( strExpName == IC_EXTEND_FACAIL_PROFILE_EYE_BLINK_RIGHT )
+                    {
+                        uEyeBlinkRightIndex = i;
+                    }
+                    else if ( strExpName == IC_TRANDITIONAL_FACAIL_PROFILE_EYES_BLINK )
+                    {
+                        uEyeBlinkBothIndex = i;
+                    }
                     kCurveElements.Add( kNewElement );
+                }
+                // Check blink weight
+                float fLBlinkWeight    = uEyeBlinkLeftIndex  == -1 ? 0.f : kCurveElements[ uEyeBlinkLeftIndex ].CurveValue;
+                float fRBlinkWeight    = uEyeBlinkRightIndex == -1 ? 0.f : kCurveElements[ uEyeBlinkRightIndex ].CurveValue;
+                float fBothBlinkWeight = uEyeBlinkBothIndex  == -1 ? 0.f : kCurveElements[ uEyeBlinkBothIndex ].CurveValue;
+                if ( ( fBothBlinkWeight + fLBlinkWeight ) > 1.0f )
+                {
+                    kCurveElements[ uEyeBlinkLeftIndex ].CurveValue = 1.0f - fBothBlinkWeight;
+                }
+                if ( ( fBothBlinkWeight + fRBlinkWeight ) > 1.0f )
+                {
+                    kCurveElements[ uEyeBlinkRightIndex ].CurveValue = 1.0f - fBothBlinkWeight;
                 }
             }
         }

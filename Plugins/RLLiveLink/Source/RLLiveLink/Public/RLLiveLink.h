@@ -6,6 +6,9 @@
 #include "Templates/SharedPointer.h"
 #include "Engine/EngineTypes.h"
 #include "Widgets/SWidget.h"
+#include "RLLiveLinkDef.h"
+#include "Widgets/Notifications/SNotificationList.h"
+
 /// Tcp Connection
 #include "Modules/ModuleManager.h"
 #include "Sockets.h"
@@ -19,7 +22,7 @@
 #include "Common/TcpSocketBuilder.h"
 #include "Common/TcpListener.h"
 #include "HAL/ThreadSafeBool.h"
-
+#include "LiveLinkTypes.h"
 #include "Engine/MeshMerging.h"
 
 class FJsonValue;
@@ -27,45 +30,13 @@ class FToolBarBuilder;
 class FMenuBuilder;
 class UBlueprint;
 class UTexture2D;
+class UAutomatedAssetImportData;
+class ULevelSequence;
+class UMovieScene3DTransformTrack;
+class UMovieSceneFloatTrack;
+class ISequencer;
 
-struct FMergeComponentData
-{
-    FMergeComponentData( UPrimitiveComponent* InPrimComponent )
-        : PrimComponent( InPrimComponent )
-        , bShouldIncorporate( true )
-    {
-    }
-
-    /** Component extracted from selected actors */
-    TWeakObjectPtr<UPrimitiveComponent> PrimComponent;
-    /** Flag determining whether or not this component should be incorporated into the merge */
-    bool bShouldIncorporate;
-};
-
-struct ExportFbxSetting 
-{
-    UObject* pObjectToExport;
-    FString strSaveFilePath;
-};
-
-class CSceneTempData
-{
-    public:
-        FString strAssetName;
-        FTransform kTransform;
-        AActor* pParentActor;
-        FString strFolderName;
-        bool bPilotTarget;
-};
-
-enum class ETransferMode : int
-{
-    Merge,
-    Simplify,
-    BatchMerge,
-    BatchSimplify,
-    Batch
-};
+typedef TSharedPtr< TArray< uint8 >, ESPMode::ThreadSafe > TcpCommandData;
 class FRLLiveLinkModule : public IModuleInterface, public FRunnable
 {
 public:
@@ -82,20 +53,22 @@ public:
     virtual void Exit() override {}
     // End FRunnable Interface
 
-    void HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::ThreadSafe> spReceivedData );
+    void HandleReceivedData( TcpCommandData spReceivedData );
 
 private:
     void InitSocket();
     FString GetCommandletExePath();
 
-    void ProcessObjectData( const TSharedPtr<FJsonValue>& spJsonValue, bool bPlaceAsset );
-    void ProcessCameraData( const TSharedPtr<FJsonValue>& spJsonValue, bool bPlaceAsset );
-    void ProcessLightData( const TSharedPtr<FJsonValue>& spJsonValue, bool bPlaceAsset );
-    void ProcessRequireFromIC( const TSharedPtr<FJsonValue>& spJsonValue );
-    void CheckAndDeleteDuplicatedAsset( const TSharedPtr<FJsonValue>& spJsonValue );
-    void CheckSkeletonAssetExist( const TSharedPtr<FJsonValue>& spJsonValue );
-    void CheckAssetExist( const TSharedPtr<FJsonValue>& spJsonValue );
+    void ProcessObjectData( const TSharedPtr< FJsonValue >& spJsonValue, bool bPlaceAsset );
+    void ProcessCameraData( const TSharedPtr< FJsonValue >& spJsonValue, bool bPlaceAsset );
+    void ProcessLightData( const TSharedPtr< FJsonValue >& spJsonValue, bool bPlaceAsset );
+    void ProcessRequireFromIC( const TSharedPtr< FJsonValue >& spJsonValue );
+    void ProcessMotionData( const TSharedPtr< FJsonValue >& spJsonValue );
+    void CheckAndDeleteDuplicatedAsset( const TSharedPtr< FJsonValue >& spJsonValue );
+    void CheckSkeletonAssetExist( const TSharedPtr< FJsonValue >& spJsonValue );
+    void CheckAssetExist( const TSharedPtr< FJsonValue >& spJsonValue );
     void CheckICVersion( const TSharedPtr< FJsonValue >& spJsonValue );
+    void ProcessPreImportData( const TSharedPtr< FJsonValue >& spJsonValue );
 
     void CreateEmptyNodeForiClone();
     void CreateCamera();
@@ -104,6 +77,7 @@ private:
     void CreateSpotLight();
     void CreatePointLight();
     void CreateRectLight();
+
     void SetUpAllCharacterToBlueprint();
     void SetUpAllCameraToBlueprint();
     void SetUpAllLightToBlueprint();
@@ -112,7 +86,7 @@ private:
 
     void AddToolBar( FToolBarBuilder& kBuilder );
     bool BuildBlueprint( const FString& strAssetFolder, const FString& strAssetName, bool bToScene = true );
-    TSharedRef<SWidget> FillComboButton( TSharedPtr<class FUICommandList> Commands );
+    TSharedRef<SWidget> FillComboButton( TSharedPtr< class FUICommandList > Commands );
 
     bool DeleteFolder( const FString& strPath );
     bool DeleteActorInScene( const FString& strPath, const FString& strTargetName );
@@ -144,46 +118,78 @@ private:
     //Transfer Scene to IC
     void TransferSceneToIC( ETransferMode iMode = ETransferMode::Merge );
     void CheckICVersionBeforeTransferScene( const ETransferMode iMode );
-    bool BatchTransferSceneToIClone( ETransferMode iMergeMode, TSet<UStaticMesh*>& kStaticMeshList );
+    bool BatchTransferSceneToIClone( ETransferMode iMergeMode, TSet< UStaticMesh* >& kStaticMeshList );
     bool CheckAssetExist( const FString& strAssetPath );
     bool RunMergeFromSelection( ETransferMode iMergeMode, FString& strPackageName );
-    bool RunSimplify( const FString& strPackageName, const TArray<TSharedPtr<FMergeComponentData>>& kSelectedComponents );
-    void BuildActorsListFromMergeComponentsData( const TArray<TSharedPtr<FMergeComponentData>>& InComponentsData, TArray<AActor*>& OutActors, TArray<ULevel*>* OutLevels /* = nullptr */ );
-    bool RunMerge( const FString& strPackageName, const TArray<TSharedPtr<FMergeComponentData>>& kSelectedComponents );
+    bool RunSimplify( const FString& strPackageName, const TArray< TSharedPtr< FMergeComponentData> >& kSelectedComponents );
+    void BuildActorsListFromMergeComponentsData( const TArray<TSharedPtr< FMergeComponentData> >& InComponentsData, TArray< AActor* >& OutActors, TArray< ULevel* >* OutLevels /* = nullptr */ );
+    bool RunMerge( const FString& strPackageName, const TArray<TSharedPtr< FMergeComponentData> >& kSelectedComponents );
     bool GetPackageNameForMergeAction( const FString& strDefaultPackageName, FString& strOutPackageName );
-    bool BuildMergeComponentDataFromSelection( TArray<TSharedPtr<FMergeComponentData>>& kOutComponentsData );
-    bool HasAtLeastOneStaticMesh( const TArray<TSharedPtr<FMergeComponentData>>& kComponentsData );
+    bool BuildMergeComponentDataFromSelection( TArray< TSharedPtr< FMergeComponentData > >& kOutComponentsData );
+    bool HasAtLeastOneStaticMesh( const TArray< TSharedPtr< FMergeComponentData > >& kComponentsData );
     FString GetDefaultPackageName() const;
     bool ExportFbx( const struct ExportFbxSetting& kExportFbxSetting );
-    bool ExportFbx( const TArray<struct ExportFbxSetting>& kExportFbxSettings );
+    bool ExportFbx( const TArray< struct ExportFbxSetting >& kExportFbxSettings );
     bool ExportAssetsInternal( const TArray<struct ExportFbxSetting>& kExportFbxSettings, bool bPromptIndividualFilenames = true ) const;
     bool ExportSelected( const FString& strSaveFilePath );
-    void EditorGetUnderlyingActors( AActor* pActor, TSet<AActor*>& kOutUnderlyingActors ) const;
+    void EditorGetUnderlyingActors( AActor* pActor, TSet< AActor* >& kOutUnderlyingActors ) const;
     bool DeletePackageInContentBrowser( const FString& strPath );
 
-    void SendJsonToIC( const TSharedPtr<FJsonObject>& spReturnJson );
+    void SendJsonToIC( const TSharedPtr< FJsonObject >& spReturnJson );
 
     //for outliner and viewport right click
     void AddMenuEntryInRightClick();
-    TSharedRef<FExtender> OutlinerMenuExtend( const TSharedRef<FUICommandList> CommandList, const TArray<AActor*> Actors );
+    TSharedRef<FExtender> OutlinerMenuExtend( const TSharedRef< FUICommandList > CommandList, const TArray< AActor* > Actors );
     void FillTransferSceneMenu( FMenuBuilder& kMenuBuilder );
 
-    void GetObjectsFromPackage( const FARFilter& kFilter, TArray<FAssetData>& kObjectList, const FARFilter& kIgnoreObjectFilter );
-    bool DeleteAssets( const TArray<FAssetData>& kObjectList );
+    void GetObjectsFromPackage( const FARFilter& kFilter, TArray< FAssetData >& kObjectList, const FARFilter& kIgnoreObjectFilter );
+    bool DeleteAssets( const TArray< FAssetData >& kObjectList );
 
     void ProcessAvatarMotionNameAndPath( const FString& strAssetPath, const FString& strAssetName );
     void ProcessPropMotionNameAndPath( const FString& strAssetPath, const FString& strAssetName );
     void MoveAsset( const FString& strFromAssetPath, const FString& strToAssetPath );
-    void MoveMotionAssetPath( const TSharedPtr<FJsonValue>& spJsonValue, bool bIsProp );
+    void MoveMotionAssetPath( const TSharedPtr< FJsonValue >& spJsonValue, bool bIsProp );
     void ReAssignMotionSkeleton( const FString& strCurrentPath );
 
 #if ENGINE_MAJOR_VERSION <= 4
-    void ReplaceMissingSkeleton( const TArray<UObject*>& kAnimAssetsToRetarget, UObject* kSkeletonAsset ) const;
+    void ReplaceMissingSkeleton( const TArray< UObject* >& kAnimAssetsToRetarget, UObject* kSkeletonAsset ) const;
 #else
-    void ReplaceMissingSkeleton( const TArray<TObjectPtr<UObject>>& kAnimAssetsToRetarget, const TObjectPtr<UObject>& kSkeletonAsset ) const;
+    void ReplaceMissingSkeleton( const TArray< TObjectPtr<UObject> >& kAnimAssetsToRetarget, const TObjectPtr< UObject >& kSkeletonAsset ) const;
 #endif
-    bool DeselectNonStaticMeshActors( TSet<AActor*>& kDeselectedActors );
+    bool DeselectNonStaticMeshActors( TSet< AActor* >& kDeselectedActors );
     void RenameAsset( UObject* pAsset, const FString& strNewAssetName );
+
+    // Improt By Editor
+    void ResetEditorImportSetting();
+    void ResetImportTaskCount();
+    void ProcessImportObject( const FString& strAssetName );
+    void ProcessImportMotion( const FString& strAssetName );
+    FString ImportFbxByJson( const FString& strJsonPath );
+    UAutomatedAssetImportData* GetImportDataByJson( const FString& strImportSettingFile );
+    FString GetObjectImportSettingFile( const FString& strAssetName );
+    FString GetMotionImportSettingFile( const FString& strAssetName );
+    bool IsImportAssetsDone() const;
+    void RemoveFbxFiles( const FString& strAssetName );
+    void RemoveFile( const FString& strFilePath );
+
+    // Progress Notification
+    void InitialProgressWidget();
+    void ShowProgress();
+    void PushProgress( size_t uPushSize );
+
+    // Composite Level Sequence
+    ULevelSequence* CreateLevelSequencer();
+    TWeakPtr<ISequencer> GetISequencer( ULevelSequence* pLevelSequence );
+    bool SetupLevelSequencer();
+    void AddActorToSequencer( ULevelSequence* pLevelSequence, const FString& strAssetName, const FString& strMotionGamePath );
+    void AddCameraToSequencer( ULevelSequence* pLevelSequence );
+    void AddFloatKey( UMovieSceneFloatTrack* pFloatTrack, FFrameNumber kFrameNumber, float fValue );
+    void AddTranslateKey( UMovieScene3DTransformTrack* pTransformTrack, FFrameNumber kFrameNumber, FVector vTransflate );
+    void LoadCameraPerFrameDatas();
+    void ReassignSkeletalMeshInLevelSequencer( const TArray< FString >& kAssetNames );
+    void RemoveTcpCommandData();
+    int ConvertFrameTimeFromeICloneToUnreal(int nICFrame );
+
 private:
     FString m_strCurUProjectPath;
     FString m_strCurEngineCmdexePath;
@@ -197,12 +203,13 @@ private:
     FTimespan m_kWaitTime;
     FThreadSafeBool m_bStopping = false;
     // Buffer to receive socket data into
-    TArray<uint8> m_kRecvBuffer;
+    TArray< uint8 > m_kRecvBuffer;
 
     // Tcp Server
     FSocket* m_pListenerSocket;
     FSocket* m_pConnectionSocket;
     FIPv4Endpoint m_kRemoteAddressForConnection;
+    TArray< TcpCommandData > m_kDataInQueue;
 
     // Blueprint file name
     FString m_strCineCameraBlueprint = "";
@@ -218,9 +225,25 @@ private:
     ////Transfer Scene to IC
     FTimerHandle m_kCountdownRecheckICVersionTimerHandle;
     ETransferMode m_iMergeMode = ETransferMode::Merge;
+
     //merge actors
     FMeshMergingSettings m_kMeshMergeSettings;
     FMeshProxySettings m_kMeshProxySetting; // simplify
-    bool bReplaceSourceActors = false;
 
+    // Editor Import
+    bool m_bCreateLevelSequencer = false;
+    bool m_bIsPlaceAssets = true;
+    int m_nImportAmount = 1;
+    int m_nCurrnetImportId = 0;
+    TSharedPtr< FNotificationInfo > m_spProgressStyle = nullptr;
+    TSharedPtr< SNotificationItem > m_spProgress = nullptr;
+    FString m_strLiveLinkTempPath;
+
+    // Level Sequencer
+    FFrameRate m_kApFps = FFrameRate( 60, 1 );
+    FFrameRate m_kLiveLinkFps = FFrameRate( 60, 1 );
+    FFrameTime m_kMotionFrameSize = FFrameTime( 1 );
+    TArray< CCreateRLLevelSequencerData > m_kCreateLevelSequencerList;
+    TMap< FString, TArray< FLiveLinkFrameData > > m_kCameraPerFrameDataMap;
+    TArray< CSwitchCameraData > m_kSwitchCameraDataList;
 };

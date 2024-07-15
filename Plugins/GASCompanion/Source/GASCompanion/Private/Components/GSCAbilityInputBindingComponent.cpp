@@ -34,10 +34,12 @@ void UGSCAbilityInputBindingComponent::SetupPlayerControls_Implementation(UEnhan
 		GSC_PLOG(Log, TEXT("setup pressed handle for %s with %s"), *GetNameSafe(InputAction), *UEnum::GetValueAsName(TriggerEvent).ToString())
 
 		// Pressed event
-		InputComponent->BindAction(InputAction, TriggerEvent, this, &UGSCAbilityInputBindingComponent::OnAbilityInputPressed, InputAction);
+		const uint32 PressedHandle = InputComponent->BindAction(InputAction, TriggerEvent, this, &UGSCAbilityInputBindingComponent::OnAbilityInputPressed, InputAction).GetHandle();
+		RegisteredInputHandles.AddUnique(PressedHandle);
 
 		// Released event
-		InputComponent->BindAction(InputAction, ETriggerEvent::Completed, this, &UGSCAbilityInputBindingComponent::OnAbilityInputReleased, InputAction);
+		const uint32 ReleasedHandle = InputComponent->BindAction(InputAction, ETriggerEvent::Completed, this, &UGSCAbilityInputBindingComponent::OnAbilityInputReleased, InputAction).GetHandle();
+		RegisteredInputHandles.AddUnique(ReleasedHandle);
 	}
 
 	if (TargetInputConfirm)
@@ -205,14 +207,17 @@ UInputAction* UGSCAbilityInputBindingComponent::GetBoundInputActionForAbility(co
 {
 	if (!Ability)
 	{
-		GSC_LOG(Error, TEXT("GetBoundInputActionForAbility - Passed in ability is null."))
+		GSC_WLOG(Error, TEXT("Passed in ability is null."))
 		return nullptr;
 	}
 
-	UAbilitySystemComponent* AbilitySystemComponent = Ability->GetAbilitySystemComponentFromActorInfo();
+	UAbilitySystemComponent* AbilitySystemComponent = Ability->IsInstantiated() && Ability->GetCurrentActorInfo() ?
+		Ability->GetAbilitySystemComponentFromActorInfo() :
+		UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
+	
 	if (!AbilitySystemComponent)
 	{
-		GSC_LOG(Error, TEXT("GetBoundInputActionForAbility - Trying to find input action for %s but AbilitySystemComponent from ActorInfo is null. (Ability's)"), *GetNameSafe(Ability))
+		GSC_WLOG(Error, TEXT("Trying to find input action for %s but unable to find an AbilitySystemComponent."), *GetNameSafe(Ability))
 		return nullptr;
 	}
 
@@ -222,13 +227,24 @@ UInputAction* UGSCAbilityInputBindingComponent::GetBoundInputActionForAbility(co
 	const FGameplayAbilitySpec* AbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(Ability->GetClass());
 	if (!AbilitySpec)
 	{
-		GSC_LOG(Error, TEXT("GetBoundInputActionForAbility - AbilitySystemComponent could not return Ability Spec for %s."), *GetNameSafe(Ability->GetClass()))
+		GSC_WLOG(Error, TEXT("AbilitySystemComponent could not return Ability Spec for %s."), *GetNameSafe(Ability->GetClass()))
 		return nullptr;
 	}
 
 	return GetBoundInputActionForAbilitySpec(AbilitySpec);
 }
 
+// ReSharper disable once CppPassValueParameterByConstReference
+UInputAction* UGSCAbilityInputBindingComponent::GetBoundInputActionForAbilityClass(TSubclassOf<UGameplayAbility> InAbilityClass)
+{
+	if (!InAbilityClass)
+	{
+		GSC_WLOG(Error, TEXT("Passed in ability class is invalid."))
+		return nullptr;
+	}
+	
+	return GetBoundInputActionForAbility(InAbilityClass.GetDefaultObject());
+}
 
 UInputAction* UGSCAbilityInputBindingComponent::GetBoundInputActionForAbilitySpec(const FGameplayAbilitySpec* AbilitySpec) const
 {
@@ -250,14 +266,8 @@ UInputAction* UGSCAbilityInputBindingComponent::GetBoundInputActionForAbilitySpe
 
 void UGSCAbilityInputBindingComponent::ResetBindings()
 {
-	for (auto& InputBinding : MappedAbilities)
+	for (const TPair<TObjectPtr<UInputAction>, FGSCAbilityInputBinding>& InputBinding : MappedAbilities)
 	{
-		if (InputComponent)
-		{
-			InputComponent->RemoveBindingByHandle(InputBinding.Value.OnPressedHandle);
-			InputComponent->RemoveBindingByHandle(InputBinding.Value.OnReleasedHandle);
-		}
-
 		if (AbilityComponent)
 		{
 			const int32 ExpectedInputID = InputBinding.Value.InputID;
@@ -277,6 +287,14 @@ void UGSCAbilityInputBindingComponent::ResetBindings()
 	{
 		InputComponent->RemoveBindingByHandle(OnConfirmHandle);
 		InputComponent->RemoveBindingByHandle(OnCancelHandle);
+
+		// Note: OnConfirmHandle and OnCancelHandle could be added to this array instead now as well.
+		for (const uint32 InputHandle : RegisteredInputHandles)
+		{
+			InputComponent->RemoveBindingByHandle(InputHandle);
+		}
+
+		RegisteredInputHandles.Reset();
 	}
 
 	AbilityComponent = nullptr;
@@ -447,12 +465,14 @@ void UGSCAbilityInputBindingComponent::TryBindAbilityInput(UInputAction* InputAc
 
 			GSC_PLOG(Log, TEXT("Setup player controls pressed handle for %s with %s"), *GetNameSafe(InputAction), *UEnum::GetValueAsName(TriggerEvent).ToString())
 			AbilityInputBinding.OnPressedHandle = InputComponent->BindAction(InputAction, TriggerEvent, this, &UGSCAbilityInputBindingComponent::OnAbilityInputPressed, InputAction).GetHandle();
+			RegisteredInputHandles.AddUnique(AbilityInputBinding.OnPressedHandle);
 		}
 
 		// Released event
 		if (AbilityInputBinding.OnReleasedHandle == 0)
 		{
 			AbilityInputBinding.OnReleasedHandle = InputComponent->BindAction(InputAction, ETriggerEvent::Completed, this, &UGSCAbilityInputBindingComponent::OnAbilityInputReleased, InputAction).GetHandle();
+			RegisteredInputHandles.AddUnique(AbilityInputBinding.OnReleasedHandle);
 		}
 	}
 }

@@ -70,7 +70,7 @@ void UGSCUWDebugAbilityQueue::UpdateAllowedAbilities(TArray<TSubclassOf<UGamepla
 			return;
 		}
 
-		for (const TSubclassOf<UGameplayAbility> Ability : AllowedAbilities)
+		for (const TSubclassOf<UGameplayAbility>& Ability : AllowedAbilities)
 		{
 			if (!Ability)
 			{

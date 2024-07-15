@@ -6,7 +6,8 @@
 #include "Components/GameFrameworkComponentManager.h"
 #include "GSCLog.h"
 
-AGSCModularDefaultPawn::AGSCModularDefaultPawn()
+AGSCModularDefaultPawn::AGSCModularDefaultPawn(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	AbilitySystemComponent = CreateDefaultSubobject<UGSCAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);

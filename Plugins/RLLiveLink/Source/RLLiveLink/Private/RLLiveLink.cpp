@@ -3,7 +3,6 @@
 #include "RLLiveLink.h"
 #include "RLLiveLinkCommands.h"
 #include "RLLiveLinkStyle.h"
-#include "RLLiveLinkDef.h"
 
 /// for UI
 #include "LevelEditor.h"
@@ -11,15 +10,14 @@
 
 /// for Json
 #include "JsonGlobals.h"
+#include "JsonObjectConverter.h"
 #include "Policies/JsonPrintPolicy.h"
 #include "Policies/PrettyJsonPrintPolicy.h"
 #include "Policies/CondensedJsonPrintPolicy.h"
 #include "Serialization/JsonTypes.h"
 #include "Dom/JsonValue.h"
 #include "Dom/JsonObject.h"
-#include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
-#include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonSerializerMacros.h"
 
 /// for Blueprint
@@ -58,8 +56,18 @@
 #include "SSkeletonWidget.h"
 #include "EditorAnimUtils.h"
 
+// for Import FBX
+#include "AssetImportTask.h"
+#include "Factories/FbxFactory.h"
+#include "FbxImporter.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+
 /// Runtime/AssetRegistry
+#if ( ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3 )
+#include "AssetRegistry/AssetRegistryModule.h"
+#else
 #include "AssetRegistryModule.h"
+#endif
 #include "AssetToolsModule.h"
 
 /// Runtime/Core
@@ -88,6 +96,30 @@
 #include "IImageWrapperModule.h"
 #include "Components/RectLightComponent.h"
 #include "CineCameraComponent.h"
+
+// for Level Sequence
+#include "LevelSequence.h"
+#include "MovieScene.h"
+#include "ILevelSequenceEditorToolkit.h"
+#include "ISequencer.h"
+#include "MovieSceneToolHelpers.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sections/MovieScene3DTransformSection.h"
+#include "Tracks/MovieScene3DTransformTrack.h"
+#include "Tracks/MovieSceneSkeletalAnimationTrack.h"
+#include "SequencerUtilities.h"
+#include "Animation/SkeletalMeshActor.h"
+#include "CineCameraActor.h"
+#include "Tracks/MovieSceneFloatTrack.h"
+#include "Tracks/MovieSceneCameraCutTrack.h"
+#include "Sections/MovieSceneCameraCutSection.h"
+
+// for Live Link Transfer Progress Info
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SProgressBar.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+
+#include "RLLiveLinkUtility.h"
 
 #define PLUGIN_NAME "LiveLink"
 #define INSTALL_PLUGIN_MESSAGE "Please Enable The Live Link plugin \n\rThe Live Link plugin can be enabled by opening the \"Plugins\" Window (Edit / Plugins) \n\rDo a search for \"Live Link\" and check the box to Enable it."
@@ -164,6 +196,7 @@ void FRLLiveLinkModule::StartupModule()
     m_strCineCameraBlueprint = "LiveLinkCineCameraBlueprint_v25";
 #endif
 
+    InitialProgressWidget();
     FRLLiveLinkModule::AddMenuEntryInRightClick();
 }
 
@@ -259,7 +292,7 @@ uint32 FRLLiveLinkModule::Run()
         if ( m_pListenerSocket->HasPendingConnection( bPending ) && bPending )
         {
             //Already have a Connection? destroy previous
-            if( m_pConnectionSocket )
+            if ( m_pConnectionSocket )
             {
                 m_pConnectionSocket->Close();
                 m_pSocketSubsystem->DestroySocket( m_pConnectionSocket );
@@ -279,9 +312,10 @@ uint32 FRLLiveLinkModule::Run()
                 {
                     if ( nRead > 0 )
                     {
-                        TSharedPtr<TArray<uint8>, ESPMode::ThreadSafe> spReceivedData = MakeShareable( new TArray<uint8>() );
+                        TcpCommandData spReceivedData = MakeShareable( new TArray<uint8>() );
                         spReceivedData->SetNumUninitialized( nRead );
                         memcpy( spReceivedData->GetData(), m_kRecvBuffer.GetData(), nRead );
+                        m_kDataInQueue.Add( spReceivedData );
                         AsyncTask( ENamedThreads::GameThread, [ this, spReceivedData ]()
                         {
                             HandleReceivedData( spReceivedData );
@@ -294,7 +328,7 @@ uint32 FRLLiveLinkModule::Run()
     return 0;
 }
 
-void FRLLiveLinkModule::HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::ThreadSafe> spReceivedData )
+void FRLLiveLinkModule::HandleReceivedData( TcpCommandData spReceivedData )
 {
     FString strJsonString;
     strJsonString.Empty( spReceivedData->Num() );
@@ -304,21 +338,25 @@ void FRLLiveLinkModule::HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::T
     }
 
     TSharedPtr<FJsonObject> spJsonObject;
-    TSharedRef<TJsonReader<>> spReader = TJsonReaderFactory<>::Create( strJsonString );
-    if ( FJsonSerializer::Deserialize( spReader, spJsonObject ) )
+    if ( FRLLiveLinkUtility::ParseStringToJson( strJsonString, spJsonObject ) )
     {
-        FFunctionGraphTask::CreateAndDispatchWhenReady( [spJsonObject, this]()
+        FFunctionGraphTask::CreateAndDispatchWhenReady( [ spJsonObject, this ]()
         {
-            bool bPlaceAsset = true;
+            if ( spJsonObject->Values.Contains( "PreImportData" ) )
+            {
+                auto& spJsonValue = spJsonObject->Values[ "PreImportData" ];
+                ProcessPreImportData( spJsonValue );
+            }
+
             if ( spJsonObject->Values.Contains( "isPlaceAssets" ) )
             {
-                bPlaceAsset = spJsonObject->Values[ "isPlaceAssets" ].Get()->AsBool();
+                m_bIsPlaceAssets = spJsonObject->Values[ "isPlaceAssets" ].Get()->AsBool();
             }
 
             if ( spJsonObject->Values.Contains( "BuildAssets" ) )
             {
                 auto& spAvatarJsonValue = spJsonObject->Values[ "BuildAssets" ];
-                ProcessObjectData( spAvatarJsonValue, bPlaceAsset );
+                ProcessObjectData( spAvatarJsonValue, m_bIsPlaceAssets );
 
                 MoveMotionAssetPath( spAvatarJsonValue, false );
 
@@ -326,26 +364,47 @@ void FRLLiveLinkModule::HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::T
                 spReturnJson->SetBoolField( "FinishBuildAsset", true );
 
                 SendJsonToIC( spReturnJson );
+
             }
 
             if ( spJsonObject->Values.Contains( "CreateCamera" ) )
             {
                 auto& spCameraJsonValue = spJsonObject->Values[ "CreateCamera" ];
-                ProcessCameraData( spCameraJsonValue, bPlaceAsset );
+                ProcessCameraData( spCameraJsonValue, m_bIsPlaceAssets );
+                LoadCameraPerFrameDatas();
+                PushProgress( spCameraJsonValue->AsArray().Num() );
+            }
+
+            if ( spJsonObject->Values.Contains( "LoadCameraPerframeData" ) )
+            {
+                auto& spCameraJsonValue = spJsonObject->Values[ "LoadCameraPerframeData" ];
+                size_t uSize = spCameraJsonValue->AsArray().Num();
+                if ( uSize > 0 )
+                {
+                    ShowProgress();
+                }
+                LoadCameraPerFrameDatas();
+                PushProgress( uSize );
             }
 
             if ( spJsonObject->Values.Contains( "CreateLight" ) )
             {
                 auto& spLightJsonValue = spJsonObject->Values[ "CreateLight" ];
-                ProcessLightData( spLightJsonValue, bPlaceAsset );
+                ProcessLightData( spLightJsonValue, m_bIsPlaceAssets );
             }
 
-            if( spJsonObject->Values.Contains( "CreateProp" ) )
+            if ( spJsonObject->Values.Contains( "CreateProp" ) )
             {
                 auto& spPropJsonValue = spJsonObject->Values[ "CreateProp" ];
-                ProcessObjectData( spPropJsonValue, bPlaceAsset );
+                ProcessObjectData( spPropJsonValue, m_bIsPlaceAssets );
 
                 MoveMotionAssetPath( spPropJsonValue, true );
+            }
+
+            if ( spJsonObject->Values.Contains( "CreateMotions" ) )
+            {
+                auto& spPropJsonValue = spJsonObject->Values[ "CreateMotions" ];
+                ProcessMotionData( spPropJsonValue );
             }
 
             if ( spJsonObject->Values.Contains( "GetRequire" ) )
@@ -388,6 +447,16 @@ void FRLLiveLinkModule::HandleReceivedData( TSharedPtr<TArray<uint8>, ESPMode::T
                 //reset socket ptr
                 m_pConnectionSocket = nullptr;
             }
+
+            if ( IsImportAssetsDone() && m_bCreateLevelSequencer )
+            {
+                if ( SetupLevelSequencer() )
+                {
+                    ResetEditorImportSetting();
+                }
+            }
+
+            RemoveTcpCommandData();
         }, TStatId(), nullptr, ENamedThreads::GameThread );
     }
 }
@@ -419,16 +488,31 @@ bool FRLLiveLinkModule::BuildBlueprint( const FString& strAssetFolder, const FSt
     strRootPath.RemoveFromStart( TEXT( "/Game/" ) );
     strRootPath = FPaths::ProjectContentDir() + strRootPath;
 
-    //Wrinkle setup
-    FString strWrinkleNameForCheck = "head_wm1_normal_head_wm1_browRaiseInner_L";
-    const auto pNameMapping = pSkeleton->GetSmartNameContainer( USkeleton::AnimCurveMappingName );
-    if ( pNameMapping )
+    FString strWrinkleAsset = strRootPath + strAssetName + "_ExpPoseAsset.uasset";
+    bool bWrinkleAssetExist = FPaths::FileExists( strWrinkleAsset );
+    if ( !bWrinkleAssetExist )
     {
-        const FCurveMetaData* pCurveData = pNameMapping->GetCurveMetaData( FName( strWrinkleNameForCheck ) );
+        //Wrinkle setup
+        FString strWrinkleNameForCheck = "head_wm1_normal_head_wm1_browRaiseInner_L";
+
+#if ENGINE_MAJOR_VERSION >=5 && ENGINE_MINOR_VERSION >= 3
+        const FCurveMetaData* pCurveData = pSkeleton->GetCurveMetaData( FName( strWrinkleNameForCheck ) );
         if ( pCurveData && pCurveData->Type.bMaterial )
         {
             BuildWrinkleBlueprint( strRootGamePath, pSkeletalMesh );
         }
+#else
+        const auto pNameMapping = pSkeleton->GetSmartNameContainer( USkeleton::AnimCurveMappingName );
+        if ( pNameMapping )
+        {
+            const FCurveMetaData* pCurveData = pNameMapping->GetCurveMetaData( FName( strWrinkleNameForCheck ) );
+            if ( pCurveData && pCurveData->Type.bMaterial )
+            {
+                BuildWrinkleBlueprint( strRootGamePath, pSkeletalMesh );
+            }
+    }
+#endif
+
     }
 
     // 處理Live Link Bone blueprint
@@ -466,7 +550,7 @@ bool FRLLiveLinkModule::BuildBlueprint( const FString& strAssetFolder, const FSt
         TArray<TWeakObjectPtr<UObject>> kAssetsToRetarget;
         kAssetsToRetarget.Add( pWeekAnimBlueprint );
         EditorAnimUtils::RetargetAnimations( pAnimBlueprint->TargetSkeleton, pSkeletalMesh->Skeleton, kAssetsToRetarget, false, NULL, false );
-        
+
         FKismetEditorUtilities::CompileBlueprint( pAnimBlueprint );
         UPackage* const pAssetPackage = pAnimBlueprint->GetOutermost();
         pAssetPackage->SetDirtyFlag( true );
@@ -491,10 +575,10 @@ bool FRLLiveLinkModule::BuildBlueprint( const FString& strAssetFolder, const FSt
     if ( pBlueprint )
     {
         AActor* pLiveLinkActor = Cast<AActor>( pBlueprint->GeneratedClass->ClassDefaultObject );
-        if( pLiveLinkActor )
+        if ( pLiveLinkActor )
         {
             USkeletalMeshComponent* pSkeletalMeshComponent = pLiveLinkActor->FindComponentByClass<USkeletalMeshComponent>();
-            if( pSkeletalMeshComponent )
+            if ( pSkeletalMeshComponent )
             {
                 pSkeletalMeshComponent->SetAnimInstanceClass( pAnimBlueprint->GeneratedClass );
                 pSkeletalMeshComponent->SetSkeletalMesh( pAnimBlueprint->GetPreviewMesh(), true );
@@ -548,17 +632,14 @@ bool FRLLiveLinkModule::BuildBlueprint( const FString& strAssetFolder, const FSt
         if ( bToScene )
         {
             UClass* pClassToSpawn = Cast< UClass >( pBlueprint->GeneratedClass );
-            const FVector kLocation = { 0, 0, 0 };
-            const FRotator kRotation = FRotator( 0, 0, 0 );
-            UWorld* const pWorld = GEditor->GetEditorWorldContext().World();
-            if ( pWorld )
+            pLiveLinkActor = FRLLiveLinkUtility::SpawnActorToViewport( pClassToSpawn, "" );
+            if ( pLiveLinkActor )
             {
-                pLiveLinkActor = pWorld->SpawnActor<AActor>( pClassToSpawn, kLocation, kRotation );
                 pLiveLinkActor->SetActorLabel( pSkeletalMesh->GetName(), false );
                 SetDefaultParentActor( pLiveLinkActor, FAttachmentTransformRules::KeepRelativeTransform );
 
                 //set focus view on actor
-                SelectAndFocusActor( pLiveLinkActor,  false, true );
+                SelectAndFocusActor( pLiveLinkActor, false, true );
             }
         }
     }
@@ -575,6 +656,10 @@ void FRLLiveLinkModule::ProcessObjectData( const TSharedPtr<FJsonValue>& spJsonV
     if ( spJsonValue )
     {
         auto spBuildArray = spJsonValue->AsArray();
+        if ( !spBuildArray.IsEmpty() )
+        {
+            ShowProgress();
+        }
         for ( auto& spAssetJsonValue : spBuildArray )
         {
             if ( auto spAssetObject = spAssetJsonValue->AsObject() )
@@ -582,6 +667,19 @@ void FRLLiveLinkModule::ProcessObjectData( const TSharedPtr<FJsonValue>& spJsonV
                 auto kAssetMap = spAssetObject->Values;
                 FString strAssetName = kAssetMap[ "Name" ]->AsString();
                 FString strAssetPath = kAssetMap[ "Path" ]->AsString();
+                bool bImportFbx = kAssetMap.Contains( "ImportFbx" ) && kAssetMap[ "ImportFbx" ]->AsBool();
+
+                if ( bImportFbx )
+                {
+                    ProcessImportObject( strAssetName );
+
+                    bool bImportMotion = kAssetMap.Contains( "ImportMotion" ) ? kAssetMap[ "ImportMotion" ]->AsBool() : false;
+                    if ( bImportMotion )
+                    {
+                        ProcessImportMotion( strAssetName );
+                    }
+                }
+
                 if ( !strAssetName.IsEmpty() )
                 {
                     USkeletalMesh* pSkeletalMesh = Cast< USkeletalMesh >( StaticLoadObject( USkeletalMesh::StaticClass(), NULL, *( strAssetPath + strAssetName + "." + strAssetName ) ) );
@@ -612,6 +710,8 @@ void FRLLiveLinkModule::ProcessObjectData( const TSharedPtr<FJsonValue>& spJsonV
                     }
 
                 }
+                PushProgress( 1 );
+                RemoveFbxFiles( strAssetName );
             }
         }
     }
@@ -635,6 +735,10 @@ void FRLLiveLinkModule::ProcessCameraData( const TSharedPtr<FJsonValue>& spJsonV
     if ( spJsonValue )
     {
         auto spBuildArray = spJsonValue->AsArray();
+        if ( !spBuildArray.IsEmpty() )
+        {
+            ShowProgress();
+        }
         for ( auto& spAssetJsonValue : spBuildArray )
         {
             if ( auto spAssetObject = spAssetJsonValue->AsObject() )
@@ -657,7 +761,7 @@ void FRLLiveLinkModule::ProcessCameraData( const TSharedPtr<FJsonValue>& spJsonV
                     bool bPlaceAsssetObject = ( bNeedPutAssetBack ) ? false : bPlaceAsset;
                     UBlueprint* pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Camera", m_strCineCameraBlueprint, strCameraName, false );
                     SetupCineCamera( pBlueprint );
-                    if( bPlaceAsssetObject )
+                    if ( bPlaceAsssetObject )
                     {
                         LoadToScene( pBlueprint );
                     }
@@ -714,7 +818,7 @@ void FRLLiveLinkModule::ProcessLightData( const TSharedPtr<FJsonValue>& spJsonVa
                         case ELightType::Spot:
                         case ELightType::Rect:
                         {
-                            if( eLightType == ELightType::Spot )
+                            if ( eLightType == ELightType::Spot )
                             {
                                 pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Light", m_strSpotLightBlueprint, strLightName, false );
                             }
@@ -817,7 +921,7 @@ void FRLLiveLinkModule::ProcessLightData( const TSharedPtr<FJsonValue>& spJsonVa
                         }
                     }
                     AActor* pLight = nullptr;
-                    if( bPlaceAsssetObject )
+                    if ( bPlaceAsssetObject )
                     {
                         pLight = LoadToScene( pBlueprint );
                     }
@@ -825,9 +929,9 @@ void FRLLiveLinkModule::ProcessLightData( const TSharedPtr<FJsonValue>& spJsonVa
                     {
                         pLight = PutAssetBackToSceneAfterReplace( pBlueprint );
                     }
-                    if( pLight )
+                    if ( pLight )
                     {
-                        if( USceneComponent* pSceneComponent = pLight->FindComponentByClass<USceneComponent>() )
+                        if ( USceneComponent* pSceneComponent = pLight->FindComponentByClass<USceneComponent>() )
                         {
                             pSceneComponent->Mobility = EComponentMobility::Movable;
                         }
@@ -860,7 +964,7 @@ void FRLLiveLinkModule::ProcessRequireFromIC( const TSharedPtr<FJsonValue>& spJs
                 bool bCheckCCPlugin;
                 auto kPlugin = IPluginManager::Get().FindPlugin( TEXT( "RLPlugin" ) );
                 bCheckCCPlugin = ( !kPlugin ) ? false :
-                                 ( kPlugin->IsEnabled() ) ? true : false;
+                    ( kPlugin->IsEnabled() ) ? true : false;
                 spReturnJson->SetBoolField( "CheckCCPlugin", bCheckCCPlugin );
             }
             else if ( strCmd == "CheckUnrealLiveLinkVersion" )
@@ -887,6 +991,31 @@ void FRLLiveLinkModule::ProcessRequireFromIC( const TSharedPtr<FJsonValue>& spJs
     }
 }
 
+void FRLLiveLinkModule::ProcessMotionData( const TSharedPtr< FJsonValue >& spJsonValue )
+{
+    if ( spJsonValue )
+    {
+        auto spBuildArray = spJsonValue->AsArray();
+        if ( !spBuildArray.IsEmpty() )
+        {
+            ShowProgress();
+        }
+
+        for ( auto& spAssetJsonValue : spBuildArray )
+        {
+            if ( auto spAssetObject = spAssetJsonValue->AsObject() )
+            { 
+                auto kAssetMap = spAssetObject->Values;
+                FString strAssetName = kAssetMap[ "Name" ]->AsString();
+                FString strAssetPath = kAssetMap[ "Path" ]->AsString();
+                ProcessImportMotion( strAssetName );
+                PushProgress( 1 );
+                RemoveFbxFiles( strAssetName );
+            }
+        }
+    }
+}
+
 void FRLLiveLinkModule::CheckAndDeleteDuplicatedAsset( const TSharedPtr<FJsonValue>& spJsonValue )
 {
     if ( spJsonValue )
@@ -899,7 +1028,7 @@ void FRLLiveLinkModule::CheckAndDeleteDuplicatedAsset( const TSharedPtr<FJsonVal
             FString strExportName = kExportData[ "Name" ]->AsString();
             FString strExportType = kExportData[ "Type" ]->AsString();
 
-            if ( strExportType == "Avatar" || strExportType == "Prop"  )
+            if ( strExportType == "Avatar" || strExportType == "Prop" )
             {
                 //DeleteFolder
                 bResult = DeleteFolder( "/Game/RLContent/" + strExportName );
@@ -951,7 +1080,7 @@ void FRLLiveLinkModule::CheckSkeletonAssetExist( const TSharedPtr<FJsonValue>& s
             auto kExportData = spExportList.Get()->AsObject()->Values;
             FString strExportName = kExportData[ "Name" ]->AsString();
             FString strExportType = kExportData[ "Type" ]->AsString();
-            
+
             bool bExist = true;
             FString strPath = "/RLContent/" + strExportName;
             IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -1052,7 +1181,49 @@ void FRLLiveLinkModule::CheckICVersion( const TSharedPtr< FJsonValue >& spJsonVa
             FMessageDialog::Open( EAppMsgType::Ok, strMsg );
             return;
         }
-        
+
+    }
+}
+
+void FRLLiveLinkModule::ProcessPreImportData( const TSharedPtr<FJsonValue>& spJsonValue )
+{
+    ResetEditorImportSetting();
+    ResetImportTaskCount();
+
+    auto spEditorImportData = spJsonValue->AsObject();
+    if ( spEditorImportData->Values.Contains( "ApFps" ) )
+    {
+        int nApFps =  spEditorImportData->Values[ "ApFps" ]->AsNumber();
+        m_kApFps = FFrameRate( nApFps, 1 );
+    }
+    if ( spEditorImportData->Values.Contains( "LiveLinkFps" ) )
+    {
+        int nLiveLinkFps =  spEditorImportData->Values[ "LiveLinkFps" ]->AsNumber();
+        m_kLiveLinkFps = FFrameRate( nLiveLinkFps, 1 );
+    }
+    if ( spEditorImportData->Values.Contains( "FrameRange" ) )
+    {
+        auto spFrameRange = spEditorImportData->Values[ "FrameRange" ]->AsArray();
+        int nStartFrame = spFrameRange.GetData()[ 0 ]->AsNumber();
+        int nEndFrame = spFrameRange.GetData()[ 1 ]->AsNumber();
+        int nFrameSize = ( nEndFrame - nStartFrame ) + 1;
+        m_kMotionFrameSize = FFrameTime( ConvertFrameTimeFromeICloneToUnreal( nFrameSize ) );
+    }
+    if ( spEditorImportData->Values.Contains( "TaskAmount" ) )
+    {
+        m_nImportAmount = spEditorImportData->Values[ "TaskAmount" ]->AsNumber();
+    }
+    if ( spEditorImportData->Values.Contains( "CreateLevelSequencer" ) )
+    {
+        m_bCreateLevelSequencer = spEditorImportData->Values[ "CreateLevelSequencer" ]->AsBool();
+    }
+    if ( spEditorImportData->Values.Contains( "FbxPath" ) )
+    {
+        m_strLiveLinkTempPath = spEditorImportData->Values[ "FbxPath" ]->AsString();
+    }
+    if ( spEditorImportData->Values.Contains( "isPlaceAssets" ) )
+    {
+        m_bIsPlaceAssets = spEditorImportData->Values[ "isPlaceAssets" ]->AsBool();
     }
 }
 //Add SubMenu-----------------------------------------------------------------------------------------------
@@ -1188,7 +1359,6 @@ TSharedRef<SWidget> FRLLiveLinkModule::FillComboButton( TSharedPtr<class FUIComm
         FUIAction( FExecuteAction::CreateRaw( this, &FRLLiveLinkModule::LiveLinkHelpMenu, strWebID03 ) )
     );
     kMenuBuilder.EndSection();
-
     return kMenuBuilder.MakeWidget();
 }
 
@@ -1207,7 +1377,7 @@ TSharedRef<FExtender> FRLLiveLinkModule::OutlinerMenuExtend( const TSharedRef<FU
         "ActorAsset",
         EExtensionHook::After,
         kCommandList,
-        FMenuExtensionDelegate::CreateLambda( [this]( FMenuBuilder& kMenuBuilder )
+        FMenuExtensionDelegate::CreateLambda( [ this ]( FMenuBuilder& kMenuBuilder )
         {
             kMenuBuilder.BeginSection( "iClone Data Link", LOCTEXT( "iClone Data Link", "iClone Data Link" ) );
             {
@@ -1271,12 +1441,11 @@ void FRLLiveLinkModule::CreateEmptyNodeForiClone()
             return;
         }
     }
-    AActor* pLiveLinkActor = pWorld->SpawnActor( AActor::StaticClass() );
+    AActor* pLiveLinkActor = FRLLiveLinkUtility::SpawnActorToViewport( AActor::StaticClass(), DEFAULT_PARENT_ACTOR);
     if ( !pLiveLinkActor )
     {
         return;
     }
-    pLiveLinkActor->SetActorLabel( DEFAULT_PARENT_ACTOR );
 
     //Create LiveLink Icon Uasset
     FString strIconName = TEXT( DEFAULT_PARENT_ACTOR );
@@ -1287,12 +1456,12 @@ void FRLLiveLinkModule::CreateEmptyNodeForiClone()
         UTexture2D* pSprite = LoadObject<UTexture2D>( nullptr, *( "/Engine/EditorResources/" + strIconName ) );
         if ( !pSprite )
         {
-            FString strPackageName = TEXT( "/Engine/EditorResources/"+ strIconName );
+            FString strPackageName = TEXT( "/Engine/EditorResources/" + strIconName );
             FString strFilePath = IPluginManager::Get().FindPlugin( TEXT( "RLLiveLink" ) )->GetBaseDir() / TEXT( "Resources/iclivelink.png" );
             TArray<uint8> kRawData;
             if ( FFileHelper::LoadFileToArray( kRawData, *strFilePath ) )
             {
-                UPackage* pAssetPackage = CreatePackage( NULL, *strPackageName );
+                UPackage* pAssetPackage = CreatePackage( *strPackageName );
                 if ( pAssetPackage )
                 {
                     UTextureFactory* kTexFactory = NewObject<UTextureFactory>();
@@ -1348,14 +1517,14 @@ void FRLLiveLinkModule::CheckICVersionBeforeTransferScene( const ETransferMode i
 
     GEditor->GetTimerManager()->SetTimer(
         m_kCountdownRecheckICVersionTimerHandle,
-        FTimerDelegate::CreateLambda( [this]()
-    {
-        FText strMsg = FText::FromString( "Please make sure iClone is running properly.\nOr the current version of iClone does not support this feature. \nPlease upgrade to iClone 8.1 or later then try again." );
-        FMessageDialog::Open( EAppMsgType::Ok, strMsg );
-    } ),
+        FTimerDelegate::CreateLambda( [ this ]()
+        {
+            FText strMsg = FText::FromString( "Please make sure iClone is running properly.\nOr the current version of iClone does not support this feature. \nPlease upgrade to iClone 8.1 or later then try again." );
+            FMessageDialog::Open( EAppMsgType::Ok, strMsg );
+        } ),
         1.0f,
         false
-        );
+    );
     TSharedPtr<FJsonObject> spReturnJson = MakeShareable( new FJsonObject );
     spReturnJson->SetBoolField( "CheckICLiveLinkVersion", false );
 
@@ -1365,7 +1534,7 @@ void FRLLiveLinkModule::CheckICVersionBeforeTransferScene( const ETransferMode i
 void FRLLiveLinkModule::TransferSceneToIC( ETransferMode iMode )
 {
     GEditor->GetTimerManager()->ClearTimer( m_kCountdownRecheckICVersionTimerHandle );
-    
+
     bool bExportFbxResult = false;
     TArray<struct ExportFbxSetting> kExportFbxSettingList;
 
@@ -1395,7 +1564,7 @@ void FRLLiveLinkModule::TransferSceneToIC( ETransferMode iMode )
 #endif
         {
             bExportFbxResult = ExportFbx( kExportFbxSettingList );
-            DeletePackageInContentBrowser( FPackageName::GetLongPackagePath( kExportFbxSettingList[0].pObjectToExport->GetPathName() ) );
+            DeletePackageInContentBrowser( FPackageName::GetLongPackagePath( kExportFbxSettingList[ 0 ].pObjectToExport->GetPathName() ) );
         }
     }
     else if ( iMode == ETransferMode::Batch )
@@ -1470,7 +1639,7 @@ void FRLLiveLinkModule::TransferSceneToIC( ETransferMode iMode )
         kExportFbxSetting.strSaveFilePath = strExportDirectory + "/" + pStaticMesh->GetName() + ".FBX";
 
         kExportFbxSettingList.Add( kExportFbxSetting );
-        
+
         bExportFbxResult = ExportFbx( kExportFbxSettingList );
         //delete temp merged object in content browser
         DeletePackageInContentBrowser( FPackageName::GetLongPackagePath( strExportMeshMergePathToLoad ) );
@@ -1490,7 +1659,7 @@ void FRLLiveLinkModule::TransferSceneToIC( ETransferMode iMode )
         }
 
         SendJsonToIC( spReturnJson );
-        
+
     }
     else
     {
@@ -1510,7 +1679,7 @@ bool CheckActorComponentCanBeTransferToIC( UPrimitiveComponent* pPrimComponent )
     {
         UStaticMesh* pStaticMesh = pStaticMeshComponent->GetStaticMesh();
 
-        if( pStaticMesh )
+        if ( pStaticMesh )
         {
             return true;
         }
@@ -1550,7 +1719,7 @@ bool FRLLiveLinkModule::DeselectNonStaticMeshActors( TSet<AActor*>& kDeselectedA
         bool bInclude = false;
         for ( UPrimitiveComponent* pPrimComponent : pPrimComponents )
         {
-            if( CheckActorComponentCanBeTransferToIC( pPrimComponent ) )
+            if ( CheckActorComponentCanBeTransferToIC( pPrimComponent ) )
             {
                 bInclude = true;
                 break;
@@ -1629,7 +1798,7 @@ bool FRLLiveLinkModule::ExportFbx( const struct ExportFbxSetting& kExportFbxSett
     TArray<struct ExportFbxSetting> kExportFbxSettings;
     kExportFbxSettings.Add( kExportFbxSetting );
 
-    if ( kExportFbxSettings.Num( ) > 0 )
+    if ( kExportFbxSettings.Num() > 0 )
     {
         return ExportAssetsInternal( kExportFbxSettings );
     }
@@ -1665,7 +1834,7 @@ bool FRLLiveLinkModule::ExportAssetsInternal( const TArray<struct ExportFbxSetti
 
     // Export the objects.
     bool bAnyObjectMissingSourceData = false;
-    for ( int32 Index = 0; Index < kExportFbxSettings.Num(); Index++ )
+    for ( int32 Index = 0; Index < kExportFbxSettings.Num(); ++Index )
     {
         GWarn->StatusUpdate( Index, kExportFbxSettings.Num(), FText::Format( NSLOCTEXT( "UnrealEd", "Exportingf", "Exporting ({0} of {1})" ), FText::AsNumber( Index ), FText::AsNumber( kExportFbxSettings.Num() ) ) );
 
@@ -1696,7 +1865,7 @@ bool FRLLiveLinkModule::ExportAssetsInternal( const TArray<struct ExportFbxSetti
                     check( pExporter->FormatExtension.IsValidIndex( pExporter->PreferredFormatIndex ) );
                     for ( int32 iFormatIndex = pExporter->FormatExtension.Num() - 1; iFormatIndex >= 0; --iFormatIndex )
                     {
-                        const FString& strFormatExtension = pExporter->FormatExtension[ iFormatIndex ];
+                        const FString strFormatExtension = pExporter->FormatExtension[ iFormatIndex ];
 
                         if ( iFormatIndex == pExporter->PreferredFormatIndex )
                         {
@@ -1712,7 +1881,7 @@ bool FRLLiveLinkModule::ExportAssetsInternal( const TArray<struct ExportFbxSetti
         {
             continue;
         }
-        
+
         // Create the path, then make sure the target file is not read-only.
         if ( IFileManager::Get().FileExists( *kExportFbxSettings[ Index ].strSaveFilePath ) )
         {
@@ -1753,7 +1922,7 @@ bool FRLLiveLinkModule::ExportAssetsInternal( const TArray<struct ExportFbxSetti
                     check( pExporter->FormatExtension.Num() == pExporter->FormatDescription.Num() );
                     for ( int32 iFormatIndex = 0; iFormatIndex < pExporter->FormatExtension.Num(); ++iFormatIndex )
                     {
-                        const FString& FormatExtension = pExporter->FormatExtension[ iFormatIndex ];
+                        const FString FormatExtension = pExporter->FormatExtension[ iFormatIndex ];
                         if ( FCString::Stricmp( *FormatExtension, *FPaths::GetExtension( kExportFbxSettings[ Index ].strSaveFilePath ) ) == 0 ||
                              FCString::Stricmp( *FormatExtension, TEXT( "*" ) ) == 0 )
                         {
@@ -1776,7 +1945,7 @@ bool FRLLiveLinkModule::ExportAssetsInternal( const TArray<struct ExportFbxSetti
                 pExporterToUse = kValidExporters[ 0 ];
 
                 // ...but search for a better match if available
-                for ( int32 iExporterIdx = 0; iExporterIdx < kValidExporters.Num(); iExporterIdx++ )
+                for ( int32 iExporterIdx = 0; iExporterIdx < kValidExporters.Num(); ++iExporterIdx )
                 {
                     if ( kValidExporters[ iExporterIdx ]->GetClass()->GetFName() == pObjectToExport->GetExporterName() )
                     {
@@ -1859,7 +2028,7 @@ bool FRLLiveLinkModule::ExportSelected( const FString& strSaveFilePath )
 
             return false;
         }
-        else 
+        else
         {
             FString MapFileName = FPaths::GetCleanFilename( *strSaveFilePath );
             const FText LocalizedExportingMap = FText::Format( NSLOCTEXT( "UnrealEd", "ExportingMap_F", "Exporting map: {0}..." ), FText::FromString( MapFileName ) );
@@ -1901,7 +2070,7 @@ bool FRLLiveLinkModule::ExportSelected( const FString& strSaveFilePath )
 bool FRLLiveLinkModule::RunMergeFromSelection( ETransferMode eMergeMode, FString& strPackageName )
 {
     TArray<TSharedPtr<FMergeComponentData>> kSelectionDataList;
-    if ( !BuildMergeComponentDataFromSelection( kSelectionDataList ) ) 
+    if ( !BuildMergeComponentDataFromSelection( kSelectionDataList ) )
     {
         return false; // if user press cancel
     }
@@ -1918,7 +2087,7 @@ bool FRLLiveLinkModule::RunMergeFromSelection( ETransferMode eMergeMode, FString
     {
         bool bResult = false;
 
-        switch ( eMergeMode ) 
+        switch ( eMergeMode )
         {
             case ETransferMode::Merge:
                 bResult = RunMerge( strPackageName, kSelectionDataList );
@@ -1958,9 +2127,9 @@ bool FRLLiveLinkModule::RunSimplify( const FString& strPackageName, const TArray
 
         FCreateProxyDelegate kProxyDelegate;
         kProxyDelegate.BindLambda(
-            [&pNewAssetsToSync]( const FGuid kGuid, TArray<UObject*>& kInAssetsToSync )
+            [ &pNewAssetsToSync ]( const FGuid kGuid, TArray<UObject*>& kInAssetsToSync )
         {
-            
+
         } );
 
         // Extracting static mesh components from the selected mesh components in the dialog
@@ -2067,7 +2236,7 @@ bool FRLLiveLinkModule::GetPackageNameForMergeAction( const FString& strDefaultP
         //之後再看路徑要改哪裡，現在先用預設的
         FString strSaveObjectPath = strDefaultPath + "/Temp/" + strDefaultName;
         if ( !strSaveObjectPath.IsEmpty() && CreatePackage( *strSaveObjectPath ) )
-        {            
+        {
             strOutPackageName = FPackageName::ObjectPathToPackageName( strSaveObjectPath );
             return true;
         }
@@ -2167,7 +2336,7 @@ bool FRLLiveLinkModule::BuildMergeComponentDataFromSelection( TArray<TSharedPtr<
     if ( pNotIncludedActors.Num() && pNotIncludedActors.Num() < pActors.Num() )
 #endif
     {
-        
+
         FString strListOfActorsName = "";
         for ( AActor* pNotIncludedActor : pNotIncludedActors )
         {
@@ -2250,7 +2419,7 @@ bool FRLLiveLinkModule::BatchTransferSceneToIClone( ETransferMode eMergeMode, TS
     TArray<AActor*> kSelectedActors;
     TArray<TSharedPtr<FMergeComponentData>> kSelectionDataList;
     TArray<struct ExportFbxSetting> kExportFbxSettingList;
-    
+
     if ( !BuildMergeComponentDataFromSelection( kSelectionDataList ) )
     {
         return false; // if user press cancel
@@ -2262,16 +2431,16 @@ bool FRLLiveLinkModule::BatchTransferSceneToIClone( ETransferMode eMergeMode, TS
         FMessageDialog::Open( EAppMsgType::Ok, strMsg );
         return false;
     }
-    
+
     for ( auto pSelectionData : kSelectionDataList )
     {
         AActor* pActor = pSelectionData->PrimComponent.Get()->GetOwner();
 
-        FString strPackageBaseName = FPackageName::FilenameToLongPackageName( FPaths::ProjectContentDir() + TEXT( "Temp/" ) ) + pActor->GetName() ;
+        FString strPackageBaseName = FPackageName::FilenameToLongPackageName( FPaths::ProjectContentDir() + TEXT( "Temp/" ) ) + pActor->GetName();
         FString strPackageName = strPackageBaseName;
         int iSerialNumber = 0;
-        
-        auto strCheckPackageName = [&eMergeMode, &strPackageName]() -> FString
+
+        auto strCheckPackageName = [ &eMergeMode, &strPackageName ]() -> FString
         {
             if ( eMergeMode == ETransferMode::BatchSimplify )
             {
@@ -2295,7 +2464,7 @@ bool FRLLiveLinkModule::BatchTransferSceneToIClone( ETransferMode eMergeMode, TS
             kDataToMerge.Add( pSelectionData );
 
             bool bResult = false;
-            
+
             switch ( eMergeMode )
             {
                 case ETransferMode::BatchMerge:
@@ -2309,8 +2478,8 @@ bool FRLLiveLinkModule::BatchTransferSceneToIClone( ETransferMode eMergeMode, TS
                     break;
 
             }
-            
-            if (!bResult )
+
+            if ( !bResult )
             {
                 continue;
             }
@@ -2331,7 +2500,7 @@ bool FRLLiveLinkModule::BatchTransferSceneToIClone( ETransferMode eMergeMode, TS
 void FRLLiveLinkModule::CreateCamera()
 {
     auto pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Camera", "LiveLinkCameraBlueprint", "Camera", true );
-    if( pBlueprint )
+    if ( pBlueprint )
     {
         LoadToScene( pBlueprint );
     }
@@ -2340,7 +2509,7 @@ void FRLLiveLinkModule::CreateCamera()
 void FRLLiveLinkModule::CreateCineCamera()
 {
     auto pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Camera", m_strCineCameraBlueprint, "Camera", true );
-    if( pBlueprint )
+    if ( pBlueprint )
     {
         SetupCineCamera( pBlueprint );
         LoadToScene( pBlueprint );
@@ -2350,7 +2519,7 @@ void FRLLiveLinkModule::CreateCineCamera()
 void FRLLiveLinkModule::CreateDirectionalLight()
 {
     auto pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Light", m_strDirLightBlueprint, "Directional_Light", true );
-    if( pBlueprint )
+    if ( pBlueprint )
     {
         LoadToScene( pBlueprint );
     }
@@ -2359,7 +2528,7 @@ void FRLLiveLinkModule::CreateDirectionalLight()
 void FRLLiveLinkModule::CreateSpotLight()
 {
     auto pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Light", m_strSpotLightBlueprint, "Spotlight", true );
-    if( pBlueprint )
+    if ( pBlueprint )
     {
         LoadToScene( pBlueprint );
     }
@@ -2368,7 +2537,7 @@ void FRLLiveLinkModule::CreateSpotLight()
 void FRLLiveLinkModule::CreatePointLight()
 {
     auto pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Light", m_strPointLightBlueprint, "Point_Light", true );
-    if( pBlueprint )
+    if ( pBlueprint )
     {
         LoadToScene( pBlueprint );
     }
@@ -2377,7 +2546,7 @@ void FRLLiveLinkModule::CreatePointLight()
 void FRLLiveLinkModule::CreateRectLight()
 {
     auto pBlueprint = CreateLiveLinkBlueprint( "/RLContent/Light", m_strRectLightBlueprint, "Rectlight", true );
-    if( pBlueprint )
+    if ( pBlueprint )
     {
         LoadToScene( pBlueprint );
     }
@@ -2417,8 +2586,8 @@ void FRLLiveLinkModule::SetUpAllLightToBlueprint()
     TArray<AActor*> kPointLightActorList = GetSelectedActorByType( "PointLight" );
     TArray<AActor*> kSpotLightActorList = GetSelectedActorByType( "SpotLight" );
     TArray<AActor*> kRectLightActorList = GetSelectedActorByType( "RectLight" );
-    if ( kDirectionalLightActorList.Num() <= 0 
-         && kPointLightActorList.Num() <= 0 
+    if ( kDirectionalLightActorList.Num() <= 0
+         && kPointLightActorList.Num() <= 0
          && kSpotLightActorList.Num() <= 0
          && kRectLightActorList.Num() <= 0 )
     {
@@ -2439,7 +2608,7 @@ void FRLLiveLinkModule::SetUpAllLightToBlueprint()
         {
             CreateLiveLinkBlueprintFromActor( pActor, "/RLContent/Light", m_strSpotLightBlueprint, "Spotlight" );
         }
-        for( AActor* pActor : kRectLightActorList )
+        for ( AActor* pActor : kRectLightActorList )
         {
             CreateLiveLinkBlueprintFromActor( pActor, "/RLContent/Light", m_strRectLightBlueprint, "Rectlight" );
         }
@@ -2490,7 +2659,7 @@ void FRLLiveLinkModule::SetUpAllCharacterToBlueprint()
             FString strActorPath;
             TArray<FString> kSpiltWord;
             pActor->GetDetailedInfo().ParseIntoArray( kSpiltWord, TEXT( "/" ), true );
-            for ( int i = 0; i < kSpiltWord.Num() - 1; i++ )
+            for ( int i = 0; i < kSpiltWord.Num() - 1; ++i )
             {
                 strActorPath += "/" + kSpiltWord[ i ];
             }
@@ -2668,7 +2837,12 @@ UBlueprint* FRLLiveLinkModule::CreateLiveLinkBlueprintFromActor( AActor* pActor,
     const FString strOriginName = pActor->GetActorLabel();
 
     //New Blueprint fome actor
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3
+    FKismetEditorUtilities::FCreateBlueprintFromActorParams kParams;
+    UBlueprint* pBlueprintActor = FKismetEditorUtilities::CreateBlueprintFromActor( "/Game" + strPath + "/" + strTargetName, pActor, kParams );
+#else
     UBlueprint* pBlueprintActor = FKismetEditorUtilities::CreateBlueprintFromActor( "/Game" + strPath + "/" + strTargetName, pActor, true );
+#endif
     if ( !pBlueprintActor )
     {
         return nullptr;
@@ -2709,7 +2883,8 @@ UBlueprint* FRLLiveLinkModule::CreateLiveLinkBlueprintFromActor( AActor* pActor,
 
     //Get Default Morph and Set
     UEdGraph* pUCSGraph = nullptr;
-    for ( TArray<UEdGraph*>::TIterator pGraphIt( pBlueprintDefault->MacroGraphs ); pGraphIt; ++pGraphIt )
+    TArray< UEdGraph* > kMacroGraphs = pBlueprintDefault->MacroGraphs;
+    for ( TArray<UEdGraph*>::TIterator pGraphIt( kMacroGraphs ); pGraphIt; ++pGraphIt )
     {
         UEdGraph* pGraph = *pGraphIt;
         if ( pGraph->GetFName().ToString() == "RLLiveLink" )
@@ -2918,15 +3093,15 @@ void FRLLiveLinkModule::SelectAndFocusActor( AActor* pActor, bool bFocus, bool b
     if ( pActor )
     {
         //focus view
-        if( bFocus )
+        if ( bFocus )
         {
             TArray<AActor*> kActors;
             kActors.Add( pActor );
             GEditor->MoveViewportCamerasToActor( kActors, true );
         }
-        
+
         //Select newly created actor
-        if( bSelect )
+        if ( bSelect )
         {
             GEditor->SelectNone( false, true, false );
             GEditor->SelectActor( pActor, true, false );
@@ -2954,7 +3129,7 @@ void FRLLiveLinkModule::MoveMotionAssetPath( const TSharedPtr<FJsonValue>& spJso
                         ProcessPropMotionNameAndPath( strAssetPath, strAssetName );
                         ReAssignMotionSkeleton( strAssetPath );
                     }
-                    else 
+                    else
                     {
                         ProcessAvatarMotionNameAndPath( strAssetPath, strAssetName );
                         ReAssignMotionSkeleton( strAssetPath );
@@ -2970,7 +3145,7 @@ void FRLLiveLinkModule::ProcessAvatarMotionNameAndPath( const FString& strAssetP
     IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( TEXT( "AssetRegistry" ) );
     FAssetToolsModule& kAssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>( "AssetTools" );
-    
+
     FString strMotionFolderPath = strAssetPath + "Motion";
     FPackageName::TryConvertLongPackageNameToFilename( strMotionFolderPath + "/", strMotionFolderPath );
     if ( kPlatformFile.CreateDirectory( *strMotionFolderPath ) )
@@ -2981,7 +3156,7 @@ void FRLLiveLinkModule::ProcessAvatarMotionNameAndPath( const FString& strAssetP
         FARFilter kFilter;
         kFilter.PackagePaths.Add( *strAssetPath );
         kFilter.bRecursivePaths = false;
-        kFilter.ClassNames.Add( "AnimSequence" );
+        kFilter.ClassPaths.Add( UAnimSequence::StaticClass()->GetClassPathName() );
 
         kAssetRegistryModule.Get().GetAssets( kFilter, kObjectList );
 
@@ -3017,7 +3192,7 @@ void FRLLiveLinkModule::ProcessAvatarMotionNameAndPath( const FString& strAssetP
 
                 TArray<FAssetRenameData> kAssetsAndNames;
                 UObject* pAssetObject = kObject.GetAsset();
-                
+
                 new( kAssetsAndNames ) FAssetRenameData();
                 kAssetsAndNames[ 0 ].NewName = strNewFileName;
                 kAssetsAndNames[ 0 ].NewPackagePath = strAssetPath + "Motion";
@@ -3053,7 +3228,7 @@ void FRLLiveLinkModule::ProcessAvatarMotionNameAndPath( const FString& strAssetP
             MoveAsset( strPath, strNewFilePath );
         }
     }
-    
+
 }
 void FRLLiveLinkModule::ProcessPropMotionNameAndPath( const FString& strAssetPath, const FString& strAssetName )
 {
@@ -3072,7 +3247,7 @@ void FRLLiveLinkModule::ProcessPropMotionNameAndPath( const FString& strAssetPat
         FARFilter kFilter;
         kFilter.PackagePaths.Add( *strAssetPath );
         kFilter.bRecursivePaths = false;
-        kFilter.ClassNames.Add( "AnimSequence" );
+        kFilter.ClassPaths.Add( UAnimSequence::StaticClass()->GetClassPathName() );
 
         kAssetRegistryModule.Get().GetAssets( kFilter, kObjectList );
 
@@ -3095,7 +3270,7 @@ void FRLLiveLinkModule::ProcessPropMotionNameAndPath( const FString& strAssetPat
             MoveAsset( strPath, strNewFilePath );
         }
     }
-    
+
 }
 void FRLLiveLinkModule::MoveAsset( const FString& strFromAssetPath, const FString& strToAssetPath )
 {
@@ -3114,21 +3289,21 @@ void FRLLiveLinkModule::MoveAsset( const FString& strFromAssetPath, const FStrin
 void FRLLiveLinkModule::ReAssignMotionSkeleton( const FString& strCurrentPath )
 {
     FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( TEXT( "AssetRegistry" ) );
-    
+
     TArray<FAssetData> kAnimObjectList;
     TArray<FAssetData> kSkeletonObjectList;
 
     FARFilter kAnimFilter;
     kAnimFilter.PackagePaths.Add( *strCurrentPath );
     kAnimFilter.bRecursivePaths = true;
-    kAnimFilter.ClassNames.Add( "AnimSequence" );
+    kAnimFilter.ClassPaths.Add( UAnimSequence::StaticClass()->GetClassPathName() );
 
     kAssetRegistryModule.Get().GetAssets( kAnimFilter, kAnimObjectList );
 
     FARFilter kSkeletonFilter;
     kSkeletonFilter.PackagePaths.Add( *strCurrentPath );
     kSkeletonFilter.bRecursivePaths = true;
-    kSkeletonFilter.ClassNames.Add( "Skeleton" );
+    kSkeletonFilter.ClassPaths.Add( USkeleton::StaticClass()->GetClassPathName() );
 
     kAssetRegistryModule.Get().GetAssets( kSkeletonFilter, kSkeletonObjectList );
 
@@ -3151,7 +3326,7 @@ void FRLLiveLinkModule::ReAssignMotionSkeleton( const FString& strCurrentPath )
             TArray<TObjectPtr<UObject>> kAssetsToRetarget;
 #endif
             kAssetsToRetarget.Add( pAnimAsset );
-            ReplaceMissingSkeleton( kAssetsToRetarget, kSkeletonObjectList[0].GetAsset() );
+            ReplaceMissingSkeleton( kAssetsToRetarget, kSkeletonObjectList[ 0 ].GetAsset() );
         }
     }
 }
@@ -3209,7 +3384,7 @@ void FRLLiveLinkModule::GetObjectsFromPackage( const FARFilter& kFilter, TArray<
 
 bool FRLLiveLinkModule::DeleteAssets( const TArray<FAssetData>& kObjectList )
 {
-    if ( kObjectList.Num() <= 0)
+    if ( kObjectList.Num() <= 0 )
     {
         return false;
     }
@@ -3282,7 +3457,7 @@ bool FRLLiveLinkModule::DeleteFolder( const FString& strPath )
 
         TArray<FString> kIgnorePackagePathList;
         kIgnorePackagePathList.Add( strPath + "/Motion" );
-  
+
         TArray<FAssetData> kObjectList;
         //Get Asset Data
         FARFilter kFilter;
@@ -3298,9 +3473,9 @@ bool FRLLiveLinkModule::DeleteFolder( const FString& strPath )
         if ( kObjectList.Num() > 0 )
         {
             //參考EditorScriptingUtils.cpp - DeleteEmptyDirectoryFromDisk()
-            if( DeleteAssets( kObjectList ) )
+            if ( DeleteAssets( kObjectList ) )
             {
-                struct FEmptyFolderVisitor: public IPlatformFile::FDirectoryVisitor
+                struct FEmptyFolderVisitor : public IPlatformFile::FDirectoryVisitor
                 {
                     bool bIsEmpty;
                     FEmptyFolderVisitor()
@@ -3358,7 +3533,7 @@ bool FRLLiveLinkModule::DeletePackageInContentBrowser( const FString& strPath )
 
     if ( kObjectList.Num() > 0 )
     {
-        if( DeleteAssets( kObjectList ) )
+        if ( DeleteAssets( kObjectList ) )
         {
             kAssetRegistryModule.Get().RemovePath( strPath );
         }
@@ -3388,21 +3563,21 @@ bool FRLLiveLinkModule::DeleteActorInScene( const FString& strPath, const FStrin
             // Stop Pilot
             bool bPilotTarget = false;
             FLevelEditorViewportClient* pLevelClient = GCurrentLevelEditingViewportClient;
-            if( AActor* pActiveLockActor = pLevelClient->GetActiveActorLock().Get() )
+            if ( AActor* pActiveLockActor = pLevelClient->GetActiveActorLock().Get() )
             {
-                if( pActiveLockActor->GetUniqueID() == pActorItr->GetUniqueID() )
+                if ( pActiveLockActor->GetUniqueID() == pActorItr->GetUniqueID() )
                 {
                     bPilotTarget = true;
                 }
             }
             // Before deleting an Actor, first check if it's selected Actor. 
             // If it's the selected state, you must cancel the selection first, otherwise the UE Menu will be disabled forever.
-            if( GEditor->GetSelectedActorCount() != 0 )
+            if ( GEditor->GetSelectedActorCount() != 0 )
             {
                 GEditor->SelectNone( false, true, false );
                 GEditor->NoteSelectionChange();
             }
-            
+
             CSceneTempData kData;
             kData.strAssetName = pActorItr->GetActorLabel();
             kData.kTransform = pActorItr->GetTransform();
@@ -3427,47 +3602,44 @@ AActor* FRLLiveLinkModule::PutAssetBackToSceneAfterReplace( UBlueprint* pBluepri
     // ex: strPath = RLConent/FolderName/obj.uasset 須扣除檔案本身名稱來取得Folder name
 
     //Camera & Light use BP name not folder name
-    if ( strFolderName=="Camera" || strFolderName == "Light" )
+    if ( strFolderName == "Camera" || strFolderName == "Light" )
     {
         strFolderName = pBlueprint->GetName();
     }
 
     AActor* pActor = nullptr;
-    for ( int32 nIndex = 0; nIndex < m_kAssetTempData.Num(); nIndex++ )
+    for ( int32 nIndex = 0; nIndex < m_kAssetTempData.Num(); ++nIndex )
     {
         const CSceneTempData& kTempData = m_kAssetTempData[ nIndex ];
         if ( strFolderName == kTempData.strFolderName )
         {
             //Add To Scene
-            UWorld* const pWorld = GEditor->GetEditorWorldContext().World();
-            if ( pWorld )
+            const FVector kLocation = kTempData.kTransform.GetLocation();
+            const FRotator kRotation = kTempData.kTransform.Rotator();
+            UClass* pClassToSpawn = Cast<UClass>( pBlueprint->GeneratedClass );
+            pActor = FRLLiveLinkUtility::SpawnActorToViewport( pClassToSpawn, "", kLocation, kRotation );
+            if ( pActor )
             {
-                const FVector kLocation = kTempData.kTransform.GetLocation();
-                const FRotator kRotation = kTempData.kTransform.Rotator();
-                UClass* pClassToSpawn = Cast<UClass>( pBlueprint->GeneratedClass );
-                pActor = pWorld->SpawnActor<AActor>( pClassToSpawn, kLocation, kRotation );
-                if ( pActor )
+                pActor->SetActorLabel( kTempData.strAssetName );
+                if ( kTempData.pParentActor )
                 {
-                    pActor->SetActorLabel( kTempData.strAssetName );
-                    if ( kTempData.pParentActor )
-                    {
-                        pActor->AttachToActor( kTempData.pParentActor, FAttachmentTransformRules::KeepWorldTransform );
-                    }
-                    SetDefaultParentActor( pActor, FAttachmentTransformRules::KeepWorldTransform );
+                    pActor->AttachToActor( kTempData.pParentActor, FAttachmentTransformRules::KeepWorldTransform );
                 }
-                if( kTempData.bPilotTarget )
+                SetDefaultParentActor( pActor, FAttachmentTransformRules::KeepWorldTransform );
+            }
+            if ( kTempData.bPilotTarget )
+            {
+                FLevelEditorViewportClient* pLevelClient = GCurrentLevelEditingViewportClient;
+                if ( pLevelClient && pLevelClient->bLockedCameraView )
                 {
-                    FLevelEditorViewportClient* pLevelClient = GCurrentLevelEditingViewportClient;
-                    if( pLevelClient && pLevelClient->bLockedCameraView )
+                    TSharedPtr<SLevelViewport> spLevelEditorViewport = StaticCastSharedPtr<SLevelViewport>( pLevelClient->GetEditorViewportWidget() );
+                    if ( spLevelEditorViewport )
                     {
-                        TSharedPtr<SLevelViewport> spLevelEditorViewport = StaticCastSharedPtr<SLevelViewport>( pLevelClient->GetEditorViewportWidget() );
-                        if( spLevelEditorViewport )
-                        {
-                            spLevelEditorViewport->OnActorLockToggleFromMenu( pActor );
-                        }
+                        spLevelEditorViewport->OnActorLockToggleFromMenu( pActor );
                     }
                 }
             }
+            
             m_kAssetTempData.RemoveAt( nIndex );
             nIndex--;
         }
@@ -3478,24 +3650,25 @@ AActor* FRLLiveLinkModule::PutAssetBackToSceneAfterReplace( UBlueprint* pBluepri
 UTexture2D* FRLLiveLinkModule::LoadTextureFromFile( const FString& strPath, const FString& strSaveAssetPath )
 {
     UTexture2D* pTexture = nullptr;
-    if( !FPlatformFileManager::Get().GetPlatformFile().FileExists( *strPath ) )
+    if ( !FPlatformFileManager::Get().GetPlatformFile().FileExists( *strPath ) )
     {
         return nullptr;
     }
-    UPackage* pPackage = CreatePackage( NULL, *strSaveAssetPath );
-    if( !pPackage )
+
+    UPackage* pPackage = CreatePackage( *strSaveAssetPath );
+    if ( !pPackage )
     {
         return nullptr;
     }
     pPackage->FullyLoad();
     FString strTextureName = FPaths::GetBaseFilename( strSaveAssetPath );
     TArray<uint8> kRawData;
-    if( !FFileHelper::LoadFileToArray( kRawData, *strPath ) )
+    if ( !FFileHelper::LoadFileToArray( kRawData, *strPath ) )
     {
         return nullptr;
     }
     UTextureFactory* pTexFactory = NewObject<UTextureFactory>();
-    if( !pTexFactory )
+    if ( !pTexFactory )
     {
         return nullptr;
     }
@@ -3510,7 +3683,7 @@ UTexture2D* FRLLiveLinkModule::LoadTextureFromFile( const FString& strPath, cons
                                                            Ptr,
                                                            Ptr + kRawData.Num() - 1,
                                                            GWarn );
-    if( pTexAsset )
+    if ( pTexAsset )
     {
         UTexture* kTexture = Cast<UTexture>( pTexAsset );
         pTexAsset->MarkPackageDirty();
@@ -3538,7 +3711,8 @@ UTextureLightProfile* FRLLiveLinkModule::LoadTextureLightProfileFromFile( const 
     {
         return nullptr;
     }
-    UPackage* pPackage = CreatePackage( NULL, *strSaveAssetPath );
+
+    UPackage* pPackage = CreatePackage( *strSaveAssetPath );
     if ( !pPackage )
     {
         return nullptr;
@@ -3589,30 +3763,26 @@ UTextureLightProfile* FRLLiveLinkModule::LoadTextureLightProfileFromFile( const 
 
 AActor* FRLLiveLinkModule::LoadToScene( UBlueprint* pBlueprint )
 {
-    if( !pBlueprint )
+    if ( !pBlueprint )
     {
         return nullptr;
     }
-    AActor* pActor = nullptr;
-    UWorld* const pWorld = GEditor->GetEditorWorldContext().World();
-    if( pWorld )
+    UClass* pClassToSpawn = Cast<UClass>( pBlueprint->GeneratedClass );
+    AActor* pActor = FRLLiveLinkUtility::SpawnActorToViewport( pClassToSpawn, "" );
+    if ( !pActor )
     {
-        const FVector kLocation = { 0, 0, 0 };
-        const FRotator kRotation = FRotator( 0, 0, 0 );
-        UClass* pClassToSpawn = Cast<UClass>( pBlueprint->GeneratedClass );
-
-        pActor = pWorld->SpawnActor<AActor>( pClassToSpawn, kLocation, kRotation );
-        SetDefaultParentActor( pActor, FAttachmentTransformRules::KeepRelativeTransform );
-
-        //set focus view on actor
-        SelectAndFocusActor( pActor, false, true );
+        return nullptr;
     }
+    SetDefaultParentActor( pActor, FAttachmentTransformRules::KeepRelativeTransform );
+
+    //set focus view on actor
+    SelectAndFocusActor( pActor, false, true );
     return pActor;
 }
 
 UTexture2D* FRLLiveLinkModule::RotateTexture2D( UTexture2D* pTexture )
 {
-    if( !pTexture ) 
+    if ( !pTexture )
     {
         return nullptr;
     }
@@ -3624,8 +3794,8 @@ UTexture2D* FRLLiveLinkModule::RotateTexture2D( UTexture2D* pTexture )
     int32 nWidth = pTexture->GetPlatformData()->SizeX;
     int32 nHeight = pTexture->GetPlatformData()->SizeY;
 #endif
-    TextureCompressionSettings kOriCompressionSettings = pTexture->CompressionSettings; 
-    TextureMipGenSettings kOriMipGenSettings = pTexture->MipGenSettings; 
+    TextureCompressionSettings kOriCompressionSettings = pTexture->CompressionSettings;
+    TextureMipGenSettings kOriMipGenSettings = pTexture->MipGenSettings;
     bool bOriSRGB = pTexture->SRGB;
     pTexture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
     pTexture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
@@ -3633,23 +3803,30 @@ UTexture2D* FRLLiveLinkModule::RotateTexture2D( UTexture2D* pTexture )
     pTexture->UpdateResource();
 
     // read & wirte texture color
+#if ( ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4 )
+    const FColor* pFormatedImageData = static_cast< const FColor* >( pTexture->GetPlatformData()->Mips[ 0 ].BulkData.Lock( LOCK_READ_ONLY ) );
+#else
     const FColor* pFormatedImageData = static_cast< const FColor* >( pTexture->PlatformData->Mips[ 0 ].BulkData.Lock( LOCK_READ_ONLY ) );
+#endif
     uint8* pFlipedPixels = new uint8[ nWidth * nHeight * 4 ];
-    for( int32 i = 0; i < nWidth; ++i )
+    for ( int32 i = 0; i < nWidth; ++i )
     {
-        for( int32 j = 0; j < nHeight; ++j )
+        for ( int32 j = 0; j < nHeight; ++j )
         {
             const FColor& kPixelColor = pFormatedImageData[ i * nWidth + j ];
 
             int32 nFlipedIndex = j * nWidth + ( nWidth - i );
-            pFlipedPixels[ 4 * nFlipedIndex     ] = kPixelColor.B;
+            pFlipedPixels[ 4 * nFlipedIndex ] = kPixelColor.B;
             pFlipedPixels[ 4 * nFlipedIndex + 1 ] = kPixelColor.G;
             pFlipedPixels[ 4 * nFlipedIndex + 2 ] = kPixelColor.R;
             pFlipedPixels[ 4 * nFlipedIndex + 3 ] = kPixelColor.A;
         }
     }
+#if ( ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4 )
+    pTexture->GetPlatformData()->Mips[ 0 ].BulkData.Unlock();
+#else
     pTexture->PlatformData->Mips[ 0 ].BulkData.Unlock();
-
+#endif
     // recover texture setting
     pTexture->CompressionSettings = kOriCompressionSettings;
     pTexture->MipGenSettings = kOriMipGenSettings;
@@ -3657,15 +3834,15 @@ UTexture2D* FRLLiveLinkModule::RotateTexture2D( UTexture2D* pTexture )
     pTexture->Source.Init( nWidth, nHeight, 1, 1, ETextureSourceFormat::TSF_BGRA8, pFlipedPixels );
     pTexture->UpdateResource();
     UPackage* pOutPackage = pTexture->GetOutermost();
-    if( pOutPackage )
+    if ( pOutPackage )
     {
         pOutPackage->MarkPackageDirty();
         bool bSaved = UPackage::SavePackage( pOutPackage,
-                                             pTexture, 
-                                             EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, 
+                                             pTexture,
+                                             EObjectFlags::RF_Public | EObjectFlags::RF_Standalone,
                                              *pOutPackage->GetName(),
                                              GError, nullptr, true, true, SAVE_NoError );
-        if( bSaved ) 
+        if ( bSaved )
         {
             TArray<UPackage*> kPackagesToSave;
             kPackagesToSave.Add( pOutPackage );
@@ -3673,7 +3850,7 @@ UTexture2D* FRLLiveLinkModule::RotateTexture2D( UTexture2D* pTexture )
         }
     }
     return pTexture;
-}
+    }
 
 bool FRLLiveLinkModule::BuildWrinkleBlueprint( const FString& strRootGamePath, USkeletalMesh* pMesh )
 {
@@ -3702,8 +3879,8 @@ bool FRLLiveLinkModule::BuildWrinkleBlueprint( const FString& strRootGamePath, U
     FString strWrinkleAnimBpPath = strPluginPath + "/Content/" + WrinkleAnimBP + ".rluasset";
     // 1.1 先檢查Source檔案是否存在
     if ( !kPlatformFile.FileExists( *strExpSequencePath )
-      || !kPlatformFile.FileExists( *strExpPosePath )
-      || !kPlatformFile.FileExists( *strWrinkleAnimBpPath ) )
+         || !kPlatformFile.FileExists( *strExpPosePath )
+         || !kPlatformFile.FileExists( *strWrinkleAnimBpPath ) )
     {
         UE_LOG( LogTemp, Error, TEXT( "BuildWrinkleBlueprint Source file not found." ) );
         return false;
@@ -3713,16 +3890,16 @@ bool FRLLiveLinkModule::BuildWrinkleBlueprint( const FString& strRootGamePath, U
     FString strTargetExpPosePath = strRootPath + ExpPoseAsset + ".uasset";
     FString strTargetWrinkleAnimBpPath = strRootPath + WrinkleAnimBP + ".uasset";
     if ( kPlatformFile.FileExists( *strTargetExpSequencePath )
-      || kPlatformFile.FileExists( *strTargetExpPosePath )
-      || kPlatformFile.FileExists( *strTargetWrinkleAnimBpPath ) )
+         || kPlatformFile.FileExists( *strTargetExpPosePath )
+         || kPlatformFile.FileExists( *strTargetWrinkleAnimBpPath ) )
     {
         UE_LOG( LogTemp, Error, TEXT( "BuildWrinkleBlueprint target file alrady exist." ) );
         return false;
     }
     // 1.3 開始複製
-    if ( !kPlatformFile.CopyFile( *strTargetExpSequencePath,   *strExpSequencePath ) != 0
-      || !kPlatformFile.CopyFile( *strTargetExpPosePath,       *strExpPosePath ) != 0
-      || !kPlatformFile.CopyFile( *strTargetWrinkleAnimBpPath, *strWrinkleAnimBpPath ) != 0 )
+    if ( !kPlatformFile.CopyFile( *strTargetExpSequencePath, *strExpSequencePath ) != 0
+         || !kPlatformFile.CopyFile( *strTargetExpPosePath, *strExpPosePath ) != 0
+         || !kPlatformFile.CopyFile( *strTargetWrinkleAnimBpPath, *strWrinkleAnimBpPath ) != 0 )
     {
         UE_LOG( LogTemp, Error, TEXT( "BuildWrinkleBlueprint copy file failed." ) );
         return false;
@@ -3730,7 +3907,7 @@ bool FRLLiveLinkModule::BuildWrinkleBlueprint( const FString& strRootGamePath, U
 
     //2. re assign skeleton
     TArray< TWeakObjectPtr< UObject > > kAssetsToRetarget;
-    auto fnAddRetargetSource = [&]( const FString& strAssetPath )->bool
+    auto fnAddRetargetSource = [ & ]( const FString& strAssetPath )->bool
     {
         auto pObject = StaticLoadObject( UAnimationAsset::StaticClass(),
                                          NULL,
@@ -3863,6 +4040,939 @@ bool FRLLiveLinkModule::ReAssignAnimationBlueprintSkeleton( UAnimBlueprint* pAni
     kPackagesToSave.Add( pAssetPackage );
     FEditorFileUtils::PromptForCheckoutAndSave( kPackagesToSave, false, /*bPromptToSave=*/ false );
     return true;
+}
+
+void FRLLiveLinkModule::ResetEditorImportSetting()
+{
+    m_kApFps = FFrameRate( 60, 1 );
+    m_kLiveLinkFps = FFrameRate( 60, 1 );
+    m_kMotionFrameSize = FFrameTime( 1 );
+
+    m_bCreateLevelSequencer = false;
+    m_bIsPlaceAssets = true;
+    m_kCreateLevelSequencerList.Empty();
+    m_kCameraPerFrameDataMap.Empty();
+    m_kSwitchCameraDataList.Empty();
+    m_kDataInQueue.Empty();
+}
+
+void FRLLiveLinkModule::ResetImportTaskCount()
+{
+    m_nImportAmount = 1;
+    m_nCurrnetImportId = 0;
+}
+
+void FRLLiveLinkModule::ProcessImportObject( const FString& strAssetName )
+{
+    const FString strImportObjectSetting = GetObjectImportSettingFile( strAssetName );
+    ImportFbxByJson( strImportObjectSetting );
+}
+
+void FRLLiveLinkModule::ProcessImportMotion( const FString& strAssetName )
+{
+    const FString strImportMotionSetting = GetMotionImportSettingFile( strAssetName );
+    FString strMotionPath = ImportFbxByJson( strImportMotionSetting );
+    if ( strMotionPath.IsEmpty() )
+    {
+        return;
+    }
+
+    if ( m_bCreateLevelSequencer )
+    {
+        strMotionPath = strMotionPath.Replace( TEXT( ".fbx" ), TEXT( "" ) );
+        int32 nMotionNameFirstWorldIndex = 0;
+        strMotionPath.FindLastChar( *"/", nMotionNameFirstWorldIndex );
+        FString strMotionName = strMotionPath.Mid( ++nMotionNameFirstWorldIndex );
+
+        CCreateRLLevelSequencerData kData;
+        kData.strAssetName = strAssetName;
+        kData.strMotionName = strMotionName;
+        m_kCreateLevelSequencerList.Add( kData );
+    }
+}
+
+FString FRLLiveLinkModule::ImportFbxByJson( const FString& strJsonPath )
+{
+    // Import Fbx
+    UAutomatedAssetImportData* pImportData = GetImportDataByJson( strJsonPath );
+    FAssetToolsModule& kAssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>( "AssetTools" );
+    if ( !pImportData )
+    {
+        return "";
+    }
+    kAssetToolsModule.Get().ImportAssetsAutomated( pImportData );
+
+    //要改成直接對Folder裡的東西存檔
+    TArray< UObject* > kModifiedObjects;
+    FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked< FAssetRegistryModule >( "AssetRegistry" );
+    TArray< FAssetData > kAssetsInFile;
+    kAssetRegistryModule.Get().GetAssetsByPath( FName( pImportData->DestinationPath ), kAssetsInFile, true, false );
+    for ( const FAssetData& kAsset : kAssetsInFile )
+    {
+        UObject* pObject = kAsset.GetAsset();
+        if ( pObject && pObject->GetOutermost()->IsDirty() )
+        {
+            kModifiedObjects.Add( pObject );
+        }
+    }
+    UPackageTools::SavePackagesForObjects( kModifiedObjects );
+    return pImportData->Filenames.Num() > 0 ? pImportData->Filenames[ 0 ] : "";
+}
+
+UAutomatedAssetImportData* FRLLiveLinkModule::GetImportDataByJson( const FString& strImportSettingFile )
+{
+    FString strImportSettingString;
+    if ( !FFileHelper::LoadFileToString( strImportSettingString, *strImportSettingFile ) )
+    {
+        return nullptr;
+    }
+
+    TSharedPtr< FJsonObject > spJsonObject;
+    if ( !FRLLiveLinkUtility::ParseStringToJson( strImportSettingString, spJsonObject ) )
+    {
+        return nullptr;
+    }
+    UAutomatedAssetImportData* pImportData = nullptr;
+    const TArray< TSharedPtr< FJsonValue > > kImportGroupsJsonArray = spJsonObject->GetArrayField( TEXT( "ImportGroups" ) );
+    for ( const TSharedPtr< FJsonValue >& spImportGroupsJson : kImportGroupsJsonArray )
+    {
+        const TSharedPtr< FJsonObject > spImportGroupsJsonObject = spImportGroupsJson->AsObject();
+        if ( spImportGroupsJsonObject.IsValid() )
+        {
+            // All import data is based off of the global data defaults
+            pImportData = NewObject< UAutomatedAssetImportData >();
+            if ( !pImportData )
+            {
+                continue;
+            }
+            // Parse data from the json object
+            if ( FJsonObjectConverter::JsonObjectToUStruct( spImportGroupsJsonObject.ToSharedRef(), UAutomatedAssetImportData::StaticClass(), pImportData, 0, 0 ) )
+            {
+                pImportData->Initialize( spImportGroupsJsonObject );
+            }
+            UFactory* pFactory = pImportData->Factory;
+            const TSharedPtr< FJsonObject >* spImportSettingsJsonObject = nullptr;
+            if ( pImportData->ImportGroupJsonData.IsValid() )
+            {
+                pImportData->ImportGroupJsonData->TryGetObjectField( TEXT( "ImportSettings" ), spImportSettingsJsonObject );
+                const TSharedPtr< FJsonObject >* pSkeletalMeshImportDataJson;
+                if ( spImportSettingsJsonObject->Get()->TryGetObjectField( TEXT( "SkeletalMeshImportData" ), pSkeletalMeshImportDataJson ) )
+                {
+                    pSkeletalMeshImportDataJson->Get()->SetNumberField( TEXT( "NormalImportMethod" ), 2 );
+                }
+            }
+
+            if ( pFactory != nullptr && spImportSettingsJsonObject )
+            {
+                IImportSettingsParser* pImportSettings = pFactory->GetImportSettingsParser();
+                if ( pImportSettings )
+                {
+                    pImportSettings->ParseFromJson( spImportSettingsJsonObject->ToSharedRef() );
+                }
+            }
+        }
+    }
+    return pImportData;
+}
+
+void FRLLiveLinkModule::RemoveFbxFiles( const FString& strAssetName )
+{
+    const FString strExportFolder = m_strLiveLinkTempPath + "/" + strAssetName;
+    IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    if ( kPlatformFile.DirectoryExists( *strExportFolder ) )
+    {
+        kPlatformFile.DeleteDirectoryRecursively( *strExportFolder );
+    }
+}
+
+void FRLLiveLinkModule::RemoveFile( const FString& strFilePath )
+{
+    IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    if ( kPlatformFile.FileExists( *strFilePath ) )
+    {
+        kPlatformFile.DeleteFile( *strFilePath );
+    }
+}
+
+FString FRLLiveLinkModule::GetObjectImportSettingFile( const FString& strAssetName )
+{
+    return m_strLiveLinkTempPath + "/" + strAssetName +  "/import_settings.json";
+}
+
+FString FRLLiveLinkModule::GetMotionImportSettingFile( const FString& strAssetName )
+{
+    return m_strLiveLinkTempPath + "/" + strAssetName + "/motion_import_settings.json";
+}
+
+bool FRLLiveLinkModule::IsImportAssetsDone() const
+{
+    return m_nImportAmount != 0 && m_nCurrnetImportId == m_nImportAmount;
+}
+
+void FRLLiveLinkModule::InitialProgressWidget()
+{
+    if ( IsRunningCommandlet() )
+    {
+        return;
+    }
+    m_spProgressStyle = MakeShareable( new FNotificationInfo( FText::FromString( "" ) ) );
+    TSharedRef< SHorizontalBox > kHorizontalBox = SNew( SHorizontalBox );
+
+    TSharedRef< FSlateStyleSet > kStyle = MakeShareable( new FSlateStyleSet( "RLLiveLinkStyle" ) );
+    kStyle->SetContentRoot( IPluginManager::Get().FindPlugin( "RLLiveLink" )->GetBaseDir() / TEXT( "Resources" ) );
+
+    TSharedRef< SHorizontalBox > kNotificationWidget = kHorizontalBox;
+    kHorizontalBox->AddSlot()
+        .AutoWidth()
+        [
+            SNew( SBox )
+                [
+                    SNew( SImage )
+                        .Image_Lambda( [ & ]()
+                    {
+                        return FRLLiveLinkStyle::Get().GetBrush( "RLLiveLink.PluginAction" );
+                    } )
+                ]
+        ];
+    kHorizontalBox->AddSlot()
+        .FillWidth( 4.f )
+        .Padding( 10.f, 0.f, 0.f, 0.f )
+        [
+            SNew( SVerticalBox )
+                + SVerticalBox::Slot()
+                [
+                    SNew( SBox )
+                        .HeightOverride( 30 )
+                        [
+                            SNew( STextBlock )
+                                .TextStyle( &FAppStyle::GetWidgetStyle<FTextBlockStyle>( "NotificationList.WidgetText" ) )
+                                .Font( FAppStyle::Get().GetFontStyle( TEXT( "NotificationList.FontBold" ) ) )
+                                .Text_Lambda( [ & ]()
+                            {
+                                int nId =  m_nCurrnetImportId < m_nImportAmount ? m_nCurrnetImportId + 1 : m_nImportAmount;
+                                return FText::FromString( "Import asset from iClone...( " +
+                                                          FString::FromInt( nId ) + "/" + FString::FromInt( m_nImportAmount )
+                                                          + " )" );
+                            } )
+                        ]
+                ]
+                + SVerticalBox::Slot()
+                [
+                    SNew( SBox )
+                        [
+                            SNew( SProgressBar )
+                                .FillColorAndOpacity( FLinearColor::Green )
+                                .Percent_Lambda( [ & ]()
+                            {
+                                return m_nCurrnetImportId / static_cast< float >( m_nImportAmount );
+                            } )
+                        ]
+                ]
+        ];
+    m_spProgressStyle.Get()->ContentWidget = MakeShared<FLiveLinkNotificationWidgetProvider>( kNotificationWidget );
+    m_spProgressStyle.Get()->bFireAndForget = false;
+    m_spProgressStyle.Get()->FadeInDuration = 0.f;
+}
+
+void FRLLiveLinkModule::ShowProgress()
+{
+    if ( m_spProgress.Get() || IsRunningCommandlet() )
+    {
+        return;
+    }
+    m_spProgress = FSlateNotificationManager::Get().AddNotification( *m_spProgressStyle.Get() );
+}
+
+void FRLLiveLinkModule::PushProgress( size_t uPushSize )
+{
+    if ( IsRunningCommandlet() )
+    {
+        return;
+    }
+    m_nCurrnetImportId = m_nCurrnetImportId + uPushSize <= m_nImportAmount ? m_nCurrnetImportId + uPushSize : m_nImportAmount;
+    if ( IsImportAssetsDone() && m_spProgress )
+    {
+        m_spProgress->ExpireAndFadeout();
+        m_spProgress = nullptr;
+    }
+}
+
+ULevelSequence* FRLLiveLinkModule::CreateLevelSequencer()
+{
+    const FString strSequenceName = "RLSequence_" + FDateTime::Now().ToString( TEXT( "%Y_%m_%d-%H_%M_%S" ) );
+    const FString strSaveFolder = FPaths::ProjectContentDir() + "/RLLevelSequences";
+    IPlatformFile& kPlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+    if ( !kPlatformFile.DirectoryExists( *strSaveFolder ) )
+    {
+        kPlatformFile.CreateDirectory( *strSaveFolder );
+    }
+
+    const FString strPackName = TEXT( "/Game/RLLevelSequences/" ) + strSequenceName;
+    UPackage* pPackage = CreatePackage( *strPackName );
+    if ( !IsValid( pPackage ) )
+    {
+        return nullptr;
+    }
+    pPackage->FullyLoad();
+
+    ULevelSequence* pLevelSequence = NewObject< ULevelSequence >( pPackage, *strSequenceName, RF_Public | RF_Standalone );
+    if ( !IsValid( pLevelSequence ) )
+    {
+        return nullptr;
+    }
+    pLevelSequence->Initialize();
+
+    UMovieScene* pMovieScene = pLevelSequence->GetMovieScene();
+    if ( !IsValid( pMovieScene ) )
+    {
+        return nullptr;
+    }
+
+    pMovieScene->SetDisplayRate( m_kLiveLinkFps );
+    const FFrameRate kTickRate = pMovieScene->GetTickResolution();
+    const FFrameTime kTickResolutionFrameNumber = FFrameRate::TransformTime( m_kMotionFrameSize, m_kLiveLinkFps, kTickRate );
+
+    const TRange< FFrameNumber > kDataRange = TRange< FFrameNumber >::Inclusive( FFrameNumber( 0 ), kTickResolutionFrameNumber.GetFrame() );
+    pMovieScene->SetPlaybackRange( kDataRange );
+    pMovieScene->SetPlaybackRangeLocked( false );
+
+    FMovieSceneEditorData& kEditorData = pMovieScene->GetEditorData();
+    kEditorData.ViewStart = kEditorData.WorkStart = 0.f;
+    kEditorData.ViewEnd = kEditorData.WorkEnd =  m_kLiveLinkFps.AsSeconds( m_kMotionFrameSize );
+    pMovieScene->SetWorkingRange( static_cast< float >( kEditorData.ViewStart ), static_cast< float >( kEditorData.ViewEnd ) );
+    pMovieScene->SetViewRange( static_cast< float >( kEditorData.ViewStart ), static_cast< float >( kEditorData.ViewEnd ) );
+    return pLevelSequence;
+}
+
+bool FRLLiveLinkModule::SetupLevelSequencer()
+{
+    ULevelSequence* pLevelSequence = CreateLevelSequencer();
+    if ( !pLevelSequence )
+    {
+        return false;
+    }
+
+    TArray< FString > kAssetNames;
+    for ( const auto& kData : m_kCreateLevelSequencerList )
+    {
+        const FString strAssetName = kData.strAssetName;
+        const FString strMotionGamePath = kData.GetMotionGamePath();
+        AddActorToSequencer( pLevelSequence, strAssetName, strMotionGamePath );
+        kAssetNames.Add( strAssetName );
+    }
+    AddCameraToSequencer( pLevelSequence );
+
+    UPackage* pPackage = pLevelSequence->GetOutermost();
+    if ( !pPackage )
+    {
+        return false;
+    }
+    pPackage->SetDirtyFlag( true );
+    UPackageTools::SavePackagesForObjects( { pLevelSequence } );
+
+    IAssetEditorInstance* pAssetEditor = GEditor->GetEditorSubsystem< UAssetEditorSubsystem >()->FindEditorForAsset( pLevelSequence, false );
+    if ( pAssetEditor )
+    {
+        pAssetEditor->CloseWindow();
+    }
+
+    ReassignSkeletalMeshInLevelSequencer( kAssetNames );
+    return true;
+}
+
+TWeakPtr< ISequencer > FRLLiveLinkModule::GetISequencer( ULevelSequence* pLevelSequence )
+{
+    if ( !pLevelSequence )
+    {
+        return nullptr;
+    }
+    GEditor->GetEditorSubsystem< UAssetEditorSubsystem >()->OpenEditorForAsset( pLevelSequence );
+    IAssetEditorInstance* pAssetEditor = GEditor->GetEditorSubsystem< UAssetEditorSubsystem >()->FindEditorForAsset( pLevelSequence, false );
+    ILevelSequenceEditorToolkit* pLevelSequenceEditor = static_cast< ILevelSequenceEditorToolkit* >( pAssetEditor );
+    TWeakPtr< ISequencer > pWeakSequencer = pLevelSequenceEditor ? pLevelSequenceEditor->GetSequencer() : nullptr;
+    return pWeakSequencer;
+}
+
+void FRLLiveLinkModule::AddActorToSequencer( ULevelSequence* pLevelSequence, const FString& strAssetName, const FString& strMotionGamePath )
+{
+    if ( !pLevelSequence )
+    {
+        return;
+    }
+
+    const FString strManSkeletalGamePath = "/Game/RLContent/" + strAssetName + "/" + strAssetName + "." + strAssetName;
+    USkeletalMesh* pSkeletalMesh = Cast< USkeletalMesh >( StaticLoadObject( USkeletalMesh::StaticClass(), nullptr, *( strManSkeletalGamePath ) ) );
+    if ( !pSkeletalMesh )
+    {
+        return;
+    }
+
+    AActor* pActor = FRLLiveLinkUtility::SpawnActorToViewport( ASkeletalMeshActor::StaticClass(), strAssetName );
+    ASkeletalMeshActor* pSkeletalMeshActor = Cast< ASkeletalMeshActor >( pActor );
+    if ( !pSkeletalMeshActor || !pActor )
+    {
+        return;
+    }
+    pSkeletalMeshActor->GetSkeletalMeshComponent()->SetSkeletalMesh( pSkeletalMesh );
+    UMovieScene* pMovieScene = pLevelSequence->GetMovieScene();
+    TWeakPtr< ISequencer > pWeakSequencer = GetISequencer( pLevelSequence );
+    if ( !pMovieScene || !pWeakSequencer.Pin() )
+    {
+        return;
+    }
+
+    TArray< FGuid > kActorTrackIds = pWeakSequencer.Pin()->AddActors( { pActor }, false );
+    for ( auto kActorTrackId : kActorTrackIds )
+    {
+        UMovieScene3DTransformTrack* pTransformTrack = pMovieScene->FindTrack< UMovieScene3DTransformTrack >( kActorTrackId );
+        AddTranslateKey( pTransformTrack, FFrameNumber( 0 ), FVector::Zero() );
+
+        UMovieSceneSkeletalAnimationTrack* pAnimTrack = pMovieScene->FindTrack< UMovieSceneSkeletalAnimationTrack >( kActorTrackId );
+        if ( pAnimTrack )
+        {
+            const FFrameNumber kZeroFrame( 0 );
+            UAnimSequenceBase* pTransferMotion = Cast< UAnimSequenceBase >( StaticLoadObject( UAnimSequenceBase::StaticClass(), nullptr, *( strMotionGamePath ) ) );
+            if ( !pTransferMotion )
+            {
+                continue;
+            }
+            pAnimTrack->AddNewAnimation( kZeroFrame, pTransferMotion );
+            pAnimTrack->Modify();
+        }
+        FSequencerUtilities::ConvertToSpawnable( pWeakSequencer.Pin().ToSharedRef(), kActorTrackId );
+    }
+    pWeakSequencer.Pin()->NotifyMovieSceneDataChanged( EMovieSceneDataChangeType::MovieSceneStructureItemAdded );
+}
+
+void FRLLiveLinkModule::AddCameraToSequencer( ULevelSequence* pLevelSequence )
+{
+    if ( !pLevelSequence )
+    {
+        return;
+    }
+    UMovieScene* pMovieScene = pLevelSequence->GetMovieScene();
+    TWeakPtr< ISequencer > pWeakSequencer = GetISequencer( pLevelSequence );
+    if ( !pMovieScene || !pWeakSequencer.Pin() )
+    {
+        return;
+    }
+    const FFrameRate kTickRate = pMovieScene->GetTickResolution();
+    const FFrameTime kTickResolutionFrameNumber = FFrameRate::TransformTime( m_kMotionFrameSize, m_kLiveLinkFps, kTickRate );
+    const FFrameNumber kLastFrame = kTickResolutionFrameNumber.GetFrame();
+    const TRange< FFrameNumber > kCameraSectionRange = TRange< FFrameNumber >::Inclusive( FFrameNumber( 0 ), kLastFrame );
+
+    TMap< FString, FGuid > kCineCameraIdMap;
+    kCineCameraIdMap.Reserve( m_kCameraPerFrameDataMap.Num() );
+    for ( const auto& kCameraData : m_kCameraPerFrameDataMap )
+    {
+        // Spawn Cine Camera
+        const FString strCameraName =  kCameraData.Key;
+        AActor* pActor = FRLLiveLinkUtility::SpawnActorToViewport( ACineCameraActor::StaticClass(), strCameraName );
+        ACineCameraActor* pCineCameraActor = Cast< ACineCameraActor >( pActor );
+        if ( !pCineCameraActor || !pActor )
+        {
+            continue;
+        }
+        UCameraComponent* pCineCameraComponent = pCineCameraActor->GetCameraComponent();
+        if ( !pCineCameraComponent )
+        {
+            continue;
+        }
+        TArray< FGuid > kActorIds = pWeakSequencer.Pin()->AddActors( { pActor }, false );
+        if ( kActorIds.IsEmpty() )
+        {
+            continue;
+        }
+
+        // Prpare Camera Property Tracks to Add Keys
+        const FGuid kCineCameraId = kActorIds[ 0 ];
+        const TArray< FMovieSceneBinding >& kBindings = pMovieScene->GetBindings();
+        TMap< FString, UMovieSceneTrack* > kUECameraPropertyTracks;
+        for ( const FMovieSceneBinding& kBinding : kBindings )
+        {
+            UObject* pBindingObject = pWeakSequencer.Pin()->FindSpawnedObjectOrTemplate( kBinding.GetObjectGuid() );
+            if ( !pBindingObject
+                 || !Cast< UCameraComponent >( pBindingObject ) )
+            {
+                continue;
+            }
+            UCameraComponent* pCameraComponent = Cast< UCameraComponent >( pBindingObject );
+            FGuid kCameraComponentId = kBinding.GetObjectGuid();
+            if ( pCameraComponent->GetOwner() != pCineCameraActor )
+            {
+                continue;
+            }
+            for ( auto kCameraPropertyPair : s_kUEToICCameraPropertyNameMap )
+            {
+                const FName strPropertyName = *kCameraPropertyPair.Value;
+                UMovieSceneFloatTrack* pPropertyTrack = Cast< UMovieSceneFloatTrack >( pMovieScene->FindTrack( UMovieSceneFloatTrack::StaticClass(), kCameraComponentId, strPropertyName ) );
+                if ( !pPropertyTrack )
+                {    
+                    pPropertyTrack = Cast< UMovieSceneFloatTrack >( pMovieScene->AddTrack( UMovieSceneFloatTrack::StaticClass(), kCameraComponentId ) );
+                    if ( !pPropertyTrack || !s_kUEPropertyNameAndPathMap.Contains( strPropertyName ) )
+                    {
+                        continue;
+                    }
+                    UMovieSceneSection* pNewSection = pPropertyTrack->CreateNewSection();
+                    pNewSection->SetRange( kCameraSectionRange );
+                    pPropertyTrack->AddSection( *pNewSection );
+                    pPropertyTrack->SetPropertyNameAndPath( strPropertyName, s_kUEPropertyNameAndPathMap[ strPropertyName ] );
+                }
+                kUECameraPropertyTracks.Add( kCameraPropertyPair.Value, pPropertyTrack );
+            }
+            break;
+        }
+
+
+        // Add Camera Property key & Transform Key
+        ECameraFocusMethod eFocusMethod = ECameraFocusMethod::Disable;
+        UMovieScene3DTransformSection* pTransformSection = MovieSceneToolHelpers::GetTransformSection( pWeakSequencer.Pin().Get(),
+                                                                                                       kCineCameraId,
+                                                                                                       FTransform::Identity );
+        TArray< FTransform > kInTransforms;
+        TArray< FFrameNumber > kFrames;
+        for ( int nFrame = 0; nFrame < kCameraData.Value.Num(); ++nFrame )
+        {
+            const FLiveLinkFrameData kFrameData = kCameraData.Value[ nFrame ];
+            const FFrameNumber kFrameNumber = FFrameRate::TransformTime( FFrameTime( nFrame ), m_kLiveLinkFps, kTickRate ).FrameNumber;
+            for ( auto kPair : kUECameraPropertyTracks )
+            {
+                if ( const FName* strICCameraProperty = s_kUEToICCameraPropertyNameMap.FindKey( kPair.Key ) )
+                {
+                    const float fPropertyValue = FCString::Atof( *kFrameData.MetaData.StringMetaData[ *strICCameraProperty ] );
+                    UMovieSceneFloatTrack* pTrack = Cast< UMovieSceneFloatTrack >( kPair.Value );
+                    AddFloatKey( pTrack, kFrameNumber, fPropertyValue );
+                }
+
+
+                const bool bIsDofEnable = FCString::Atof( *kFrameData.MetaData.StringMetaData[ FName( "Enable" ) ] ) > 0.f;
+                if ( bIsDofEnable )
+                {
+                    eFocusMethod = ECameraFocusMethod::Manual;
+                }
+            }
+            kInTransforms.Append( kFrameData.Transforms );
+            kFrames.Add( kFrameNumber );
+        }
+        pCineCameraActor->GetCineCameraComponent()->FocusSettings.FocusMethod = eFocusMethod;
+        kCineCameraIdMap.Add( strCameraName, kCineCameraId );
+        MovieSceneToolHelpers::AddTransformKeys( pTransformSection, kFrames, kInTransforms, EMovieSceneTransformChannel::AllTransform );
+    }
+
+    UMovieSceneTrack* pCameraCutTrack = pMovieScene->GetCameraCutTrack();
+    if ( !pCameraCutTrack )
+    {
+        pCameraCutTrack = pLevelSequence->GetMovieScene()->AddCameraCutTrack( UMovieSceneCameraCutTrack::StaticClass() );
+        return;
+    }
+    TArray< UMovieSceneSection* > kSecitons = pCameraCutTrack->GetAllSections();
+    for ( const auto pSection : kSecitons )
+    {
+        pCameraCutTrack->RemoveSection( *pSection );
+    }
+
+    // Set Switch Camera Key
+    for ( size_t i = 0; i < m_kSwitchCameraDataList.Num(); ++i )
+    {
+        const auto& kData = m_kSwitchCameraDataList[ i ];
+        if ( kCineCameraIdMap.Contains( kData.strCameraName ) )
+        {
+            UMovieSceneCameraCutSection* pCameraCutSection = Cast<UMovieSceneCameraCutSection>( pCameraCutTrack->CreateNewSection() );
+            if ( !pCameraCutSection )
+            {
+                continue;
+            }
+            const FGuid kCineCameraId = kCineCameraIdMap[ kData.strCameraName ];
+            const int nICFrameTime = kData.nSwitchFrame;
+            const int nUrealFrameTime = ConvertFrameTimeFromeICloneToUnreal( nICFrameTime );
+            const FFrameNumber kCutStartFrame = FFrameRate::TransformTime( nUrealFrameTime, m_kLiveLinkFps, kTickRate ).GetFrame();
+            FFrameNumber kCutEndFrame;
+            if ( i + 1 < m_kSwitchCameraDataList.Num() )
+            {
+                const int nICNextFrameTime = m_kSwitchCameraDataList[ i + 1 ].nSwitchFrame;
+                const int nUrealNextFrameTime = ConvertFrameTimeFromeICloneToUnreal( nICNextFrameTime );
+                kCutEndFrame = FFrameRate::TransformTime( nUrealNextFrameTime, m_kLiveLinkFps, kTickRate ).GetFrame();
+            }
+            else
+            {
+                kCutEndFrame = kLastFrame;
+            }
+            const TRange< FFrameNumber > kCutRange = TRange< FFrameNumber >::Inclusive( kCutStartFrame, kCutEndFrame );
+            pCameraCutSection->SetRange( kCutRange );
+            pCameraCutSection->SetCameraBindingID( UE::MovieScene::FRelativeObjectBindingID( kCineCameraId ) );
+            pCameraCutTrack->AddSection( *pCameraCutSection );
+        }
+    }
+
+    // ConverToSpawnable要最後做, 做完後Id會改變
+    for ( const auto kPair : kCineCameraIdMap )
+    {
+        FSequencerUtilities::ConvertToSpawnable( pWeakSequencer.Pin().ToSharedRef(), kPair.Value );
+    }
+}
+
+void FRLLiveLinkModule::AddFloatKey( UMovieSceneFloatTrack* pFloatTrack, FFrameNumber kFrameNumber, float fValue )
+{
+    if ( pFloatTrack )
+    {
+        // Add First Key
+        const TArray< UMovieSceneSection* >& kSections =  pFloatTrack->GetAllSections();
+        if ( kSections.IsEmpty() )
+        {
+            return;
+        }
+        TArrayView< FMovieSceneFloatChannel* > kChannels = kSections[ 0 ]->GetChannelProxy().GetChannels< FMovieSceneFloatChannel >();
+        if ( kChannels.IsEmpty() )
+        {
+            return;
+        }
+        TMovieSceneChannelData< FMovieSceneFloatValue > kChannelData = kChannels[ 0 ]->GetData();
+        MovieSceneToolHelpers::SetOrAddKey( kChannelData, kFrameNumber, fValue );
+    }
+}
+
+void FRLLiveLinkModule::AddTranslateKey( UMovieScene3DTransformTrack* pTransformTrack, FFrameNumber kFrameNumber, FVector vTransflate )
+{
+    if ( pTransformTrack )
+    {
+        // Add First Key
+        const TArray< UMovieSceneSection* >& kSections =  pTransformTrack->GetAllSections();
+        if ( kSections.IsEmpty() )
+        {
+            return;
+        }
+        TArrayView< FMovieSceneDoubleChannel* > kChannels = kSections[ 0 ]->GetChannelProxy().GetChannels< FMovieSceneDoubleChannel >();
+        if ( kChannels.Num() < 3 )
+        {
+            return;
+        }
+        TMovieSceneChannelData< FMovieSceneDoubleValue > kChannelData = kChannels[ 0 ]->GetData();
+        MovieSceneToolHelpers::SetOrAddKey( kChannelData, kFrameNumber, vTransflate.X );
+        kChannelData = kChannels[ 1 ]->GetData();
+        MovieSceneToolHelpers::SetOrAddKey( kChannelData, kFrameNumber, vTransflate.Y );
+        kChannelData = kChannels[ 2 ]->GetData();
+        MovieSceneToolHelpers::SetOrAddKey( kChannelData, kFrameNumber, vTransflate.Z );
+    }
+}
+
+void FRLLiveLinkModule::LoadCameraPerFrameDatas()
+{
+    const FString strCameraPerframeDataFile = m_strLiveLinkTempPath + "/" + "camera_per_frame_data";
+    TArray<uint8> kCameraPerFrameRawList;
+    if ( !FFileHelper::LoadFileToArray( kCameraPerFrameRawList, *strCameraPerframeDataFile ) )
+    {
+        return;
+    }
+
+    int nMajorVersion = 0;
+    int nMinorVersion = 0;
+    int nIndex = 0;
+
+    auto fnReadInt = [ & ]() -> int
+    {
+        if ( nIndex < kCameraPerFrameRawList.Num() )
+        {
+            int nValue;
+            uint8 kCharlist[ 4 ];
+            for ( int i = 0; i < 4; ++i )
+            {
+                kCharlist[ i ] = kCameraPerFrameRawList.GetData()[ i + nIndex ];
+            }
+            memcpy( &nValue, kCharlist, 4 );
+            nIndex += 4;
+            return nValue;
+        }
+        return 0;
+    };
+
+    auto fnReadFloat = [ & ]() -> float
+    {
+        if ( nIndex < kCameraPerFrameRawList.Num() )
+        {
+            float fValue;
+            uint8 kCharlist[ 4 ];
+            for ( int i = 0; i < 4; ++i )
+            {
+                kCharlist[ i ] = kCameraPerFrameRawList.GetData()[ i + nIndex ];
+            }
+            memcpy( &fValue, kCharlist, 4 );
+            nIndex += 4;
+            return fValue;
+        }
+        return 0;
+    };
+
+    auto fnReadBool = [ & ]() -> bool
+    {
+        if ( nIndex < kCameraPerFrameRawList.Num() )
+        {
+            bool bValue;
+            uint8 kCharlist[ 1 ];
+            for ( int i = 0; i < 1; ++i )
+            {
+                kCharlist[ i ] = kCameraPerFrameRawList.GetData()[ i + nIndex ];
+            }
+            memcpy( &bValue, kCharlist, 1 );
+            nIndex += 1;
+            return bValue;
+        }
+        return 0;
+    };
+
+    auto fnReadString = [ & ]() -> FString
+    {
+        if ( nIndex < kCameraPerFrameRawList.Num() )
+        {
+            int nLength = fnReadInt();
+            FString strValue;
+            FFileHelper::BufferToString( strValue,
+                                         kCameraPerFrameRawList.GetData() + nIndex,
+                                         nLength );
+             nIndex += nLength;
+             return strValue;
+        }
+        return "";
+    };
+
+    auto fnReadVector = [ & ]() -> FVector
+    {
+        if ( nIndex < kCameraPerFrameRawList.Num() )
+        {
+            float fValueX = fnReadFloat();
+            float fValueY = fnReadFloat();
+            float fValueZ = fnReadFloat();
+            return FVector( fValueX, fValueY, fValueZ );
+        }
+        return FVector();
+    };
+
+    auto fnReadQuat = [ & ]() -> FQuat
+    {
+        if ( nIndex + 3 < kCameraPerFrameRawList.Num() )
+        {
+            float fValueX = fnReadFloat();
+            float fValueY = fnReadFloat();
+            float fValueZ = fnReadFloat();
+            float fValueW = fnReadFloat();
+            return FQuat( fValueX, fValueY, fValueZ, fValueW );
+        }
+        return FQuat();
+    };
+
+    FString strVersion = fnReadString();
+    if ( strVersion != "Version" )
+    {
+        UE_LOG( LogTemp, Error, TEXT( "(%s)" ), *strVersion );
+        check( false );
+        return;
+    }
+
+    nMajorVersion = fnReadInt();
+    nMinorVersion = fnReadInt();
+
+    if ( fnReadString() != "CameraPerFrameData" )
+    {
+        check( false );
+        return;
+    }
+
+    int nCameraSize = fnReadInt();
+    m_kCameraPerFrameDataMap.Reserve( nCameraSize );
+    for ( int nCameraIndex = 0; nCameraIndex < nCameraSize; ++nCameraIndex )
+    {
+        FString strCameraName = fnReadString();
+        if ( fnReadString() != "Data" )
+        {
+            check( false );
+            return;
+        }
+
+        if ( strCameraName == "#SwitchCameras#" )
+        {
+            int nKeySize = fnReadInt();
+            m_kSwitchCameraDataList.Reserve( nKeySize );
+            for ( int nKeyIndex = 0; nKeyIndex < nKeySize; ++nKeyIndex )
+            {
+                FString strSwitchToCameraName = fnReadString();
+                int nFrame = fnReadInt();
+
+                CSwitchCameraData kData;
+                kData.strCameraName = strSwitchToCameraName;
+                kData.nSwitchFrame = nFrame;
+                m_kSwitchCameraDataList.Add( kData );
+            }
+        }
+        else
+        {
+            int nFrameSize = fnReadInt();
+            if ( !m_kCameraPerFrameDataMap.Contains( strCameraName ) )
+            {
+                m_kCameraPerFrameDataMap.Add( strCameraName );
+                m_kCameraPerFrameDataMap[ strCameraName ].Reserve( nFrameSize );
+            }
+            for ( int nFrameIndex = 0; nFrameIndex < nFrameSize; ++nFrameIndex )
+            {
+                //Received Data
+                FVector kCameraLocation = fnReadVector();
+                kCameraLocation = FVector( kCameraLocation.X, -kCameraLocation.Y, kCameraLocation.Z );
+
+                //ROT
+                FQuat kCameraRotation = fnReadQuat();
+                FVector kVec = kCameraRotation.Euler();
+                FVector kLeftVec = FVector( -kVec.X, kVec.Y, -kVec.Z );
+                kCameraRotation = FQuat::MakeFromEuler( kLeftVec );
+
+                //Set Camera Rotation
+                FTransform kCameraTransform = FTransform( kCameraRotation, kCameraLocation );
+                FTransform kICToUE = FTransform( FQuat::MakeFromEuler( FVector( -90, -90, 0 ) ), FVector::ZeroVector );
+                kCameraTransform = kICToUE * kCameraTransform;
+
+                TMap<FName, FString> kCameraMap;
+                //SetFocalLength
+                float fFocalLength = fnReadFloat();
+                float fAngleView = fnReadFloat();
+
+                //Set DOF
+                bool bEnable = fnReadBool();
+                float fFocus = fnReadFloat();
+                float fRange = fnReadFloat();
+                float fNearTransitionRegion = fnReadFloat();
+                float fFarTransitionRegion = fnReadFloat();
+                float fNearBlurScale = fnReadFloat();
+                float fFarBlurScale = fnReadFloat();
+                float fMinBlendDistance = fnReadFloat();
+                float fCenterColorWeight = fnReadFloat();
+                float fEdgeDecayPower = fnReadFloat();
+                kCameraMap.Add( "FocalLength", FString::SanitizeFloat( fFocalLength ) );
+                kCameraMap.Add( "AngleView", FString::SanitizeFloat( fAngleView ) );
+                kCameraMap.Add( "Enable", FString::SanitizeFloat( bEnable ) );
+                kCameraMap.Add( "Focus", FString::SanitizeFloat( fFocus ) );
+                kCameraMap.Add( "Range", FString::SanitizeFloat( fRange * 2.f ) );
+                kCameraMap.Add( "NearTransitionRegion", FString::SanitizeFloat( fNearTransitionRegion * 2.f ) );
+                kCameraMap.Add( "FarTransitionRegion", FString::SanitizeFloat( fFarTransitionRegion * 2.f ) );
+                kCameraMap.Add( "NearBlurScale", FString::SanitizeFloat( fNearBlurScale * 4.44f ) );
+                kCameraMap.Add( "FarBlurScale", FString::SanitizeFloat( fFarBlurScale * 4.44f ) );
+                kCameraMap.Add( "MinBlendDistance", FString::SanitizeFloat( fMinBlendDistance ) );
+                kCameraMap.Add( "CenterColorWeight", FString::SanitizeFloat( fCenterColorWeight ) );
+                kCameraMap.Add( "EdgeDecayPower", FString::SanitizeFloat( fEdgeDecayPower ) );
+                kCameraMap.Add( "FocusOffset", FString::SanitizeFloat( fRange * -1.f ) );
+
+
+                //Film back & Screen Size
+                int nFovType = fnReadInt();
+                int nScreenWidth = fnReadInt();
+                int nScreenHeight = fnReadInt();
+                float fFilmbackWidth = fnReadFloat();
+                float fFilmbackHeight = fnReadFloat();
+
+                float fAspectRatio = static_cast< float >( nScreenWidth ) / nScreenHeight;
+                float fScreeHeight = 36.f / fAspectRatio;
+                float fSensorWidth = ( nFovType == 0 ) ? fFilmbackWidth : fFilmbackHeight * fAspectRatio;
+                float fSensorHeight = ( nFovType == 1 ) ? fFilmbackHeight : fFilmbackWidth / fAspectRatio;
+                float fSensorAspectRatio = fSensorWidth / fSensorHeight;
+                float fCurrentFocalLength = fFocalLength * fAspectRatio / fSensorAspectRatio;
+                kCameraMap.Add( "ScreenWidth", "36" );
+                kCameraMap.Add( "ScreenHeight", FString::SanitizeFloat( fScreeHeight ) );
+                kCameraMap.Add( "AspectRatio", FString::SanitizeFloat( fAspectRatio ) );
+                kCameraMap.Add( "SensorWidth", FString::SanitizeFloat( fSensorWidth ) );
+                kCameraMap.Add( "SensorHeight", FString::SanitizeFloat( fSensorHeight ) );
+                kCameraMap.Add( "CurrentFocalLength", FString::SanitizeFloat( fCurrentFocalLength ) );
+
+                FLiveLinkFrameData kCameraFrameData;
+                kCameraFrameData.Transforms.Add( kCameraTransform );
+                kCameraFrameData.MetaData.StringMetaData = kCameraMap;
+                m_kCameraPerFrameDataMap[ strCameraName ].Add( kCameraFrameData );
+            }
+        }
+    }
+    RemoveFile( strCameraPerframeDataFile );
+}
+
+void FRLLiveLinkModule::ReassignSkeletalMeshInLevelSequencer( const TArray< FString >& kAssetNames )
+{
+    if ( kAssetNames.IsEmpty() )
+    {
+        return;
+    }
+
+    const FString strAssetGamePath = "/Game/RLLevelSequences";
+    FAssetRegistryModule& kAssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>( "AssetRegistry" );
+    TArray< FAssetData > kAssetsInFile;
+    kAssetRegistryModule.Get().GetAssetsByPath( FName( strAssetGamePath ), kAssetsInFile, true, false );
+
+    TArray< UObject* > kModifiedObjects;
+    for ( const FAssetData& kAsset : kAssetsInFile )
+    {
+        ULevelSequence* pLevelSequencer = Cast< ULevelSequence >( kAsset.GetAsset() );
+        if ( !pLevelSequencer )
+        {
+            continue;
+        }
+
+        UMovieScene* pMoiveScene = pLevelSequencer->GetMovieScene();
+        if ( !pMoiveScene )
+        {
+            continue;
+        }
+
+        for ( size_t i = 0; i < pMoiveScene->GetSpawnableCount(); ++i )
+        {
+            FMovieSceneSpawnable& kSpawnable = pMoiveScene->GetSpawnable( i );
+            AActor* pActor = Cast< AActor >( kSpawnable.GetObjectTemplate() );
+            if ( !pActor )
+            {
+                continue;
+            }
+            USkeletalMeshComponent* pSkeletalMeshComponent = pActor->FindComponentByClass< USkeletalMeshComponent >();
+            if ( !pSkeletalMeshComponent )
+            {
+                continue;
+            }
+
+            // Check SkeletalMesh Missing
+            if ( pSkeletalMeshComponent->SkeletalMesh )
+            {
+                continue;
+            }
+
+            // Reassign SkeletalMesh
+            const FString strActorName = pActor->GetActorLabel();
+            if ( !kAssetNames.Contains( strActorName ) )
+            {
+                continue;
+            } 
+
+            const FString strAssetPath = "/Game/RLContent/" + strActorName + "/" + strActorName + "." + strActorName;
+            USkeletalMesh* pSkeletalMesh = Cast< USkeletalMesh >( StaticLoadObject( USkeletalMesh::StaticClass(), NULL, *strAssetPath ) );
+            pSkeletalMeshComponent->SetSkeletalMesh( pSkeletalMesh, true );
+            pLevelSequencer->GetOutermost()->SetDirtyFlag( true );
+            kModifiedObjects.Add( pLevelSequencer );
+        }
+    }
+    UPackageTools::SavePackagesForObjects( kModifiedObjects );
+}
+
+void FRLLiveLinkModule::RemoveTcpCommandData()
+{
+    if ( m_kDataInQueue.IsEmpty() || IsRunningCommandlet() )
+    {
+        return;
+    }
+    m_kDataInQueue.RemoveAt( 0 );
+    if ( m_kDataInQueue.IsEmpty() )
+    {
+        if ( !FRLLiveLinkUtility::IsProcessRunning( "iClone.exe" ) && m_spProgress )
+        {
+            m_spProgress.Get()->ExpireAndFadeout();
+            m_spProgress = nullptr;
+        }
+    }
+}
+
+int FRLLiveLinkModule::ConvertFrameTimeFromeICloneToUnreal( int nICFrame )
+{
+    return FMath::CeilToInt( static_cast< float >( nICFrame ) / m_kApFps.Numerator * m_kLiveLinkFps.Numerator );
 }
 
 #undef LOCTEXT_NAMESPACE
