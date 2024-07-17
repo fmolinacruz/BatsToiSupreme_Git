@@ -43,7 +43,7 @@ UWBTMenu* ABTPlayerController::CreateMenuWidget()
 //Client Only
 void ABTPlayerController::TurnOffMenuWidget()
 {
-	bool IsClient = GetWorld()->IsClient();
+	bool IsClient = IsLocalPlayerController();
 	if (!IsClient)
 		return;
 

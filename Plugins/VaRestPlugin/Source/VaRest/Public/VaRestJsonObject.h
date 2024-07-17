@@ -160,6 +160,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "VaRest|Json")
 	void SetMapFields_bool(const TMap<FString, bool>& Fields);
 
+<<<<<<<< HEAD:Plugins/VaRest-develop/Source/VaRest/Public/VaRestJsonObject.h
+========
+	/** Get response string */
+	UFUNCTION(BlueprintCallable, Category = "VaRest|Json")
+	FString GetString() const;
+
+
+>>>>>>>> Javier-ue54:Plugins/VaRestPlugin/Source/VaRest/Public/VaRestJsonObject.h
 private:
 	/** Internal implementation for setting map fields. */
 	template <typename T>
@@ -286,4 +294,9 @@ public:
 private:
 	/** Internal JSON data */
 	TSharedRef<FJsonObject> JsonObj;
+<<<<<<<< HEAD:Plugins/VaRest-develop/Source/VaRest/Public/VaRestJsonObject.h
+========
+	//Data InString
+	FString DataString;
+>>>>>>>> Javier-ue54:Plugins/VaRestPlugin/Source/VaRest/Public/VaRestJsonObject.h
 };

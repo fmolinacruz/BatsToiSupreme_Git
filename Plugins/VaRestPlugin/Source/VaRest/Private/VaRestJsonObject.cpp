@@ -459,6 +459,14 @@ void UVaRestJsonObject::SetMapFields_bool(const TMap<FString, bool>& Fields)
 	SetMapFields_Impl(Fields);
 }
 
+<<<<<<<< HEAD:Plugins/VaRest-develop/Source/VaRest/Private/VaRestJsonObject.cpp
+========
+FString UVaRestJsonObject::GetString() const
+{
+	return DataString;
+}
+
+>>>>>>>> Javier-ue54:Plugins/VaRestPlugin/Source/VaRest/Private/VaRestJsonObject.cpp
 //////////////////////////////////////////////////////////////////////////
 // Array fields helpers (uniform arrays)
 

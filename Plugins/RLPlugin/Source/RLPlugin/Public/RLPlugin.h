@@ -23,7 +23,9 @@
 #include "RLTextureData.h"
 #include "RLMaterialData.h"
 #include "RLPhysicCollisionShapeData.h"
+#if ( ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION < 4 )
 #include "Runtime/Engine/Classes/Animation/Rig.h"
+#endif
 #include "Runtime/Launch/Resources/Version.h"
 #include <functional>
 class FToolBarBuilder;

@@ -20,7 +20,7 @@ public class BatsToiSupreme_Real : ModuleRules
 			"GASCompanion",
 			"EngineSettings",
 			"GameplayAbilities",
-			"GameLiftServerSDK",
+            "GameLiftServerSDK",
             "VaRest",
 			"OnlineSubsystem", 
 			"OnlineSubsystemUtils",
@@ -39,12 +39,14 @@ public class BatsToiSupreme_Real : ModuleRules
 
 		bEnableExceptions = true;
 
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+        PublicDefinitions.Add("WITH_EOS_SESSION=1");
+        //PublicDefinitions.Add("WITH_GAMELIFT=0");
+        // Uncomment if you are using Slate UI
+        // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
-		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
+        // Uncomment if you are using online features
+        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
-		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
-	}
+        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+    }
 }

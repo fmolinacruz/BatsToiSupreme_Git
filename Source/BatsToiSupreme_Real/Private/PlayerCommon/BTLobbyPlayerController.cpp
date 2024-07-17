@@ -7,6 +7,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "OnlineSubsystemTypes.h"
+#include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Containers/Array.h"
 #include "Kismet/GameplayStatics.h"
@@ -15,6 +16,7 @@
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/ArchiveLoadCompressedProxy.h"
 #include <Utilities/BTGameFunctionLibrary.h>
+#include <Utilities/BTHttpRequest.h>
 
 void ABTLobbyPlayerController::BeginPlay()
 {
@@ -22,11 +24,11 @@ void ABTLobbyPlayerController::BeginPlay()
 
 	Super::BeginPlay();
 
-	//if (!IsRunningDedicatedServer())
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("EOSLogin into EOS..."));
-	//	EOSLogin(); // Call login function only on the client
-	//}
+	if (!IsRunningDedicatedServer())
+	{
+		UE_LOG(LogTemp, Log, TEXT("EOSLogin into EOS..."));
+		EOSLogin(); // Call login function only on the client
+	}
 
 	CppInit();
 }
@@ -96,36 +98,59 @@ void ABTLobbyPlayerController::SaveGame()
 	WritePlayerDataStorage("CharacterPawnLocation", SaveData);
 }
 
-void ABTLobbyPlayerController::OnGetEosSessionDataCompleted(UVaRestJsonObject* Result)
+void ABTLobbyPlayerController::GetEosSessionData(const FString& url, const FString& SessionId)
 {
-	UVaRestJsonObject* Data = Result->GetObjectField(TEXT("data"));
-	if (Data)
+	ABTHttpRequest* HttpRequestActor = Cast<ABTHttpRequest>(UBTGameFunctionLibrary::GetOrCreateWorldActor(GetWorld(), ABTHttpRequest::StaticClass()));
+	if (HttpRequestActor)
 	{
-		FString BEUrl = Data->GetStringField(TEXT("BEUrl"));
-		BTLOG_WARNING("[ABTLobbyPlayerController] [OnGetEosSessionDataCompleted] %s", *BEUrl);
-		
-		UGameplayStatics::OpenLevel(GetWorld(), *BEUrl);
-		/*FURL DedicatedServerURL(nullptr, *BEUrl, TRAVEL_Absolute);
-		FString DedicatedServerJoinError;
-		auto DedicatedServerJoinStatus = GEngine->Browse(GEngine->GetWorldContextFromWorldChecked(GetWorld()), DedicatedServerURL, DedicatedServerJoinError);
-		if (DedicatedServerJoinStatus == EBrowseReturnVal::Failure)
+		UVaRestRequestJSON* Request = HttpRequestActor->CreateRequest(EVaRestRequestVerb::GET, EVaRestRequestContentType::x_www_form_urlencoded_url);
+		Request->OnRequestComplete.AddDynamic(this, &ABTLobbyPlayerController::HandleGetEosSessionDataCompleted);
+		Request->SetHeader(TEXT("Authorization"), UBTGameFunctionLibrary::GetAccountId());
+		Request->GetRequestObject()->SetStringField(TEXT("sessionID"), SessionId);
+		Request->ProcessURL(url);
+	}
+}
+
+void ABTLobbyPlayerController::HandleGetEosSessionDataCompleted(UVaRestRequestJSON* Request)
+{
+	if (Request->GetStatus() == EVaRestRequestStatus::Succeeded)
+	{
+		// Parse the response JSON
+		FString ResponseContent = Request->GetResponseContentAsString();
+		UE_LOG(LogTemp, Warning, TEXT("HandleGetDataCompleted Response: %s"), *ResponseContent);
+		UVaRestJsonObject* Data = Request->GetResponseObject()->GetObjectField(TEXT("data"));
+		if (Data)
 		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to browse for dedicated server. Error is: %s"), *DedicatedServerJoinError);
-		}*/
+			FString BEUrl = Data->GetStringField(TEXT("BEUrl"));
+			BTLOG_WARNING("[ABTLobbyPlayerController] [OnGetEosSessionDataCompleted] %s", *BEUrl);
+
+			UGameplayStatics::OpenLevel(GetWorld(), *BEUrl);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[ABTLobbyPlayerController] [OnGetEosSessionDataCompleted]: Request failed"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("OnGetCloudHostIpCompleted: Request failed"));
 	}
 }
 
 FString ABTLobbyPlayerController::GetLanHostUrl()
 {
-	// Get Lan Host from command line arguments
-	if (FParse::Value(FCommandLine::Get(), TEXT("-LANHOST="), LanHostUrl))
+	if (LanHostUrl.IsEmpty())
 	{
-		BTLOG_WARNING("LAN HOST: %s", *LanHostUrl);
-	}
-	else
-	{
-		LanHostUrl = UBTGameFunctionLibrary::GetPIEHOST();
-		BTLOG_WARNING("GetPIEHOST: %s", *LanHostUrl);
+		// Get Lan Host from command line arguments
+		if (FParse::Value(FCommandLine::Get(), TEXT("-LANHOST="), LanHostUrl))
+		{
+			BTLOG_WARNING("LAN HOST: %s", *LanHostUrl);
+		}
+		else
+		{
+			LanHostUrl = UBTGameFunctionLibrary::GetPIEHOST();
+			BTLOG_WARNING("GetPIEHOST: %s", *LanHostUrl);
+		}
 	}
 
 	return LanHostUrl;

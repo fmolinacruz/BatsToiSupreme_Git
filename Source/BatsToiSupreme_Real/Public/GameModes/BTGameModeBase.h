@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#if WITH_GAMELIFT
 #include "GameLiftServerSDK.h"
+#endif
 #include "GameFramework/GameModeBase.h"
 #include "Input/BTInputReceiver.h"
 #include "BTGameModeBase.generated.h"
@@ -40,7 +42,6 @@ public:
 	void CheckForSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 	void StartSpawningPlayerCharacter(ABTPlayerController* PC, int CharacterID, int PlayerIndex);
 	void RestorePlayerCharacter(int PlayerIndex);
-	bool HasGameSessionStarted() { return mGameSessionStarted; }
 
 	UFUNCTION(BlueprintCallable, Category = "BatstoiGamemode|Component")
 	FORCEINLINE ABTGameplayManager* GetGameplayManager() const
@@ -91,11 +92,11 @@ private: // Default game setup
 	UPROPERTY(Transient)
 	TObjectPtr<ABTGameplayManager> GameplayManagerRef;
 	
-private: // GameLift
+	void InitGameplaySettings();
+#if WITH_GAMELIFT
 	void InitGameLift();
 	void InitSDKEC2();
 	void InitSDKAnyWhere();
-	void InitGameplaySettings();
 
 	void OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession);
 	void OnGameLiftSessionUpdate(Aws::GameLift::Server::Model::UpdateGameSession UpdatedSession);
@@ -104,6 +105,7 @@ private: // GameLift
 
 	void StartServerTimeOut();
 	void OnServerTimeOut();
+	bool HasGameSessionStarted() { return mGameSessionStarted; }
 
 	FGameLiftServerSDKModule* GameLiftSDKModule;
 	FServerParameters GameLiftServerParams;
@@ -111,4 +113,5 @@ private: // GameLift
 	int ClientConnectTimeOut = 60;// in Seconds
 	bool HasClientConnected = false;
 	bool mGameSessionStarted;
+#endif
 };

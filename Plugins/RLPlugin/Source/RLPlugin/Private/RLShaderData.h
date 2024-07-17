@@ -1,7 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 
-TMap< FString, FString > g_kTeethMap =
+static TMap< FString, FString > g_kTeethMap =
 {
     { "Gums Mask", "Teeth Mask Map" },
     { "Gradient AO", "Gradient AO Map" },
@@ -33,7 +33,7 @@ TMap< FString, FString > g_kTeethMap =
     { "Teeth Scatter", "Teeth Scatter" }
 };
 
-TMap< FString, FString > g_kTongueMap =
+static TMap< FString, FString > g_kTongueMap =
 {
     { "MicroNormal", "MicroNormal Map" },
     { "Gradient AO", "Gradient AO Map" },
@@ -56,7 +56,7 @@ TMap< FString, FString > g_kTongueMap =
     { "_Scatter", "Flesh Scatter" }
 };
 
-TMap< FString, FString > g_kSkinMap =
+static TMap< FString, FString > g_kSkinMap =
 {
     { "SSS Map", "SSS Map" },
     { "MicroNormalMask", "MicroNormal Mask Map" },
@@ -90,7 +90,7 @@ TMap< FString, FString > g_kSkinMap =
     { "Unmasked Scatter Scale", "SSS Unmasked Scale" }
 };
 
-TMap< FString, FString > g_kHeadMap =
+static TMap< FString, FString > g_kHeadMap =
 {
     { "BaseColor Blend2", "Blend Map_2" },
     { "NormalMap Blend", "NormalMap_Blend" },
@@ -146,7 +146,7 @@ TMap< FString, FString > g_kHeadMap =
     { "Unmasked Scatter Scale", "SSS Unmasked Scale" }
 };
 
-TMap< FString, FString > g_kEyeMap =
+static TMap< FString, FString > g_kEyeMap =
 {
     { "Iris Normal", "Iris Normal Map" },
     { "Sclera Normal", "Normal Map" },
@@ -190,7 +190,7 @@ TMap< FString, FString > g_kEyeMap =
 #define FLIP_TANGENT_Y  "Flip Tangent Y"
 #define ACTIVATE_HAIR_COLOR "Activate Hair Color"
 
-TMap< FString, FString > g_kHairMap =
+static TMap< FString, FString > g_kHairMap =
 {
     { "Hair Tangent Map"      , "Tangent Map" },
     { "Hair Flow Map"         , "Flow Map" },
@@ -242,7 +242,7 @@ TMap< FString, FString > g_kHairMap =
     { "WhiteColor Reflection Offset Z", "Shift by White ID" },
 };
 
-TMap< FString, FString > g_kEyeOccusionMap =
+static TMap< FString, FString > g_kEyeOccusionMap =
 {
     { "Display Blur Range", "Blur Color" },
     { "Blur Strength", "Blur Strength" },
@@ -285,7 +285,7 @@ TMap< FString, FString > g_kEyeOccusionMap =
     { "Outer Corner Offset", "Outer Corner Offset" },
 };
 
-TMap< FString, FString > g_kTearLineMap =
+static TMap< FString, FString > g_kTearLineMap =
 {
     { "Depth Offset", "DepthOffset" },
     { "Detail Amount", "DetailAmount" },
@@ -298,7 +298,7 @@ TMap< FString, FString > g_kTearLineMap =
 #define AO_MAP_OCCLUDE_ALL_LIGHTS "Occlude All Lighting"
 #define FLIP_MICRO_NORMAL_Y "Flip Micro Normal Y"
 
-TMap< FString, FString > g_kGeneralMap =
+static TMap< FString, FString > g_kGeneralMap =
 {
     { "SSS Map", "SSS Map" },
     { "MicroNormalMask", "MicroNormal Mask Map" },

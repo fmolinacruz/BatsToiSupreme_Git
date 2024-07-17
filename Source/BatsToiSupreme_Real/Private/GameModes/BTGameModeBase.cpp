@@ -15,6 +15,7 @@
 ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), MainCameraRef(nullptr)
 {
+#if WITH_GAMELIFT
 	GameLiftSDKModule = nullptr;
 	mGameSessionStarted = false;
 	ClientConnectTimeOut = 60;
@@ -23,18 +24,20 @@ ABTGameModeBase::ABTGameModeBase(const FObjectInitializer& ObjectInitializer)
 	GameLiftProcessParams.OnTerminate.BindUObject(this, &ABTGameModeBase::OnGameLiftProcessTerminate);
 	GameLiftProcessParams.OnHealthCheck.BindUObject(this, &ABTGameModeBase::OnGameLiftServerHealthCheck);
 	*/
+#endif
 }
 
 void ABTGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 #if WITH_GAMELIFT 
-	//InitGameLift();
+	InitGameLift();
 #endif
 
 	InitGameplaySettings();
 }
 
+#if WITH_GAMELIFT
 void ABTGameModeBase::InitGameLift()
 {
 	BTLOG_DISPLAY("Initialize GameLift Server !");
@@ -67,7 +70,7 @@ void ABTGameModeBase::InitGameLift()
 	// Here is where a game server takes action based on the game session object.
 	// When the game server is ready to receive incoming player connections,
 	// it invokes the server SDK call ActivateGameSession().
-	auto onGameSession = [=](Aws::GameLift::Server::Model::GameSession gameSession) {
+	auto onGameSession = [this](Aws::GameLift::Server::Model::GameSession gameSession) {
 		mGameSessionStarted = true;
 		FString gameSessionId = FString(gameSession.GetGameSessionId());
 		BTLOG_DISPLAY("GameSession Initializing: %s", *gameSessionId);
@@ -85,7 +88,7 @@ void ABTGameModeBase::InitGameLift()
 	// It gives the game server a chance to save its state, communicate with services, etc.,
 	// and initiate shut down. When the game server is ready to shut down, it invokes the
 	// server SDK call ProcessEnding() to tell GameLift it is shutting down.
-	auto onProcessTerminate = [=]() {
+	auto onProcessTerminate = [this]() {
 		BTLOG_DISPLAY("Game Server Process is terminating");
 		GameLiftSDKModule->ProcessEnding();
 		mGameSessionStarted = false;
@@ -124,7 +127,6 @@ void ABTGameModeBase::InitGameLift()
 	Logfiles.Add(logpath);
 	GameLiftProcessParams.logParameters = Logfiles;
 	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
-
 }
 
 void ABTGameModeBase::InitSDKEC2()
@@ -167,17 +169,6 @@ void ABTGameModeBase::InitSDKAnyWhere()
 	BTLOG_DISPLAY("InitSDKAnyWhere DONE");
 }
 
-void ABTGameModeBase::InitGameplaySettings()
-{
-	if (GameplayManagerRef != nullptr)
-		return;
-	
-	GameplayManagerRef = GetWorld()->SpawnActor<ABTGameplayManager>(GameplayManagerClass);
-	if (GameplayManagerRef == nullptr)
-	{
-		BTLOG_ERROR("ABTGameplayManager cannot be spawned!");
-	}
-}
 
 void ABTGameModeBase::OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession)
 {
@@ -242,6 +233,7 @@ void ABTGameModeBase::OnServerTimeOut()
 		}
 	}
 }
+#endif
 
 void ABTGameModeBase::OnPostLogin(AController* NewPlayer)
 {
@@ -308,7 +300,7 @@ void ABTGameModeBase::PostLogin(APlayerController* NewPlayer)
 
 void ABTGameModeBase::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
-	BTLOG_DISPLAY("[ABTGameModeBase] - PostLogin: ");
+	BTLOG_DISPLAY("[ABTGameModeBase] - PreLogin: ");
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
 }
 
@@ -405,4 +397,16 @@ void ABTGameModeBase::GetMainCameraRef()
 void ABTGameModeBase::GetStartSpots()
 {
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), StartSpots);
+}
+
+void ABTGameModeBase::InitGameplaySettings()
+{
+	if (GameplayManagerRef != nullptr)
+		return;
+
+	GameplayManagerRef = GetWorld()->SpawnActor<ABTGameplayManager>(GameplayManagerClass);
+	if (GameplayManagerRef == nullptr)
+	{
+		BTLOG_ERROR("ABTGameplayManager cannot be spawned!");
+	}
 }

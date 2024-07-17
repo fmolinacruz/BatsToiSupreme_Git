@@ -43,17 +43,21 @@ void ABTGameSession::BeginPlay()
 	// Tutorial 3: Overide base function to create session when running as dedicated server
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Warning, TEXT("ABTGameSession::BeginPlay"));
+#if WITH_EOS_SESSION
 	if (IsRunningDedicatedServer() && !bSessionExists) // Only create a session if running as a dedicated server and session doesn't exist
 	{
 		CreateSession("KeyName", "KeyValue"); // Should parametrized Key/Value pair for custom attribute
 	}
+#endif
 }
 
 void ABTGameSession::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	// Tutorial 3: Overide base function to destroy session at end of play. This happens on both dedicated server and client
 	Super::EndPlay(EndPlayReason);
+#if WITH_EOS_SESSION
 	DestroySession();
+#endif
 }
 
 void ABTGameSession::PostLogin(APlayerController* NewPlayer)
@@ -68,7 +72,7 @@ void ABTGameSession::NotifyLogout(const APlayerController* ExitingPlayer)
 {
 	// Tutorial 3: Overide base function to handle players leaving EOS Session.
 	Super::NotifyLogout(ExitingPlayer); // This calls UnregisterPlayer
-
+#if WITH_EOS_SESSION
 	// When players leave the dedicated server we need to check how many players are left. If 0 players are left, session is destroyed.
 	if (IsRunningDedicatedServer())
 	{
@@ -92,6 +96,7 @@ void ABTGameSession::NotifyLogout(const APlayerController* ExitingPlayer)
 		// This isn't "handling" the error when the server is full, just a log to help keep track of the flow.
 		UE_LOG(LogTemp, Log, TEXT("Player is leaving the dedicated server. This may be a kick because the server is full if the player didn't leave intentionally."))
 	}
+#endif
 }
 
 void ABTGameSession::CreateSession(FName KeyName, FString KeyValue) // Dedicated Server Only
@@ -149,7 +154,6 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 		OnSessionCreated.Broadcast(sessionId);
 		OnSessionCreated.Clear();
 		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created 1! %s"), *EOSSessionName.ToString(), *sessionId);
-
 	}
 	else
 	{
@@ -159,7 +163,6 @@ void ABTGameSession::HandleCreateSessionCompleted(FName EOSSessionName, bool bWa
 	// Clear our handle and reset the delegate.
 	Session->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
 	CreateSessionDelegateHandle.Reset();
-
 }
 
 void ABTGameSession::RegisterPlayer(APlayerController* NewPlayer, const FUniqueNetIdRepl& UniqueId, bool bWasFromInvite)
@@ -167,6 +170,7 @@ void ABTGameSession::RegisterPlayer(APlayerController* NewPlayer, const FUniqueN
 	// Tutorial 3: Override base function to register player in EOS Session
 	Super::RegisterPlayer(NewPlayer, UniqueId, bWasFromInvite);
 	UE_LOG(LogTemp, Warning, TEXT("Player registered in EOS Session! -- %s"), *NewPlayer->GetName());
+#if WITH_EOS_SESSION
 	if (IsRunningDedicatedServer()) // Only run this on the dedicated server
 	{
 		IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
@@ -185,6 +189,7 @@ void ABTGameSession::RegisterPlayer(APlayerController* NewPlayer, const FUniqueN
 			RegisterPlayerDelegateHandle.Reset();
 		}
 	}
+#endif
 }
 
 void ABTGameSession::HandleRegisterPlayerCompleted(FName EOSSessionName, const TArray<FUniqueNetIdRef>& PlayerIds, bool bWasSuccesful)
@@ -216,6 +221,7 @@ void ABTGameSession::UnregisterPlayer(const APlayerController* ExitingPlayer)
 	// Tutorial 3: Override base function to Unregister player in EOS Session
 	Super::UnregisterPlayer(ExitingPlayer);
 
+#if WITH_EOS_SESSION
 	// Only need to unregisted the player in the EOS Session on the Server
 	if (IsRunningDedicatedServer())
 	{
@@ -231,18 +237,20 @@ void ABTGameSession::UnregisterPlayer(const APlayerController* ExitingPlayer)
 					this,
 					&ThisClass::HandleUnregisterPlayerCompleted));
 
-			if (!Session->UnregisterPlayer(SessionName, *ExitingPlayer->PlayerState->UniqueId))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Failed to Unregister Player!"));
-				Session->ClearOnUnregisterPlayersCompleteDelegate_Handle(UnregisterPlayerDelegateHandle);
-				UnregisterPlayerDelegateHandle.Reset();
-			}
+			//TODO: Fix compiler bug
+			//if (!Session->UnregisterPlayer(SessionName, *ExitingPlayer->PlayerState->UniqueId))
+			//{
+			//	UE_LOG(LogTemp, Warning, TEXT("Failed to Unregister Player!"));
+			//	Session->ClearOnUnregisterPlayersCompleteDelegate_Handle(UnregisterPlayerDelegateHandle);
+			//	UnregisterPlayerDelegateHandle.Reset();
+			//}
 		}
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Failed to Unregister Player!"));
 		}
 	}
+#endif
 }
 
 void ABTGameSession::HandleUnregisterPlayerCompleted(FName EOSSessionName, const TArray<FUniqueNetIdRef>& PlayerIds, bool bWasSuccesful)
@@ -384,9 +392,4 @@ void ABTGameSession::HandleDestroySessionCompleted(FName EOSSessionName, bool bW
 
 	Session->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
 	DestroySessionDelegateHandle.Reset();
-}
-
-void ABTGameSession::OnTest()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Test Session."));
 }
