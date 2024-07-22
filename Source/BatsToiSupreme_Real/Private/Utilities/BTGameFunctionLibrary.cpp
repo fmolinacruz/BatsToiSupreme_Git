@@ -107,6 +107,19 @@ bool UBTGameFunctionLibrary::IsLanHost()
 	return true;
 }
 
+bool UBTGameFunctionLibrary::IsUseEOS()
+{
+	if (FPlatformFileManager::Get().GetPlatformFile().FileExists(*CustomConfigPath))
+	{
+		bool isUse;
+		if (GConfig->GetBool(TEXT("CustomSection"), TEXT("UseEOS"), isUse, CustomConfigPath))
+		{
+			return isUse;
+		}
+	}
+	return false;
+}
+
 AActor* UBTGameFunctionLibrary::GetOrCreateWorldActor(UWorld* World, UClass* Class)
 {
 	AActor* Actor = UGameplayStatics::GetActorOfClass(World, Class);

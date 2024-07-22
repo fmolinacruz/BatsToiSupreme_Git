@@ -22,14 +22,24 @@ void ABTLobbyPlayerController::BeginPlay()
 	// On BeginPlay call our login function. This is only on the GameClient, not on the DedicatedServer.
 
 	Super::BeginPlay();
+	CppInit();
 
+	//Run on Client
 	if (!IsRunningDedicatedServer())
 	{
 		UE_LOG(LogTemp, Log, TEXT("EOSLogin into EOS..."));
-		EOSLogin(); // Call login function only on the client
+		//Only Login Eos when EOS enable
+		if (UBTGameFunctionLibrary::IsUseEOS())
+		{
+			EOSLogin(); // Call login function only on the client
+		}
+		else //Connect Host direct from host on custom config
+		{
+			FString BEUrl = UBTGameFunctionLibrary::GetPIEHOST();
+			UGameplayStatics::OpenLevel(GetWorld(), *BEUrl);
+		}
 	}
 
-	CppInit();
 }
 
 void ABTLobbyPlayerController::CppInit()
