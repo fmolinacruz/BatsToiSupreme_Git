@@ -21,7 +21,18 @@ private:
 	void OnEOSSessionCreated(FString sessionId);
 
 	UFUNCTION()
-	void Init();
+	void InitEOS();
+
+	UFUNCTION()
+	void RequestCloudHostIp();
+
+	UFUNCTION()
+	void OnGetCloudHostIpCompleted(UVaRestRequestJSON* Request);
+
+	UFUNCTION()
+	void OnUpdateEosSessionDataCompleted(UVaRestRequestJSON* Request);
+
+	ABTHttpRequest* HttpRequestActor;
 
 protected:
 	ABTLobbyServerGM(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
@@ -45,10 +56,13 @@ protected:
 
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
-
+	virtual void OnPostLogin(AController* NewPlayer) override;
 	UFUNCTION()
 	int32 GetPlayerCount() const;
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Batstoi|LobbyServer")
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyServer")
 	void UpdateEosSessionData(UVaRestJsonObject* Data);
+
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyServer")
+	ABTHttpRequest* GetHttpRequestActor();
 };
