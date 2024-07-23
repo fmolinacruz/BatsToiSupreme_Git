@@ -23,3 +23,10 @@ Need 2 gamepad to play game
 5. Package with config: Windows, Development, BatsToiSupreme_RealServer, 
 
 ** Deploy to AWS
+1. Run Power shell
+2. Run First Setup for prepare asset
+- Command/FirstSetup.bat
+3. Run Aws Config
+- Command/aws-configure.bat
+4. Deploy
+- Command/ps-run-upload-deploy.ps1
