@@ -49,9 +49,22 @@ public:
 	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
 	static FString GetPIEHOST();
 
+	// Check host type will connect
+	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
+	static bool IsLanHost();
+
+	// Is Use Login EOS or Not
+	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
+	static bool IsUseEOS();
+
+	// Check host type will connect
+	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
+	static AActor* GetOrCreateWorldActor(UWorld* World, UClass* Class);
+
 	static const FString ServerlessURL;
 	static const FString UpdateSessionDataAPI;
 	static const FString GetSessionDataAPI;
 	static const FString XAPIKey;
 	static const FString CustomConfigPath;
+	static const FString Ipifp;
 };

@@ -61,7 +61,7 @@ struct FCombinedAnimsData : public FTableRowBase
 
 	/* The stamina to trigger this ability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batstoi")
-	float StaminaUsage;
+	float StaminaUsage = 0;
 };
 
 USTRUCT(BlueprintType)

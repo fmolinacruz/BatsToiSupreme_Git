@@ -12,6 +12,7 @@ const FString UBTGameFunctionLibrary::UpdateSessionDataAPI = TEXT("/internal/ses
 const FString UBTGameFunctionLibrary::GetSessionDataAPI = TEXT("/session/data");
 const FString UBTGameFunctionLibrary::XAPIKey = TEXT("UzpmMSlfazp8UXFrZ0pfTCI9P25Pa3BFQl1RZ0hPVEhSZ3plJ11qZHIwJTp3aktrJkl0JislZVMzbEd2cyNxbEBBJThiXCI0RSlzeVlkeSNvcCc6ZVA+QWwgSSJQclM8");
 const FString UBTGameFunctionLibrary::CustomConfigPath = FPaths::ProjectConfigDir() / TEXT("CustomConfig.ini");
+const FString UBTGameFunctionLibrary::Ipifp = TEXT("http://api.ipify.org");
 
 
 ABTGameState* UBTGameFunctionLibrary::GetBTGameState(const UObject* WorldContextObject)
@@ -67,7 +68,7 @@ FString UBTGameFunctionLibrary::GetLocalIP()
 	}
 	else
 	{
-		return FString(TEXT(""));
+		return FString();
 	}
 }
 
@@ -83,4 +84,50 @@ FString UBTGameFunctionLibrary::GetPIEHOST()
 		}
 	}
 	return FString();
+}
+
+bool UBTGameFunctionLibrary::IsLanHost()
+{
+	FString HostType;
+	// Get Lan Host from command line arguments
+	if (FParse::Value(FCommandLine::Get(), TEXT("-HOSTTYPE="), HostType))
+	{
+		if (HostType == "LAN")
+		{
+			UE_LOG(LogTemp, Warning, TEXT("IsLanHost: LAN"));
+			return true;
+		}
+		if (HostType == "CLOUD")
+		{
+			UE_LOG(LogTemp, Warning, TEXT("IsLanHost: CLOUD"));
+			return false;
+		}
+	}
+	UE_LOG(LogTemp, Warning, TEXT("IsLanHost: PIE"));
+	return true;
+}
+
+bool UBTGameFunctionLibrary::IsUseEOS()
+{
+	if (FPlatformFileManager::Get().GetPlatformFile().FileExists(*CustomConfigPath))
+	{
+		bool isUse;
+		if (GConfig->GetBool(TEXT("CustomSection"), TEXT("UseEOS"), isUse, CustomConfigPath))
+		{
+			return isUse;
+		}
+	}
+	return false;
+}
+
+AActor* UBTGameFunctionLibrary::GetOrCreateWorldActor(UWorld* World, UClass* Class)
+{
+	AActor* Actor = UGameplayStatics::GetActorOfClass(World, Class);
+	if (!Actor)
+	{
+		// Spawn
+		FActorSpawnParameters SpawnParams;
+		Actor = World->SpawnActor<AActor>(Class, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
+	return Actor;
 }

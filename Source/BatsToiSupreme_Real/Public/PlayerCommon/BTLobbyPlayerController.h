@@ -118,12 +118,12 @@ public:
 	UVaRestJsonObject* EosSessionData;
 
 	// Get BE Data
-	UFUNCTION(BlueprintImplementableEvent, Category = "Batstoi|LobbyPlayer")
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyPlayer")
 	void GetEosSessionData(const FString& url, const FString& SessionId);
 
 	// Function to sign into EOS Game Services
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyPlayer")
-	void OnGetEosSessionDataCompleted(UVaRestJsonObject* Result);
+	void HandleGetEosSessionDataCompleted(UVaRestRequestJSON* Request);
 
 	// Function Get Lan Host Url
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyPlayer")
