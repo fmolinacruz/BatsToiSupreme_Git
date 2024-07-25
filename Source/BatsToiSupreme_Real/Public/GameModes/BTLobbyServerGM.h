@@ -24,6 +24,9 @@ private:
 	void InitEOS();
 
 	UFUNCTION()
+	void InitGameLift();
+
+	UFUNCTION()
 	void RequestCloudHostIp();
 
 	UFUNCTION()

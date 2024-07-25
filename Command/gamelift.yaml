@@ -110,13 +110,13 @@ Resources:
         ServerProcesses:
           - ConcurrentExecutions: 1
             LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7777.log -HOSTTYPE=CLOUD -Port=7777'
+            Parameters: 'LV_LobbyServer -AbsLog=c:\game\logs\game-server-7777.log -HOSTTYPE=CLOUD -epicapp=DedicatedServerDev -Port=7777'
           - ConcurrentExecutions: 1
             LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7778.log -HOSTTYPE=CLOUD -Port=7778'
+            Parameters: 'LV_LobbyServer -AbsLog=c:\game\logs\game-server-7778.log -HOSTTYPE=CLOUD -epicapp=DedicatedServerDev -Port=7778'
           - ConcurrentExecutions: 1
             LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7779.log -HOSTTYPE=CLOUD -Port=7779'
+            Parameters: 'LV_LobbyServer -AbsLog=c:\game\logs\game-server-7779.log -HOSTTYPE=CLOUD -epicapp=DedicatedServerDev -Port=7779'
       EC2InstanceType: m5.large
       FleetType: ON_DEMAND
       NewGameSessionProtectionPolicy: NoProtection

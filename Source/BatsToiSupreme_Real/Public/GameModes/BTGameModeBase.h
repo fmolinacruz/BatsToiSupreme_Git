@@ -3,9 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#if WITH_GAMELIFT
-#include "GameLiftServerSDK.h"
-#endif
 #include "GameFramework/GameModeBase.h"
 #include "Input/BTInputReceiver.h"
 #include "BTGameModeBase.generated.h"
@@ -93,25 +90,6 @@ private: // Default game setup
 	TObjectPtr<ABTGameplayManager> GameplayManagerRef;
 	
 	void InitGameplaySettings();
-#if WITH_GAMELIFT
 	void InitGameLift();
-	void InitSDKEC2();
-	void InitSDKAnyWhere();
 
-	void OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession);
-	void OnGameLiftSessionUpdate(Aws::GameLift::Server::Model::UpdateGameSession UpdatedSession);
-	void OnGameLiftProcessTerminate();
-	bool OnGameLiftServerHealthCheck();
-
-	void StartServerTimeOut();
-	void OnServerTimeOut();
-	bool HasGameSessionStarted() { return mGameSessionStarted; }
-
-	FGameLiftServerSDKModule* GameLiftSDKModule;
-	FServerParameters GameLiftServerParams;
-	FProcessParameters GameLiftProcessParams;
-	int ClientConnectTimeOut = 60;// in Seconds
-	bool HasClientConnected = false;
-	bool mGameSessionStarted;
-#endif
 };

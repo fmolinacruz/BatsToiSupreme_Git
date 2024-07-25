@@ -9,6 +9,7 @@
 #include "Utilities/BTGameFunctionLibrary.h"
 #include <VaRestSubsystem.h>
 #include <Utilities/BTHttpRequest.h>
+#include <Utilities/GameLiftUtils.h>
 
 int ABTLobbyServerGM::GetBEPort() const
 {
@@ -55,6 +56,17 @@ void ABTLobbyServerGM::InitEOS()
 	TempGameSession->OnSessionCreated.AddDynamic(this, &ABTLobbyServerGM::OnEOSSessionCreated);
 }
 
+void ABTLobbyServerGM::InitGameLift()
+{
+#if WITH_GAMELIFT
+	GameLiftUtils* GameLift = Cast<GameLiftUtils>(UBTGameFunctionLibrary::GetOrCreateWorldActor(GetWorld(), GameLiftUtils::StaticClass()));
+	if (GameLift)
+	{
+		GameLift->Init();
+	}
+#endif
+}
+
 void ABTLobbyServerGM::RequestCloudHostIp()
 {
 	// Get Cloud Host IP
@@ -91,6 +103,7 @@ void ABTLobbyServerGM::BeginPlay()
 #if WITH_EOS_SESSION
 	InitEOS();
 #endif	
+	InitGameLift();
 }
 
 void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)
