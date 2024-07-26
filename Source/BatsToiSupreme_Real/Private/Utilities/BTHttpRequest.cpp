@@ -120,3 +120,71 @@ void ABTHttpRequest::HandleGetSessionDataCompleted(UVaRestRequestJSON* Request)
 	}
 }
 
+void ABTHttpRequest::GameLiftSessionCreate(FString Url, FString AccountId)
+{
+	// Get the VaRestSubsystem
+	UVaRestSubsystem* VaRestSubsystem = GEngine->GetEngineSubsystem<UVaRestSubsystem>();
+	if (VaRestSubsystem)
+	{
+		// Create a new VaRest JSON request
+		UVaRestRequestJSON* Request = VaRestSubsystem->ConstructVaRestRequestExt(EVaRestRequestVerb::POST, EVaRestRequestContentType::json);
+		// Bind the callback function
+		Request->OnRequestComplete.AddDynamic(this, &ABTHttpRequest::HandleGameLiftSessionCreateCompleted);
+		Request->SetHeader(TEXT("Authorization"), AccountId);
+		//Set Latencies , Temp CHEAT
+		UVaRestJsonObject* Latencies = NewObject<UVaRestJsonObject>();
+		Latencies->SetNumberField(TEXT("ap-northeast-1"), 50);
+		Latencies->SetNumberField(TEXT("us-east-1"), 60);
+		Request->GetRequestObject()->SetObjectField(TEXT("Latencies"), Latencies);
+		Request->ProcessURL(Url);
+	}
+}
+
+void ABTHttpRequest::HandleGameLiftSessionCreateCompleted(UVaRestRequestJSON* Request)
+{
+	if (Request->GetStatus() == EVaRestRequestStatus::Succeeded)
+	{
+		// Parse the response JSON
+		FString ResponseContent = Request->GetResponseContentAsString();
+		UE_LOG(LogTemp, Warning, TEXT("HandleGameLiftSessionCreateCompleted Response: %s"), *ResponseContent);
+		OnGameLiftSessionCreateCompleted.Broadcast(Request->GetResponseObject());
+		OnGameLiftSessionCreateCompleted.Clear();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GameLiftSessionCreate Failed"));
+	}
+}
+
+void ABTHttpRequest::GetGameLiftSessionStatus(FString Url, FString TicketId, FString AccountId)
+{
+	// Get the VaRestSubsystem
+	UVaRestSubsystem* VaRestSubsystem = GEngine->GetEngineSubsystem<UVaRestSubsystem>();
+	if (VaRestSubsystem)
+	{
+		// Create a new VaRest JSON request
+		UVaRestRequestJSON* Request = VaRestSubsystem->ConstructVaRestRequestExt(EVaRestRequestVerb::GET, EVaRestRequestContentType::x_www_form_urlencoded_url);
+		// Bind the callback function
+		Request->OnRequestComplete.AddDynamic(this, &ABTHttpRequest::HandleGameLiftGetSessionStatusCompleted);
+		Request->SetHeader(TEXT("Authorization"), AccountId);
+		Request->GetRequestObject()->SetStringField(TEXT("id"), TicketId);
+		Request->ProcessURL(Url);
+	}
+}
+
+void ABTHttpRequest::HandleGameLiftGetSessionStatusCompleted(UVaRestRequestJSON* Request)
+{
+	if (Request->GetStatus() == EVaRestRequestStatus::Succeeded)
+	{
+		// Parse the response JSON
+		FString ResponseContent = Request->GetResponseContentAsString();
+		UE_LOG(LogTemp, Warning, TEXT("HandleGameLiftGetSessionStatusCompleted Response: %s"), *ResponseContent);
+		OnGetGameLiftGetSessionStatusCompleted.Broadcast(Request->GetResponseObject());
+		OnGetGameLiftGetSessionStatusCompleted.Clear();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GetGameLiftSessionStatus Failed"));
+	}
+}
+

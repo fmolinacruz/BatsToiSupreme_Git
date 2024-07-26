@@ -11,6 +11,8 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGetDataEvent, UVaRestJsonObject*, Result);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUpdateSessionDataEvent, UVaRestJsonObject*, Result);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGetSessionDataEvent, UVaRestJsonObject*, Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGameLiftSessionCreateEvent, UVaRestJsonObject*, Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGameLiftGetSessionStatusEvent, UVaRestJsonObject*, Result);
 
 UCLASS()
 class BATSTOISUPREME_REAL_API ABTHttpRequest : public AActor
@@ -50,4 +52,20 @@ public:
 	void HandleGetSessionDataCompleted(UVaRestRequestJSON* Request);
 	UPROPERTY(BlueprintAssignable, Category = "Batstoi|HttpRequest")
 	FGetSessionDataEvent OnGetSessionDataCompleted;
+
+	//GameLift Session Create
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|HttpRequest")
+	void GameLiftSessionCreate(FString Url, FString AccountId);
+	UFUNCTION()
+	void HandleGameLiftSessionCreateCompleted(UVaRestRequestJSON* Request);
+	UPROPERTY(BlueprintAssignable, Category = "Batstoi|HttpRequest")
+	FGameLiftSessionCreateEvent OnGameLiftSessionCreateCompleted;
+
+	// GameLiftSession Get Status
+	UFUNCTION(BlueprintCallable, Category = "Batstoi|HttpRequest")
+	void GetGameLiftSessionStatus(FString Url, FString TicketId, FString AccountId);
+	UFUNCTION()
+	void HandleGameLiftGetSessionStatusCompleted(UVaRestRequestJSON* Request);
+	UPROPERTY(BlueprintAssignable, Category = "Batstoi|HttpRequest")
+	FGameLiftGetSessionStatusEvent OnGetGameLiftGetSessionStatusCompleted;
 };
