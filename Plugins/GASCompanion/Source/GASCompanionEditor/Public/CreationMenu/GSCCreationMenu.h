@@ -8,6 +8,7 @@
 #include "Factories/BlueprintFactory.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Templates/GSCTemplate_GameplayEffectDefinition.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "GSCCreationMenu.generated.h"
 
 struct FGSCMenuItem : TSharedFromThis<FGSCMenuItem>
@@ -59,6 +60,104 @@ struct FGSCMenuItem : TSharedFromThis<FGSCMenuItem>
 			{
 				EDITOR_LOG(Verbose, TEXT("Update Gameplay Effect CDO to match template for %s"), *GetNameSafe(CDO))
 				UGSCTemplate_GameplayEffectDefinition::CopyProperties(CDO, TemplateCDO);
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+				// Part of UGameplayEffect->PostCDOCompiled() we should do to handle the upgrade in 5.3 and GEComponents
+				// Note: Can't because most of the methods below are private / protected.
+				// ---
+
+				// UE_LOG(LogGameplayEffects, VeryVerbose, TEXT("%s: Running Upgrade code. Current Version = %d"), *GetName(), int(GetVersion()));
+				//
+				// // Make sure everything is fixed up properly before going through upgrade code
+				// CDO->PostCDOCompiledFixupSubobjects();
+				//
+				// // Move any data from deprecated properties into components, create components as needed
+				// CDO->ConvertAbilitiesComponent();
+				// CDO->ConvertAdditionalEffectsComponent();
+				// CDO->ConvertAssetTagsComponent();
+				// CDO->ConvertBlockByTagsComponent();
+				// CDO->ConvertChanceToApplyComponent();
+				// CDO->ConvertCustomCanApplyComponent();
+				// CDO->ConvertImmunityComponent();
+				// CDO->ConvertRemoveOtherComponent();
+				// CDO->ConvertTagRequirementsComponent();
+				// CDO->ConvertTargetTagsComponent();
+				// CDO->ConvertUIComponent();
+				//
+				// const bool bAlreadyLoaded = !CDO->HasAnyFlags(RF_NeedPostLoad);
+				// if (bAlreadyLoaded)
+				// {
+				// 	CDO->OnGameplayEffectChanged();
+				// }
+				
+				// ---
+
+				// Make sure to re-invoke UGameplay->PostCDOCompiled() so that it handles the upgrade from pre-5.3, that way
+				// GAS Companion GE Template definitions can remain the same.
+				CDO->PostCDOCompiled(UObject::FPostCDOCompiledContext());
+
+				// Reset all deprecated properties that were copied from the TemplateCDO, and now handled via GEComponents. To avoid further compilation of Blueprints to redo
+				// the upgrade path.
+
+				// This code section used a lot of deprecated variables, so just disable it throughout this section
+				PRAGMA_DISABLE_DEPRECATION_WARNINGS
+				// ConvertAbilitiesComponent(); - GrantedAbilities already emptied in ConvertAbilitiesComponent(), but to keep consistency.
+				CDO->GrantedAbilities.Empty();
+
+				// ConvertAdditionalEffectsComponent()
+				CDO->ConditionalGameplayEffects.Empty();
+				CDO->PrematureExpirationEffectClasses.Empty();
+				CDO->RoutineExpirationEffectClasses.Empty();
+				
+				// ConvertAssetTagsComponent();
+				CDO->InheritableGameplayEffectTags.CombinedTags.Reset();
+				CDO->InheritableGameplayEffectTags.Added.Reset();
+				CDO->InheritableGameplayEffectTags.Removed.Reset();
+				
+				// ConvertBlockByTagsComponent();
+				CDO->InheritableBlockedAbilityTagsContainer.CombinedTags.Reset();
+				CDO->InheritableBlockedAbilityTagsContainer.Added.Reset();
+				CDO->InheritableBlockedAbilityTagsContainer.Removed.Reset();
+				
+				// ConvertChanceToApplyComponent();
+				CDO->ChanceToApplyToTarget_DEPRECATED.SetValue(1.f);
+				
+				// ConvertCustomCanApplyComponent();
+				CDO->ApplicationRequirements_DEPRECATED.Empty();
+				
+				// ConvertImmunityComponent();
+				CDO->GrantedApplicationImmunityTags.RequireTags.Reset();
+				CDO->GrantedApplicationImmunityTags.IgnoreTags.Reset();
+				CDO->GrantedApplicationImmunityTags.TagQuery.Clear();
+				CDO->GrantedApplicationImmunityQuery = FGameplayEffectQuery();
+				
+				// ConvertRemoveOtherComponent();
+				CDO->RemoveGameplayEffectsWithTags.CombinedTags.Reset();
+				CDO->RemoveGameplayEffectsWithTags.Added.Reset();
+				CDO->RemoveGameplayEffectsWithTags.Removed.Reset();
+				CDO->RemoveGameplayEffectQuery = FGameplayEffectQuery();
+				
+				// ConvertTagRequirementsComponent();
+				CDO->ApplicationTagRequirements.RequireTags.Reset();
+				CDO->ApplicationTagRequirements.IgnoreTags.Reset();
+				CDO->ApplicationTagRequirements.TagQuery.Clear();
+				CDO->RemovalTagRequirements.RequireTags.Reset();
+				CDO->RemovalTagRequirements.IgnoreTags.Reset();
+				CDO->RemovalTagRequirements.TagQuery.Clear();
+				CDO->OngoingTagRequirements.RequireTags.Reset();
+				CDO->OngoingTagRequirements.IgnoreTags.Reset();
+				CDO->OngoingTagRequirements.TagQuery.Clear();
+				
+				// ConvertTargetTagsComponent();
+				CDO->InheritableOwnedTagsContainer.CombinedTags.Reset();
+				CDO->InheritableOwnedTagsContainer.Added.Reset();
+				CDO->InheritableOwnedTagsContainer.Removed.Reset();
+				
+				// ConvertUIComponent(); - UIData already set back to nullptr in ConvertUIComponent(), but to keep consistency
+				CDO->UIData = nullptr;
+				PRAGMA_ENABLE_DEPRECATION_WARNINGS
+#endif
+				
 				Asset->Modify();
 			}
 		}

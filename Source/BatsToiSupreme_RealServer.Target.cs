@@ -10,7 +10,11 @@ public class BatsToiSupreme_RealServerTarget : TargetRules
         Name = "BatsToiSupreme_RealServer";
 
         Type = TargetType.Server;
-		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange(new[] { "BatsToiSupreme_Real" });
+        // Update build settings
+        DefaultBuildSettings = BuildSettingsVersion.Latest;
+
+        // Update include order version
+        IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
+        ExtraModuleNames.AddRange(new[] { "BatsToiSupreme_Real" });
 	}
 }

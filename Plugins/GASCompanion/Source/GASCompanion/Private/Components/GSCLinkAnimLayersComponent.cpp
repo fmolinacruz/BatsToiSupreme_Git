@@ -58,7 +58,7 @@ void UGSCLinkAnimLayersComponent::LinkAnimLayers()
 		return;
 	}
 	
-	for (const TSubclassOf<UAnimInstance> LayerType : LayerTypes)
+	for (const TSubclassOf<UAnimInstance>& LayerType : LayerTypes)
 	{
 		LinkAnimLayer(LayerType);
 	}
@@ -71,7 +71,7 @@ void UGSCLinkAnimLayersComponent::UnlinkAnimLayers()
 		return;
 	}
 	
-	for (const TSubclassOf<UAnimInstance> LayerType : LayerTypes)
+	for (const TSubclassOf<UAnimInstance>& LayerType : LayerTypes)
 	{
 		UnlinkAnimLayer(LayerType);
 	}

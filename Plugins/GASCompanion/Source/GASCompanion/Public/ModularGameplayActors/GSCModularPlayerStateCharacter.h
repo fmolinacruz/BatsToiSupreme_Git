@@ -21,7 +21,7 @@ class GASCOMPANION_API AGSCModularPlayerStateCharacter : public ACharacter, publ
 	GENERATED_BODY()
 
 public:
-	AGSCModularPlayerStateCharacter(const FObjectInitializer& ObjectInitializer);
+	AGSCModularPlayerStateCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	// Cached AbilitySystemComponent. Real owner is PlayerState, but pointer gets updated to use PlayerState's here in PossessedBy / OnRep_PlayerState
 	TWeakObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;

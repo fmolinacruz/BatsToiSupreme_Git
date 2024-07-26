@@ -7,6 +7,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "OnlineSubsystemTypes.h"
+#include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Containers/Array.h"
 #include "Kismet/GameplayStatics.h"

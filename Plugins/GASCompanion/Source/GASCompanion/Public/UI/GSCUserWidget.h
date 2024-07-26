@@ -148,9 +148,13 @@ public:
 	UFUNCTION(BlueprintPure, Category="GAS Companion|UI")
 	float GetPercentForAttributes(FGameplayAttribute Attribute, FGameplayAttribute MaxAttribute) const;
 
-	/** Returns the current value of an attribute (base value) from owning actor Ability System (if it has any). That is, the value of the attribute with no stateful modifiers */
+	/**
+	 * Returns the current value of an attribute (final value) from owning actor Ability System, if it has the attribute set.
+	 *
+	 * Returns 0 otherwise.
+	 */
 	UFUNCTION(BlueprintCallable, Category="GAS Companion|UI")
-	virtual float GetAttributeValue(FGameplayAttribute Attribute) const;
+	virtual float GetAttributeValue(const FGameplayAttribute Attribute) const;
 
 	/** Triggered by ASC and handle / broadcast Attributes change */
 	virtual void OnAttributeChanged(const FOnAttributeChangeData& Data);

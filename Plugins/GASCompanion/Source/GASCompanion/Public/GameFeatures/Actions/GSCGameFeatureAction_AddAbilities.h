@@ -6,6 +6,7 @@
 #include "GameFeatureAction.h"
 #include "Abilities/GSCAbilitySet.h"
 #include "Abilities/GameplayAbility.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "GSCGameFeatureAction_AddAbilities.generated.h"
 
 struct FComponentRequestHandle;
@@ -72,7 +73,11 @@ public:
 
 	//~ Begin UObject interface
 #if WITH_EDITOR
-	virtual EDataValidationResult IsDataValid(TArray<FText>& ValidationErrors) override;
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+#else
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) override;
+#endif
 #endif
 	//~ End UObject interface
 

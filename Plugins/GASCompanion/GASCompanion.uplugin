@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "6.0.0+5.2",
+	"VersionName": "6.1.0+5.4",
 	"FriendlyName": "GAS Companion",
 	"Description": "Leveraging the power of the Gameplay Ability System, this plugin provides a starting template and a robust foundation to speed up the creation and development of GAS based projects.",
 	"Category": "Gameplay",
@@ -10,7 +10,7 @@
 	"DocsURL": "https://gascompanion.github.io",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/d83c6f34c3fb4b7092dde195c37c7413",
 	"SupportURL": "https://github.com/GASCompanion/GASCompanion-Documentation/issues",
-	"EngineVersion": "5.2.0",
+	"EngineVersion": "5.4.0",
 	"CanContainContent": true,
 	"Installed": true,
 	"Modules": [

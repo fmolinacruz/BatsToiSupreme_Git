@@ -4,6 +4,7 @@
 #include "Templates/GSCTemplate_GameplayEffectDefinition.h"
 
 #include "GSCLog.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 UGSCTemplate_GameplayEffectDefinition::UGSCTemplate_GameplayEffectDefinition()
 {
@@ -22,9 +23,18 @@ void UGSCTemplate_GameplayEffectDefinition::PostInitProperties()
 {
 	UObject::PostInitProperties();
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+	InheritableGameplayEffectTags.Added.Reset();
+	InheritableGameplayEffectTags.Removed.Reset();
+	InheritableOwnedTagsContainer.Added.Reset();
+	InheritableOwnedTagsContainer.Removed.Reset();
+	RemoveGameplayEffectsWithTags.Added.Reset();
+	RemoveGameplayEffectsWithTags.Removed.Reset();
+#else
 	InheritableGameplayEffectTags.PostInitProperties();
 	InheritableOwnedTagsContainer.PostInitProperties();
 	RemoveGameplayEffectsWithTags.PostInitProperties();
+#endif
 }
 
 #if WITH_EDITOR
@@ -35,20 +45,22 @@ void UGSCTemplate_GameplayEffectDefinition::PostEditChangeProperty(FPropertyChan
 	const FProperty* PropertyThatChanged = PropertyChangedEvent.MemberProperty;
 	if (PropertyThatChanged)
 	{
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		const UGameplayEffect* Parent = Cast<UGameplayEffect>(GetClass()->GetSuperClass()->GetDefaultObject());
 		const FName PropName = PropertyThatChanged->GetFName();
-		if (PropName == GET_MEMBER_NAME_CHECKED(UGameplayEffect, InheritableGameplayEffectTags))
+		if (PropName == GET_MEMBER_NAME_CHECKED(UGSCTemplate_GameplayEffectDefinition, InheritableGameplayEffectTags))
 		{
 			InheritableGameplayEffectTags.UpdateInheritedTagProperties(Parent ? &Parent->InheritableGameplayEffectTags : NULL);
 		}
-		else if (PropName == GET_MEMBER_NAME_CHECKED(UGameplayEffect, InheritableOwnedTagsContainer))
+		else if (PropName == GET_MEMBER_NAME_CHECKED(UGSCTemplate_GameplayEffectDefinition, InheritableOwnedTagsContainer))
 		{
 			InheritableOwnedTagsContainer.UpdateInheritedTagProperties(Parent ? &Parent->InheritableOwnedTagsContainer : NULL);
 		}
-		else if (PropName == GET_MEMBER_NAME_CHECKED(UGameplayEffect, RemoveGameplayEffectsWithTags))
+		else if (PropName == GET_MEMBER_NAME_CHECKED(UGSCTemplate_GameplayEffectDefinition, RemoveGameplayEffectsWithTags))
 		{
 			RemoveGameplayEffectsWithTags.UpdateInheritedTagProperties(Parent ? &Parent->RemoveGameplayEffectsWithTags : NULL);
 		}
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
 }
 #endif

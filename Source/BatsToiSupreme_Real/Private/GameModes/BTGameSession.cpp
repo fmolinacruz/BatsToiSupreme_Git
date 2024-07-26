@@ -237,12 +237,13 @@ void ABTGameSession::UnregisterPlayer(const APlayerController* ExitingPlayer)
 					this,
 					&ThisClass::HandleUnregisterPlayerCompleted));
 
-			if (!Session->UnregisterPlayer(SessionName, *ExitingPlayer->PlayerState->UniqueId))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Failed to Unregister Player!"));
-				Session->ClearOnUnregisterPlayersCompleteDelegate_Handle(UnregisterPlayerDelegateHandle);
-				UnregisterPlayerDelegateHandle.Reset();
-			}
+			//TODO: Fix compiler bug
+			//if (!Session->UnregisterPlayer(SessionName, *ExitingPlayer->PlayerState->UniqueId))
+			//{
+			//	UE_LOG(LogTemp, Warning, TEXT("Failed to Unregister Player!"));
+			//	Session->ClearOnUnregisterPlayersCompleteDelegate_Handle(UnregisterPlayerDelegateHandle);
+			//	UnregisterPlayerDelegateHandle.Reset();
+			//}
 		}
 		else
 		{

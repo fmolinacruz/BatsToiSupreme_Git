@@ -11,7 +11,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
-#include "Runtime/Launch/Resources/Version.h"
+#include "Misc/DataValidation.h"
 
 #define LOCTEXT_NAMESPACE "GASCompanion"
 
@@ -44,28 +44,41 @@ void UGSCGameFeatureAction_AddInputMappingContext::OnGameFeatureDeactivating(FGa
 #if WITH_EDITORONLY_DATA
 void UGSCGameFeatureAction_AddInputMappingContext::AddAdditionalAssetBundleData(FAssetBundleData& AssetBundleData)
 {
-	if (UAssetManager::IsValid())
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+	if (!UAssetManager::IsInitialized())
 	{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
-		AssetBundleData.AddBundleAsset(UGameFeaturesSubsystemSettings::LoadStateClient, InputMapping.ToSoftObjectPath().GetAssetPath());
-		AssetBundleData.AddBundleAsset(UGameFeaturesSubsystemSettings::LoadStateServer, InputMapping.ToSoftObjectPath().GetAssetPath());
-#else
-		AssetBundleData.AddBundleAsset(UGameFeaturesSubsystemSettings::LoadStateClient, InputMapping.ToSoftObjectPath());
-		AssetBundleData.AddBundleAsset(UGameFeaturesSubsystemSettings::LoadStateServer, InputMapping.ToSoftObjectPath());
-#endif
+		return;
 	}
+#else
+	if (!UAssetManager::IsValid())
+	{
+		return;
+	}
+#endif
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
+	AssetBundleData.AddBundleAsset(UGameFeaturesSubsystemSettings::LoadStateClient, InputMapping.ToSoftObjectPath().GetAssetPath());
+	AssetBundleData.AddBundleAsset(UGameFeaturesSubsystemSettings::LoadStateServer, InputMapping.ToSoftObjectPath().GetAssetPath());
+#else
+	AssetBundleData.AddBundleAsset(UGameFeaturesSubsystemSettings::LoadStateClient, InputMapping.ToSoftObjectPath());
+	AssetBundleData.AddBundleAsset(UGameFeaturesSubsystemSettings::LoadStateServer, InputMapping.ToSoftObjectPath());
+#endif
 }
 #endif
 
 #if WITH_EDITOR
-EDataValidationResult UGSCGameFeatureAction_AddInputMappingContext::IsDataValid(TArray<FText>& ValidationErrors)
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+EDataValidationResult UGSCGameFeatureAction_AddInputMappingContext::IsDataValid(FDataValidationContext& Context) const
+#else
+EDataValidationResult UGSCGameFeatureAction_AddInputMappingContext::IsDataValid(FDataValidationContext& Context)
+#endif
 {
-	EDataValidationResult Result = CombineDataValidationResults(Super::IsDataValid(ValidationErrors), EDataValidationResult::Valid);
+	EDataValidationResult Result = CombineDataValidationResults(Super::IsDataValid(Context), EDataValidationResult::Valid);
 
 	if (InputMapping.IsNull())
 	{
 		Result = EDataValidationResult::Invalid;
-		ValidationErrors.Add(LOCTEXT("NullInputMapping", "Null InputMapping."));
+		Context.AddError(LOCTEXT("NullInputMapping", "Null InputMapping."));
 	}
 
 	return Result;

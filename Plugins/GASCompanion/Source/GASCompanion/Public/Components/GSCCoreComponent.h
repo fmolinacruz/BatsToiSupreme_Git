@@ -218,7 +218,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GAS Companion|Attributes")
 	virtual float GetCurrentAttributeValue(FGameplayAttribute Attribute) const;
 
-	/** Returns whether or not the Actor is considered alive (Health > 0) */
+	/** Returns whether the Actor is considered alive (Health > 0) */
 	UFUNCTION(BlueprintCallable, Category = "GAS Companion|Attributes")
 	virtual bool IsAlive() const;
 
