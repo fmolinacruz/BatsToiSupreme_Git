@@ -33,7 +33,7 @@ void UWBTCharacterSelect::NativeConstruct()
 	// Check if MyTextBlock is valid before attempting to use it
 	if (PlayerNumber)
 	{
-		FText PlayerNumberText = FText::FromString("P" + (CharacterChoice + 1));
+		FText PlayerNumberText = FText::FromString("P" + FString::FromInt(CharacterChoice + 1));
 		PlayerNumber->SetText(PlayerNumberText);
 	}
 }
