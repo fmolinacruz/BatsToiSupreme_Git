@@ -228,6 +228,8 @@ void ABTLocalMultiGameMode::RemoveUnusedCameras()
 	// Get all camera actors in the world and store them in the array
 	UGameplayStatics::GetAllActorsOfClass(World, CameraActorClass, CameraActorArray);
 
+	//IsPendingKill is depreciate
+	/*
 	for (AActor* CameraActor : CameraActorArray)
 	{
 		if (CameraActor && !CameraActor->IsPendingKill())
@@ -238,6 +240,7 @@ void ABTLocalMultiGameMode::RemoveUnusedCameras()
 			CameraActor = nullptr;
 		}
 	}
+	*/
 }
 
 void ABTLocalMultiGameMode::CreateLocalPlayerDebug(int ControllerId)

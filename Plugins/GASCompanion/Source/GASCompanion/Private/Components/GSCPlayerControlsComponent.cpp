@@ -16,9 +16,16 @@ void UGSCPlayerControlsComponent::OnRegister()
 
 	if (ensure(MyOwner) && World->IsGameWorld())
 	{
-		MyOwner->ReceiveRestartedDelegate.AddDynamic(this, &UGSCPlayerControlsComponent::OnPawnRestarted);
-		MyOwner->ReceiveControllerChangedDelegate.AddDynamic(this, &UGSCPlayerControlsComponent::OnControllerChanged);
+		// Sign up for possess / un possess events so that we can release / setup input component
+		if (!MyOwner->ReceiveRestartedDelegate.Contains(this, TEXT("OnPawnRestarted")))
+		{
+			MyOwner->ReceiveRestartedDelegate.AddDynamic(this, &UGSCPlayerControlsComponent::OnPawnRestarted);
+		}
 
+		if (!MyOwner->ReceiveControllerChangedDelegate.Contains(this, TEXT("OnControllerChanged")))
+		{
+			MyOwner->ReceiveControllerChangedDelegate.AddDynamic(this, &UGSCPlayerControlsComponent::OnControllerChanged);
+		}
 
 		// If our pawn has an input component we were added after restart
 		if (MyOwner->InputComponent)

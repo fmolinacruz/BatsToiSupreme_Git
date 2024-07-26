@@ -1,6 +1,5 @@
 // Copyright 2021 Mickael Daniel. All Rights Reserved.
 
-
 #include "GameFeatures/Actions/GSCGameFeatureAction_AddAnimLayers.h"
 
 #include "GSCLog.h"
@@ -9,7 +8,7 @@
 #include "Components/GameFrameworkComponentManager.h"
 #include "Engine/AssetManager.h"
 #include "Engine/GameInstance.h"
-#include "Runtime/Launch/Resources/Version.h"
+#include "Misc/DataValidation.h"
 
 #define LOCTEXT_NAMESPACE "GASCompanion"
 
@@ -44,12 +43,19 @@ void UGSCGameFeatureAction_AddAnimLayers::OnGameFeatureDeactivating(FGameFeature
 #if WITH_EDITORONLY_DATA
 void UGSCGameFeatureAction_AddAnimLayers::AddAdditionalAssetBundleData(FAssetBundleData& AssetBundleData)
 {
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+	if (!UAssetManager::IsInitialized())
+	{
+		return;
+	}
+#else
 	if (!UAssetManager::IsValid())
 	{
 		return;
 	}
+#endif
 
-	for (FGSCAnimLayerEntry& Entry : AnimLayerEntries)
+	for (const FGSCAnimLayerEntry& Entry : AnimLayerEntries)
 	{
 		for (TSoftClassPtr<UAnimInstance> AnimLayer : Entry.AnimLayers)
 		{
@@ -66,9 +72,13 @@ void UGSCGameFeatureAction_AddAnimLayers::AddAdditionalAssetBundleData(FAssetBun
 #endif
 
 #if WITH_EDITOR
-EDataValidationResult UGSCGameFeatureAction_AddAnimLayers::IsDataValid(TArray<FText>& ValidationErrors)
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+EDataValidationResult UGSCGameFeatureAction_AddAnimLayers::IsDataValid(FDataValidationContext& Context) const
+#else
+EDataValidationResult UGSCGameFeatureAction_AddAnimLayers::IsDataValid(FDataValidationContext& Context)
+#endif
 {
-	EDataValidationResult Result = CombineDataValidationResults(Super::IsDataValid(ValidationErrors), EDataValidationResult::Valid);
+	EDataValidationResult Result = CombineDataValidationResults(Super::IsDataValid(Context), EDataValidationResult::Valid);
 
 	int32 EntryIndex = 0;
 	for (const FGSCAnimLayerEntry& Entry : AnimLayerEntries)
@@ -76,13 +86,13 @@ EDataValidationResult UGSCGameFeatureAction_AddAnimLayers::IsDataValid(TArray<FT
 		if (Entry.ActorClass.IsNull())
 		{
 			Result = EDataValidationResult::Invalid;
-			ValidationErrors.Add(FText::Format(LOCTEXT("AnimLayerEntryHasNullActor", "Null ActorClass at index {0} in AnimLayerEntries"), FText::AsNumber(EntryIndex)));
+			Context.AddError(FText::Format(LOCTEXT("AnimLayerEntryHasNullActor", "Null ActorClass at index {0} in AnimLayerEntries"), FText::AsNumber(EntryIndex)));
 		}
 
 		if (Entry.AnimLayers.IsEmpty())
 		{
 			Result = EDataValidationResult::Invalid;
-			ValidationErrors.Add(FText::Format(LOCTEXT("EntryHasNoAnimLayers", "Empty AnimLayers at index {0} in AnimLayerEntries"), FText::AsNumber(EntryIndex)));
+			Context.AddError(FText::Format(LOCTEXT("EntryHasNoAnimLayers", "Empty AnimLayers at index {0} in AnimLayerEntries"), FText::AsNumber(EntryIndex)));
 		}
 
 		int32 AnimLayerIndex = 0;
@@ -91,7 +101,7 @@ EDataValidationResult UGSCGameFeatureAction_AddAnimLayers::IsDataValid(TArray<FT
 			if (AnimLayer.IsNull())
 			{
 				Result = EDataValidationResult::Invalid;
-				ValidationErrors.Add(FText::Format(LOCTEXT("EntryHasNullAnimLayer", "Null AnimLayer at index {0} in AnimLayerEntries[{1}].AnimLayers"), FText::AsNumber(AnimLayerIndex), FText::AsNumber(EntryIndex)));
+				Context.AddError(FText::Format(LOCTEXT("EntryHasNullAnimLayer", "Null AnimLayer at index {0} in AnimLayerEntries[{1}].AnimLayers"), FText::AsNumber(AnimLayerIndex), FText::AsNumber(EntryIndex)));
 			}
 
 			++AnimLayerIndex;
@@ -197,7 +207,7 @@ void UGSCGameFeatureAction_AddAnimLayers::RemoveAnimLayers(AActor* Actor)
 	{
 		if (UGSCLinkAnimLayersComponent* LinkAnimLayersComponent = Actor->FindComponentByClass<UGSCLinkAnimLayersComponent>())
 		{
-			for (const TSubclassOf<UAnimInstance> AnimLayer : ActorExtensions->AnimLayers)
+			for (const TSubclassOf<UAnimInstance>& AnimLayer : ActorExtensions->AnimLayers)
 			{
 				LinkAnimLayersComponent->UnlinkAnimLayer(AnimLayer);
 			}

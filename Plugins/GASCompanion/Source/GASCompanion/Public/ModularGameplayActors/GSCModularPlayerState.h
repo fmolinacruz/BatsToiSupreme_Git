@@ -16,7 +16,7 @@ class GASCOMPANION_API AGSCModularPlayerState : public APlayerState, public IAbi
 	GENERATED_BODY()
 
 public:
-	AGSCModularPlayerState(const FObjectInitializer& ObjectInitializer);
+	AGSCModularPlayerState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/**
 	* Ability System Replication Mode: How gameplay effects will be replicated to clients

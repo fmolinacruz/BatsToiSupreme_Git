@@ -17,7 +17,7 @@ class GASCOMPANION_API AGSCModularActor : public AActor, public IAbilitySystemIn
 	GENERATED_BODY()
 
 public:
-	AGSCModularActor(const FObjectInitializer& ObjectInitializer);
+	AGSCModularActor(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/**
 	* Ability System Replication Mode: How gameplay effects will be replicated to clients

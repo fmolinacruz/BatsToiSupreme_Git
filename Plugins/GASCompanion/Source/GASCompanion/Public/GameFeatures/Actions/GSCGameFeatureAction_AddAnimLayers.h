@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFeatureAction.h"
 #include "Animation/AnimInstance.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "GSCGameFeatureAction_AddAnimLayers.generated.h"
 
 class UActorComponent;
@@ -46,7 +47,11 @@ public:
 
 	//~ Begin UObject interface
 #if WITH_EDITOR
-	virtual EDataValidationResult IsDataValid(TArray<FText>& ValidationErrors) override;
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+#else
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) override;
+#endif
 #endif
 	//~ End UObject interface
 

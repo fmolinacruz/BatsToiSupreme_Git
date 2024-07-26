@@ -17,7 +17,7 @@ class GASCOMPANION_API AGSCModularPawn : public APawn, public IAbilitySystemInte
 	GENERATED_BODY()
 
 public:
-	AGSCModularPawn(const FObjectInitializer& ObjectInitializer);
+	AGSCModularPawn(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/**
 	* Ability System Replication Mode: How gameplay effects will be replicated to clients

@@ -20,7 +20,7 @@ public class BatsToiSupreme_Real : ModuleRules
 			"GASCompanion",
 			"EngineSettings",
 			"GameplayAbilities",
-			"GameLiftServerSDK",
+            "GameLiftServerSDK",
             "VaRest",
 			"OnlineSubsystem", 
 			"OnlineSubsystemUtils",
@@ -40,6 +40,7 @@ public class BatsToiSupreme_Real : ModuleRules
 		bEnableExceptions = true;
 
         PublicDefinitions.Add("WITH_EOS_SESSION=1");
+        //PublicDefinitions.Add("WITH_GAMELIFT=0");
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
