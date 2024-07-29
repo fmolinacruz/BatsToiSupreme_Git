@@ -160,7 +160,7 @@ void ABTGameModeBase::InitSDKAnyWhere()
 	{
 	}
 	// The PID of the running process
-	GameLiftServerParams.m_processId = FString::Printf(TEXT("%d"), GetCurrentProcessId());
+	GameLiftServerParams.m_processId = FString::Printf(TEXT("%d"), FGenericPlatformProcess::GetCurrentProcessId());
 
 	// InitSDK establishes a local connection with GameLift's agent to enable further communication.
 	// Use InitSDK(serverParameters) for a GameLift Anywhere fleet.
