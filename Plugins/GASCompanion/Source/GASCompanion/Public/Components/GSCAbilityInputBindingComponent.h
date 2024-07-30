@@ -125,13 +125,23 @@ public:
 	void ClearAbilityBindings(UInputAction* InputAction);
 
 	/**
-	 * Given a Gameplay Ability, returns the bound InputAction from mapped abilities (previously bound abilities) that matches the Ability Spec InputID.
+	 * Given a Gameplay Ability instance, returns the bound InputAction from mapped abilities (previously bound abilities) that
+	 * matches the Ability Spec InputID.
 	 *
 	 * Designed to be called from within a Gameplay Ability event graph, passing self reference for the Gameplay Ability parameter.
 	 */
 	UFUNCTION(BlueprintPure, Category = "GAS Companion|Abilities")
 	UInputAction* GetBoundInputActionForAbility(UPARAM(ref) const UGameplayAbility* Ability);
-
+	
+	/**
+	 * Given a Gameplay Ability Class, returns the bound InputAction from mapped abilities (previously bound abilities)
+	 * that matches the Ability Spec InputID.
+	 *
+	 * Designed to be called from anywhere, passing the Gameplay Ability class reference.
+	 */
+	UFUNCTION(BlueprintPure, Category = "GAS Companion|Abilities")
+	UInputAction* GetBoundInputActionForAbilityClass(TSubclassOf<UGameplayAbility> InAbilityClass);
+	
 	/** Internal helper to return InputAction from MappedAbilities that match Ability Spec InputID */
 	UInputAction* GetBoundInputActionForAbilitySpec(const FGameplayAbilitySpec* AbilitySpec) const;
 
@@ -144,6 +154,9 @@ private:
 
 	uint32 OnConfirmHandle = 0;
 	uint32 OnCancelHandle = 0;
+
+	/** List of all enhanced input handles that were bound by the component, that needs clearing when the input component is released */
+	TArray<uint32> RegisteredInputHandles;
 
 	void ResetBindings();
 	void RunAbilitySystemSetup();

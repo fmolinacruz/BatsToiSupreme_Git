@@ -12,6 +12,7 @@
 #include "Components/GSCComboManagerComponent.h"
 #include "Components/GSCCoreComponent.h"
 #include "Engine/GameInstance.h"
+#include "GameFramework/PlayerState.h"
 #include "Runtime/Launch/Resources/Version.h"
 
 void UGSCAbilitySystemComponent::BeginPlay()
@@ -366,12 +367,13 @@ bool UGSCAbilitySystemComponent::ShouldGrantAbility(const TSubclassOf<UGameplayA
 bool UGSCAbilitySystemComponent::ShouldGrantAbilitySet(const UGSCAbilitySet* InAbilitySet) const
 {
 	check(InAbilitySet);
-	
-	// Reset thingy for Ability Sets ? (at the Ability Set DataAsset lvl if implemented)
-	// if (bResetAbilitiesOnSpawn)
-	// {
-	// 	return true;
-	// }
+
+	// Forcefully re-grant ability sets in case owner is PlayerState, this is to ensure input binding still works after a respawn
+	// ASC living on Pawns that don't have this problem.
+	if (IsPlayerStateOwner())
+	{
+		return true;
+	}
 
 	// ReSharper disable once CppUseStructuredBinding
 	for (const FGSCAbilitySetHandle& Handle : AddedAbilitySets)
@@ -383,6 +385,12 @@ bool UGSCAbilitySystemComponent::ShouldGrantAbilitySet(const UGSCAbilitySet* InA
 	}
 	
 	return true;
+}
+
+bool UGSCAbilitySystemComponent::IsPlayerStateOwner() const
+{
+	const AActor* LocalOwnerActor = GetOwnerActor();
+	return LocalOwnerActor && LocalOwnerActor->IsA<APlayerState>();
 }
 
 void UGSCAbilitySystemComponent::GrantDefaultAbilitiesAndAttributes(AActor* InOwnerActor, AActor* InAvatarActor)
@@ -582,7 +590,7 @@ void UGSCAbilitySystemComponent::GrantStartupEffects()
 
 	AddedEffects.Empty(GrantedEffects.Num());
 
-	for (const TSubclassOf<UGameplayEffect> GameplayEffect : GrantedEffects)
+	for (const TSubclassOf<UGameplayEffect>& GameplayEffect : GrantedEffects)
 	{
 		FGameplayEffectSpecHandle NewHandle = MakeOutgoingSpec(GameplayEffect, 1, EffectContext);
 		if (NewHandle.IsValid())
