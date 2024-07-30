@@ -33,7 +33,6 @@
 *.la
 *.a
 *.lib
-!aws-cpp-sdk-gamelift-server.lib
 
 # Executables
 *.exe
@@ -69,6 +68,7 @@ BuildServer/*
 WindowsServer/*
 BuildClient/*
 Windows/
+LinuxServer/*
 
 # Whitelist PakBlacklist-<BuildConfiguration>.txt files
 !Build/*/
@@ -114,3 +114,7 @@ Plugins/**/Intermediate/*
 .vsconfig
 .DS_Store
 # End of https://www.toptal.com/developers/gitignore/api/unrealengine
+
+# Alway change
+Content/StarterContent/HDRI/HDRI_Epic_Courtyard_Daylight.uasset
+Content/StarterContent/Architecture/Floor_400x400.uasset
