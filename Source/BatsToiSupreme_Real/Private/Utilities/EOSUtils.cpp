@@ -6,7 +6,6 @@
 #include "OnlineSubsystemUtils.h"
 #include "OnlineSubsystemTypes.h"
 #include "Interfaces/OnlineIdentityInterface.h"
-#include <VaRest/Private/VaRestJsonObject.cpp>
 #include <Kismet/GameplayStatics.h>
 #include "BTLogging.h"
 #include <Utilities/BTGameFunctionLibrary.h>
