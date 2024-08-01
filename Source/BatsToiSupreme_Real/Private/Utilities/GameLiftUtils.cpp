@@ -46,7 +46,7 @@ void GameLiftUtils::Init()
 	// Here is where a game server takes action based on the game session object.
 	// When the game server is ready to receive incoming player connections,
 	// it invokes the server SDK call ActivateGameSession().
-	auto onGameSession = [=](Aws::GameLift::Server::Model::GameSession gameSession) {
+	auto onGameSession = [this](Aws::GameLift::Server::Model::GameSession gameSession) {
 		mGameSessionStarted = true;
 		FString gameSessionId = FString(gameSession.GetGameSessionId());
 		BTLOG_DISPLAY("GameSession Initializing: %s", *gameSessionId);
@@ -64,7 +64,7 @@ void GameLiftUtils::Init()
 	// It gives the game server a chance to save its state, communicate with services, etc.,
 	// and initiate shut down. When the game server is ready to shut down, it invokes the
 	// server SDK call ProcessEnding() to tell GameLift it is shutting down.
-	auto onProcessTerminate = [=]() {
+	auto onProcessTerminate = [this]() {
 		BTLOG_DISPLAY("Game Server Process is terminating");
 		GameLiftSDKModule->ProcessEnding();
 		mGameSessionStarted = false;

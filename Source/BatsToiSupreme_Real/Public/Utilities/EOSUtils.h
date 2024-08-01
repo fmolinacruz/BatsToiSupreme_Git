@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Interfaces/OnlineSessionInterface.h" 
 #include <VaRestSubsystem.h>
+#include "OnlineSessionSettings.h"
 
 #include "EOSUtils.generated.h"
 
