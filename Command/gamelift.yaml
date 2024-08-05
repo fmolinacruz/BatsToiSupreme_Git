@@ -13,10 +13,33 @@ Parameters:
     Description: The region identifier for the secondary location for the Fleet
     Default: us-east-1
 Resources:
+  # Role for the instances (to access CloudWatch)
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - gamelift.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  RootInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref InstanceRole
   Queue:
     Type: AWS::GameLift::GameSessionQueue
     Properties:
-      Name: BatsToiSessionQueue
+      Name: BatsToiGameSessionQueue
       TimeoutInSeconds: 50
       Destinations:
         - DestinationArn: !Join
@@ -25,7 +48,7 @@ Resources:
               - !Ref AWS::Region
               - '::alias/'
               - !Ref Alias
-        
+
       PlayerLatencyPolicies:
         - MaximumIndividualPlayerLatencyMilliseconds: 80
           PolicyDurationSeconds: 3
@@ -33,7 +56,7 @@ Resources:
   MatchmakingRuleSet:
     Type: AWS::GameLift::MatchmakingRuleSet
     Properties:
-      Name: BatsToiGameLiftRuleSet
+      Name: BatsToiGameLiftRuleSetLinux
       RuleSetBody: !Sub |
         {
             "name": "simplerule",
@@ -109,16 +132,16 @@ Resources:
         GameSessionActivationTimeoutSeconds: 300
         ServerProcesses:
           - ConcurrentExecutions: 1
-            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7777.log -Port=7777'
+            LaunchPath: /local/game/BatsToiSupreme_RealServer.sh
+            Parameters: 'LV_LobbyServer -HOSTTYPE=CLOUD -epicapp=DedicatedServerDev -AbsLog=/local/game/logs/game-server-7777.log -Port=7777'
           - ConcurrentExecutions: 1
-            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7778.log -Port=7778'
+            LaunchPath: /local/game/BatsToiSupreme_RealServer.sh
+            Parameters: 'LV_LobbyServer -HOSTTYPE=CLOUD -epicapp=DedicatedServerDev -AbsLog=/local/game/logs/game-server-7778.log -Port=7778'
           - ConcurrentExecutions: 1
-            LaunchPath: C:\game\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.exe
-            Parameters: '-AbsLog=c:\game\logs\game-server-7779.log -Port=7779'
+            LaunchPath: /local/game/BatsToiSupreme_RealServer.sh
+            Parameters: 'LV_LobbyServer -HOSTTYPE=CLOUD -epicapp=DedicatedServerDev -AbsLog=/local/game/logs/game-server-7779.log -Port=7779'
       EC2InstanceType: m5.large
-      FleetType: ON_DEMAND
+      FleetType: SPOT
       NewGameSessionProtectionPolicy: NoProtection
       EC2InboundPermissions:
         - FromPort: 7777
@@ -131,6 +154,10 @@ Resources:
           PolicyType: TargetBased
           TargetConfiguration:
             TargetValue: 50
+      CertificateConfiguration:
+        CertificateType: GENERATED
+      InstanceRoleARN: !GetAtt InstanceRole.Arn
+      InstanceRoleCredentialsProvider: SHARED_CREDENTIAL_FILE
   Alias:
     Type: AWS::GameLift::Alias
     Properties:
