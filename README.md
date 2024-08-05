@@ -30,3 +30,22 @@ Need 2 gamepad to play game
 - Command/aws-configure.bat
 4. Deploy
 - Command/ps-run-upload-deploy.ps1
+
+PLAY LAN MULTIPLAYER
+Setup
+- Modify Config/CustinConfig.ini
+     + PIELanHost= Server IPConfig 
+- Map: LV_Lobby (default)
+- Number of Players = 1
+- Net Mode = PlayStandAlone
+
+Setup on server:
+- Modify Server.bat
+     + SET MapName=LVMap_TimeSquare_Multi
+     + SET ExePath= UnrealEditor DIR
+	 
+Run
+- Run Server.bat on PC1
+- Play map LV_Lobby on PC1
+- Play map LV_Lobby on PC2
+- Play Game
