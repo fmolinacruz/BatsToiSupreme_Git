@@ -1,6 +1,6 @@
 
 REM Copy dll to binaries
-set "src=.\..\ServerBuildResource\ToBinaries"
+set "src=.\..\ServerBuildResource\Windows\ToBinaries"
 set "des=.\..\WindowsServer\BatsToiSupreme_Real\Binaries\Win64"
 echo start Copy DLL
 for /r "%src%" %%f in (*) do (
@@ -11,7 +11,7 @@ for /r "%src%" %%f in (*) do (
 
 
 REM copy file to Root
-set "src=.\..\ServerBuildResource\ToRoot"
+set "src=.\..\ServerBuildResource\Windows\ToRoot"
 set "des=.\..\WindowsServer"
 echo start Copy DLL
 for /r "%src%" %%f in (*) do (
