@@ -1,1 +1,1 @@
-.\upload-build-and-deploy.ps1 -Path .\..\WindowsServer
+.\upload-build-and-deploy.ps1 -Path .\..\LinuxServer

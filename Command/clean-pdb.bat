@@ -1,6 +1,6 @@
 
 REM Clean pdb
-set "src=.\..\WindowsServer\BatsToiSupreme_Real\Binaries\Win64\BatsToiSupreme_RealServer.pdb"
+set "src=.\..\LinuxServer\BatsToiSupreme_Real\Binaries\Linux\BatsToiSupreme_RealServer.debug"
 echo start Delete file
 
 del /q %src%

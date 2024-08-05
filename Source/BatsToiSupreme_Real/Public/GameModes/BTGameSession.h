@@ -71,7 +71,7 @@ private:
 	//Update Host Data For Client
 	UFUNCTION()
 	void UpdateEosSessionData(FString sessionId, FString BEUrl);
-
+	UFUNCTION()
 	void OnUpdateEosSessionDataCompleted(UVaRestRequestJSON* Request);
 
 	//Get Cloud Host Ip

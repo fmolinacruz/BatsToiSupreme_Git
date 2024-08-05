@@ -243,6 +243,7 @@ void ABTGameSession::OnEOSSessionCreated(FString sessionId)
 		FString BEPort = FString::FromInt(UBTGameFunctionLibrary::GetBEPort());
 		FString BEIp = UBTGameFunctionLibrary::GetLocalIP();
 		FString BEUrl = BEIp + ":" + BEPort;
+		BTLOG_WARNING("[ABTLobbyServerGM] -IsLanHost: %s", *BEIp);
 		UpdateEosSessionData(EOSSessionId, BEUrl);
 	}
 	else
