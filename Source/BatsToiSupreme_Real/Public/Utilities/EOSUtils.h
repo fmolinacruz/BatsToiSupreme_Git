@@ -10,6 +10,9 @@
 
 #include "EOSUtils.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSessionCreated, FString, sessionId);
+
+
 UCLASS()
 class BATSTOISUPREME_REAL_API AEOSUtils : public AActor
 {
@@ -117,4 +120,52 @@ public:
 	// Function to sign into EOS Game Services
 	UFUNCTION(BlueprintCallable, Category = "Batstoi|LobbyPlayer")
 	void HandleGetEosSessionDataCompleted(UVaRestRequestJSON* Request);
+
+	
+	UPROPERTY(BlueprintAssignable, Category = "GameSession")
+	FOnSessionCreated OnSessionCreated;
+
+	// Function to create an EOS session.
+	void CreateSession(FName KeyName = "KeyName", FString KeyValue = "KeyValue");
+
+	// Callback function. This function will run when creating the session compeletes.
+	void HandleCreateSessionCompleted(FName SessionName, bool bWasSuccessful);
+
+	// Delegate to bind callback event for session creation.
+	FDelegateHandle CreateSessionDelegateHandle;
+	
+	// Function to start EOS Session.
+	void StartSession();
+
+	// Callback function. This function will run when start session compeletes.
+	void HandleStartSessionCompleted(FName SessionName, bool bWasSuccessful);
+
+	// Delegate to bind callback event for start session.
+	FDelegateHandle StartSessionDelegateHandle;
+
+	// Function to end EOS Session.
+	void EndSession();
+
+	// Callback function. This function will run when end session compeletes.
+	void HandleEndSessionCompleted(FName SessionName, bool bWasSuccessful);
+
+	// Delegate to bind callback event for end session.
+	FDelegateHandle EndSessionDelegateHandle;
+
+	// Function to Destroy EOS Session.
+	void DestroySession();
+
+	// Callback function. This function will run when destroy session compeletes.
+	void HandleDestroySessionCompleted(FName SessionName, bool bWasSuccessful);
+
+	// Delegate to bind callback event for destroy session.
+	FDelegateHandle DestroySessionDelegateHandle;
+
+private:
+	// TODO: Hardcoding the session name
+	FName SessionName = "SessionName";
+
+	// Hardcoding the max number of players in a session.
+	const int MaxNumberOfPlayersInSession = 2;
+
 };

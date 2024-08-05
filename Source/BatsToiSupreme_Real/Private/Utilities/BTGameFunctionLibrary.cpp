@@ -57,6 +57,19 @@ FString UBTGameFunctionLibrary::GetAPIKey()
 	return XAPIKey;
 }
 
+int UBTGameFunctionLibrary::GetBEPort()
+{
+	FString port;
+	int result = 0;
+	// Check Mode
+	if (FParse::Value(FCommandLine::Get(), TEXT("-Port="), port))
+	{
+		result = FCString::Atoi(*port);
+	}
+
+	return result;
+}
+
 FString UBTGameFunctionLibrary::GetLocalIP()
 {
 	bool bCanBindAll;

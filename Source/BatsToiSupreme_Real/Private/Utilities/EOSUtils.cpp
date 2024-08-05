@@ -123,8 +123,8 @@ void AEOSUtils::OnEOSLoginCompleted(int32 LocalUserNum, bool bWasSuccessful, con
 
 void AEOSUtils::FindSessions(FName SearchKey, FString SearchValue) // put default value for example
 {
-	// Tutorial 4: This function will find our EOS Session that was created by our DedicatedServer.
-	// Tutorial 7: This function will find our EOS lobby. Note that at the OSS layer we are using a Session that is marked as a lobby.  Code is similar with minor tweaks
+	// This function will find our EOS Session that was created by our DedicatedServer.
+	// This function will find our EOS lobby. Note that at the OSS layer we are using a Session that is marked as a lobby.  Code is similar with minor tweaks
 
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
@@ -154,8 +154,8 @@ void AEOSUtils::FindSessions(FName SearchKey, FString SearchValue) // put defaul
 
 void AEOSUtils::HandleFindSessionsCompleted(bool bWasSuccessful, TSharedRef<FOnlineSessionSearch> Search)
 {
-	// Tutorial 4: This function is triggered via the callback we set in FindSession once the session is found (or there is a failure).
-	// Tutorial 7: This function will triggered via the callback we set in FindSession once the lobby is found (or there is a failure). Finding the lobby here has the similar code as finding a session.
+	// This function is triggered via the callback we set in FindSession once the session is found (or there is a failure).
+	// This function will triggered via the callback we set in FindSession once the lobby is found (or there is a failure). Finding the lobby here has the similar code as finding a session.
 
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
@@ -204,8 +204,8 @@ void AEOSUtils::HandleFindSessionsCompleted(bool bWasSuccessful, TSharedRef<FOnl
 
 void AEOSUtils::JoinSession()
 {
-	// Tutorial 4: Join the session.
-	// Tutorial 7: Same code is used to join the lobby - just some tweaks to the logging
+	// Join the session.
+	// Same code is used to join the lobby - just some tweaks to the logging
 
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
@@ -225,18 +225,18 @@ void AEOSUtils::JoinSession()
 	}
 }
 
-void AEOSUtils::HandleJoinSessionCompleted(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+void AEOSUtils::HandleJoinSessionCompleted(FName FSessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	// Tutorial 4: This function is triggered via the callback we set in JoinSession once the session is joined (or there is a failure)
+	// This function is triggered via the callback we set in JoinSession once the session is joined (or there is a failure)
 
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
 	if (Result == EOnJoinSessionCompleteResult::Success)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Joined session. %s"), *SessionName.ToString());
+		UE_LOG(LogTemp, Log, TEXT("Joined session. %s"), *FSessionName.ToString());
 		if (GEngine)
 		{
-			FString sessionId = Session->GetNamedSession(SessionName)->GetSessionIdStr();
+			FString sessionId = Session->GetNamedSession(FSessionName)->GetSessionIdStr();
 			UE_LOG(LogTemp, Warning, TEXT("Session: Joined! %s"), *sessionId);
 			FString url = UBTGameFunctionLibrary::GetGetSessionDataURL();
 			// Get Eos Session Data
@@ -266,7 +266,7 @@ void AEOSUtils::HandleJoinSessionCompleted(FName SessionName, EOnJoinSessionComp
 void AEOSUtils::LoadTitleData()
 {
 	/*
-	Tutorial 6: This function is triggered by the login callback once the player has logged in (client only).
+	This function is triggered by the login callback once the player has logged in (client only).
 	Files must first be enumerated before they can be read. In this course we will read from the 1st file.
 	*/
 
@@ -289,7 +289,7 @@ void AEOSUtils::LoadTitleData()
 
 void AEOSUtils::HandleEnumTitleFilesCompleted(bool bWasSuccessfull, const FString& Error)
 {
-	// Tutorial 6: Callback function for enumerating title data storage files.
+	// Callback function for enumerating title data storage files.
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineTitleFilePtr TitleFile = Subsystem->GetTitleFileInterface();
 
@@ -329,7 +329,7 @@ void AEOSUtils::HandleEnumTitleFilesCompleted(bool bWasSuccessfull, const FStrin
 
 void AEOSUtils::HandleReadTitleFileCompleted(bool bWasSuccessfull, const FString& FileName)
 {
-	// Tutorial 6: Callback function for reading 1st file in title data storage.
+	// Callback function for reading 1st file in title data storage.
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineTitleFilePtr TitleFile = Subsystem->GetTitleFileInterface();
 
@@ -383,7 +383,7 @@ void AEOSUtils::HandleReadTitleFileCompleted(bool bWasSuccessfull, const FString
 
 void AEOSUtils::WritePlayerDataStorage(FString FileName, TArray<uint8> FileData)
 {
-	// Tutorial 6: Function called to save game. This is called when the ESC key is pressed. See the Quit() function in the character class. Only called on Clients.
+	// Function called to save game. This is called when the ESC key is pressed. See the Quit() function in the character class. Only called on Clients.
 
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineIdentityPtr Identity = Subsystem->GetIdentityInterface();
@@ -417,7 +417,7 @@ void AEOSUtils::WritePlayerDataStorage(FString FileName, TArray<uint8> FileData)
 
 void AEOSUtils::HandleWritePlayerDataStorageCompleted(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName)
 {
-	// Tutorial 6: callback function when file write has completed
+	// callback function when file write has completed
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineUserCloudPtr UserCloud = Subsystem->GetUserCloudInterface();
 
@@ -440,7 +440,7 @@ void AEOSUtils::HandleWritePlayerDataStorageCompleted(bool bWasSuccessful, const
 void AEOSUtils::LoadPlayerData()
 {
 	/*
-	Tutorial 6: This function is triggered by the login callback once the player has logged in (client only).
+	This function is triggered by the login callback once the player has logged in (client only).
 	Files must first be enumerated before they can be read. In this course we will read from the 1st file only.
    */
 
@@ -465,7 +465,7 @@ void AEOSUtils::LoadPlayerData()
 
 void AEOSUtils::HandleEnumPlayerFilesCompleted(bool bWasSuccessfull, const FUniqueNetId& NetId)
 {
-	// Tutorial 6: Callback function for enumerating player data storage files.
+	// Callback function for enumerating player data storage files.
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineUserCloudPtr PlayerData = Subsystem->GetUserCloudInterface();
 
@@ -511,7 +511,7 @@ void AEOSUtils::HandleEnumPlayerFilesCompleted(bool bWasSuccessfull, const FUniq
 
 void AEOSUtils::HandleReadPlayerFileCompleted(bool bWasSuccessfull, const FUniqueNetId& UserId, const FString& FileName)
 {
-	// Tutorial 6: Callback function for reading 1st file in player data storage.
+	// Callback function for reading 1st file in player data storage.
 
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineUserCloudPtr PlayerData = Subsystem->GetUserCloudInterface();
@@ -548,17 +548,17 @@ void AEOSUtils::UpdateSession()
 	Session->UpdateSession("SessionName", *HostSettings, true);
 }
 
-void AEOSUtils::OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful)
+void AEOSUtils::OnUpdateSessionComplete(FName FSessionName, bool bWasSuccessful)
 {
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
-	BTLOG_DISPLAY("OnUpdateSessionComplete %s bSuccess: %d", *SessionName.ToString(), bWasSuccessful);
+	BTLOG_DISPLAY("OnUpdateSessionComplete %s bSuccess: %d", *FSessionName.ToString(), bWasSuccessful);
 	Session->ClearOnUpdateSessionCompleteDelegate_Handle(OnUpdateSessionCompleteDelegateHandle);
 }
 
 void AEOSUtils::LoadGame(TArray<uint8> LoadData)
 {
-	// Tutorial 6: This function is part of the Login() callback callstack. It is only called on clients. LoadData is the serialized data retrieved from the Player Data Storage backend.
+	// This function is part of the Login() callback callstack. It is only called on clients. LoadData is the serialized data retrieved from the Player Data Storage backend.
 	// FVector is 12 bytes.
 	if (LoadData.Num() != 24)
 	{
@@ -571,7 +571,7 @@ void AEOSUtils::LoadGame(TArray<uint8> LoadData)
 void AEOSUtils::SaveGame()
 {
 	/*
-	Tutorial 6: Called from the Quit() function in the character class. This is a "pseudo" save game function. The purpose here is to show how to use EOS Player Data Storage.
+	Called from the Quit() function in the character class. This is a "pseudo" save game function. The purpose here is to show how to use EOS Player Data Storage.
 	This is not an example on how a game should be saved. You should use a derived USaveGame class and save all data that is needed for your game.
    */
 
@@ -619,4 +619,192 @@ void AEOSUtils::HandleGetEosSessionDataCompleted(UVaRestRequestJSON* Request)
 	{
 		UE_LOG(LogTemp, Error, TEXT("OnGetCloudHostIpCompleted: Request failed"));
 	}
+}
+
+
+void AEOSUtils::CreateSession(FName KeyName, FString KeyValue) // Dedicated Server Only
+{
+	// This function will create an EOS Session.
+	UE_LOG(LogTemp, Warning, TEXT("ABTGameSession::CreateSession"));
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface(); // Retrieve the generic session interface.
+
+	// Bind delegate to callback function
+	CreateSessionDelegateHandle =
+		Session->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateUObject(
+			this,
+			&ThisClass::HandleCreateSessionCompleted));
+
+	// Set session settings
+	TSharedRef<FOnlineSessionSettings> SessionSettings = MakeShared<FOnlineSessionSettings>();
+	SessionSettings->NumPublicConnections = MaxNumberOfPlayersInSession; // We will test our sessions with 2 players to keep things simple
+	SessionSettings->bShouldAdvertise = true;							 // This creates a public match and will be searchable. This will set the session as joinable via presence.
+	SessionSettings->bUsesPresence = false;								 // No presence on dedicated server. This requires a local user.
+	SessionSettings->bAllowJoinViaPresence = false;						 // superset by bShouldAdvertise and will be true on the backend
+	SessionSettings->bAllowJoinViaPresenceFriendsOnly = false;			 // superset by bShouldAdvertise and will be true on the backend
+	SessionSettings->bAllowInvites = false;								 // Allow inviting players into session. This requires presence and a local user.
+	SessionSettings->bAllowJoinInProgress = false;						 // Once the session is started, no one can join.
+	SessionSettings->bIsDedicated = true;								 // Session created on dedicated server.
+	SessionSettings->bUseLobbiesIfAvailable = false;					 // This is an EOS Session not an EOS Lobby as they aren't supported on Dedicated Servers.
+	SessionSettings->bUseLobbiesVoiceChatIfAvailable = false;
+	SessionSettings->bUsesStats = true; // Needed to keep track of player stats.
+
+	// This custom attribute will be used in searches on GameClients.
+	SessionSettings->Settings.Add(KeyName, FOnlineSessionSetting((KeyValue), EOnlineDataAdvertisementType::ViaOnlineService));
+
+	// Create session.
+	UE_LOG(LogTemp, Warning, TEXT("Creating session..."));
+
+	if (!Session->CreateSession(0, SessionName, *SessionSettings))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to create session!"));
+		Session->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
+		CreateSessionDelegateHandle.Reset();
+	}
+}
+
+void AEOSUtils::HandleCreateSessionCompleted(FName EOSSessionName, bool bWasSuccessful) // Dedicated Server Only
+{
+	// This function is triggered via the callback we set in CreateSession once the session is created (or there is a failure to create)
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface(); // Retrieve the generic session interface.
+
+	// Nothing special here, simply log that the session is created.
+	if (bWasSuccessful)
+	{
+		FString sessionId = Session->GetNamedSession(EOSSessionName)->GetSessionIdStr();
+		OnSessionCreated.Broadcast(sessionId);
+		OnSessionCreated.Clear();
+		UE_LOG(LogTemp, Warning, TEXT("Session: %s Created 1! %s"), *EOSSessionName.ToString(), *sessionId);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to create session!"));
+	}
+
+	// Clear our handle and reset the delegate.
+	Session->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
+	CreateSessionDelegateHandle.Reset();
+}
+
+
+void AEOSUtils::StartSession()
+{
+	// This function is called once all players are registered. It will mark the EOS Session as started.
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+
+	// Bind delegate to callback function
+	StartSessionDelegateHandle =
+		Session->AddOnStartSessionCompleteDelegate_Handle(FOnStartSessionCompleteDelegate::CreateUObject(
+			this,
+			&ThisClass::HandleStartSessionCompleted));
+
+	if (!Session->StartSession(SessionName))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to start session!"));
+		Session->ClearOnStartSessionCompleteDelegate_Handle(StartSessionDelegateHandle);
+		StartSessionDelegateHandle.Reset();
+	}
+}
+
+void AEOSUtils::HandleStartSessionCompleted(FName EOSSessionName, bool bWasSuccessful)
+{
+	// This function is triggered via the callback we set in StartSession once the session is started (or there is a failure).
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+
+	// Just log, clear and reset delegate.
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Session Started!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to start session! (From Callback)"));
+	}
+
+	Session->ClearOnStartSessionCompleteDelegate_Handle(StartSessionDelegateHandle);
+	StartSessionDelegateHandle.Reset();
+}
+
+void AEOSUtils::EndSession()
+{
+	// This function is called once all players have left the session. It will mark the EOS Session as ended.
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+
+	// Bind delegate to callback function
+	EndSessionDelegateHandle =
+		Session->AddOnEndSessionCompleteDelegate_Handle(FOnEndSessionCompleteDelegate::CreateUObject(
+			this,
+			&ThisClass::HandleEndSessionCompleted));
+
+	if (!Session->EndSession(SessionName))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to end session!"));
+		Session->ClearOnEndSessionCompleteDelegate_Handle(EndSessionDelegateHandle);
+		EndSessionDelegateHandle.Reset();
+	}
+}
+
+void AEOSUtils::HandleEndSessionCompleted(FName EOSSessionName, bool bWasSuccessful)
+{
+	// This function is triggered via the callback we set in EndSession once the session is ended (or there is a failure).
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+
+	// Just log, clear and reset delegate.
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Session ended!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to end session! (From Callback)"));
+	}
+
+	Session->ClearOnEndSessionCompleteDelegate_Handle(EndSessionDelegateHandle);
+	EndSessionDelegateHandle.Reset();
+}
+
+void AEOSUtils::DestroySession()
+{
+	// Called when EndPlay() is called. This will destroy the EOS Session which will remove it from the EOS backend.
+
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+
+	DestroySessionDelegateHandle =
+		Session->AddOnDestroySessionCompleteDelegate_Handle(FOnDestroySessionCompleteDelegate::CreateUObject(
+			this,
+			&ThisClass::HandleDestroySessionCompleted));
+
+	if (!Session->DestroySession(SessionName))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to destroy session.")); // Log to the UE logs that we are trying to log in.
+		Session->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
+		DestroySessionDelegateHandle.Reset();
+	}
+}
+
+void AEOSUtils::HandleDestroySessionCompleted(FName EOSSessionName, bool bWasSuccesful)
+{
+	// This function is triggered via the callback we set in DestroySession once the session is destroyed (or there is a failure).
+
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+
+	if (bWasSuccesful)
+	{
+		//bSessionExists = false; // Mark that the session doesn't exist. This way next time BeginPlay is called a new session will be created.
+		UE_LOG(LogTemp, Log, TEXT("Destroyed session succesfully."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to destroy session."));
+	}
+
+	Session->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
+	DestroySessionDelegateHandle.Reset();
 }

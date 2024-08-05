@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameSession.h"
+#include <Utilities/EOSUtils.h>
+
 #include "BTGameSession.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSessionCreated, FString, sessionId);
 /**
  * Acts as a game-specific wrapper around the session interface.
  The game code makes calls to this when it needs to interact with the session interface.
@@ -38,28 +39,6 @@ protected:
 	// Function called when players leave the dedicated server. Trigger UnregisterPlayer from base class and used to End Sesion.
 	virtual void NotifyLogout(const APlayerController* ExitingPlayer);
 
-
-	// TODO: Hardcoding the session name
-	FName SessionName = "SessionName";
-
-	// Hardcoding the max number of players in a session.
-	const int MaxNumberOfPlayersInSession = 2;
-
-	// Variable to keep track of the number of players in a session.
-	int NumberOfPlayersInSession = 0;
-
-	// Function to create an EOS session.
-	void CreateSession(FName KeyName = "KeyName", FString KeyValue = "KeyValue");
-
-	// Callback function. This function will run when creating the session compeletes.
-	void HandleCreateSessionCompleted(FName SessionName, bool bWasSuccessful);
-
-	// Delegate to bind callback event for session creation.
-	FDelegateHandle CreateSessionDelegateHandle;
-
-	// Used to keep track if the session exists or not.
-	bool bSessionExists = false;
-
 	// Function to register our players in the EOS Session.
 	virtual void RegisterPlayer(APlayerController* NewPlayer, const FUniqueNetIdRepl& UniqueId, bool bWasFromInvite = false);
 
@@ -78,35 +57,40 @@ protected:
 	// Delegate to bind callback event for unregister player.
 	FDelegateHandle UnregisterPlayerDelegateHandle;
 
-	// Function to start EOS Session.
-	void StartSession();
-
-	// Callback function. This function will run when start session compeletes.
-	void HandleStartSessionCompleted(FName SessionName, bool bWasSuccessful);
-
-	// Delegate to bind callback event for start session.
-	FDelegateHandle StartSessionDelegateHandle;
-
-	// Function to end EOS Session.
-	void EndSession();
-
-	// Callback function. This function will run when end session compeletes.
-	void HandleEndSessionCompleted(FName SessionName, bool bWasSuccessful);
-
-	// Delegate to bind callback event for end session.
-	FDelegateHandle EndSessionDelegateHandle;
-
-	// Function to Destroy EOS Session.
-	void DestroySession();
-
-	// Callback function. This function will run when destroy session compeletes.
-	void HandleDestroySessionCompleted(FName SessionName, bool bWasSuccessful);
-
-	// Delegate to bind callback event for destroy session.
-	FDelegateHandle DestroySessionDelegateHandle;
-
 public:
-	UPROPERTY(BlueprintAssignable, Category = "GameSession")
-	FOnSessionCreated OnSessionCreated;
+	
+private:	
 
+	//Init EOS
+	UFUNCTION()
+	void InitEOS();
+
+	UFUNCTION()
+	void OnEOSSessionCreated(FString sessionId);
+
+	//Update Host Data For Client
+	UFUNCTION()
+	void UpdateEosSessionData(FString sessionId, FString BEUrl);
+
+	void OnUpdateEosSessionDataCompleted(UVaRestRequestJSON* Request);
+
+	//Get Cloud Host Ip
+	UFUNCTION()
+	void RequestCloudHostIp();
+
+	//Get Cloud Host Response
+	UFUNCTION()
+	void OnGetCloudHostIpCompleted(UVaRestRequestJSON* Request);
+
+	// Hardcoding the max number of players in a session.
+	const int MaxNumberOfPlayersInSession = 2;
+
+	// Variable to keep track of the number of players in a session.
+	int NumberOfPlayersInSession = 0;
+
+	// Used to keep track if the session exists or not.
+	bool bSessionExists = false;
+
+	AEOSUtils* EOSUtilsObj;
+	FString EOSSessionId;
 };

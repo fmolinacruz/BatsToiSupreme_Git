@@ -41,6 +41,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
 	static FString GetAPIKey();
 
+	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
+	static int GetBEPort();
+
 	// Get Local IP
 	UFUNCTION(BlueprintPure, Category = BatstoiLibrary)
 	static FString GetLocalIP();
