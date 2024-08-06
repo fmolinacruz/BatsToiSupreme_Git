@@ -1,1 +1,1 @@
-.\upload-build-and-deploy.ps1 -Path .\..\LinuxServer
+.\upload-build-and-deploy.ps1 -Path .\..\LinuxServer -Profile  batstoi-accesskey
