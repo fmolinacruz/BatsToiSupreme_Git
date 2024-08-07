@@ -6,7 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Characters/BTBaseCharacter.h"
 #include "GameFramework/PlayerStart.h"
-#include "PlayerCommon/BTPlayerController.h"
+#include "PlayerCommon/BTLocalPlayerController.h"
 #include "Utilities/BTLogging.h"
 
 
@@ -43,14 +43,30 @@ void ABTLocalOfflineGameMode::SpawnInputReceivers()
 			UE_LOG(LogTemp, Warning, TEXT("Done: %d"), Index);
 
 			// Get Player Controller
-			APlayerController* PC = UGameplayStatics::GetPlayerController(CurrentWorld, Index);
+			ABTLocalPlayerController* PC = Cast<ABTLocalPlayerController>(UGameplayStatics::GetPlayerController(CurrentWorld, Index));
 			if (PC == nullptr)
 			{
-				PC = UGameplayStatics::CreatePlayer(CurrentWorld, Index, true);
+				PC = Cast<ABTLocalPlayerController>(UGameplayStatics::CreatePlayer(CurrentWorld, Index, true));
 			}
 
 			const FVector& Location = StartSpots[Index]->GetActorLocation();
 			const FRotator& Rotation = StartSpots[Index]->GetActorRotation();
+
+            // Spawn InputReceiver tr??c
+			// ABTInputReceiver* InputReceiver = GetWorld()->SpawnActor<ABTInputReceiver>(InputReceiverClass, Location, Rotation);
+			ABTLocalInputReceiver* InputReceiver = GetWorld()->SpawnActor<ABTLocalInputReceiver>(InputReceiverClass, Location, Rotation);
+			if (InputReceiver)
+			{
+				PC->Possess(InputReceiver);
+				InputReceiver->InitializeWithPlayerController(PC, Index);
+
+				// T?o UI Menu cho ng??i ch?i ??u tiên
+				if (!bIsMenuCreated)
+				{
+					InputReceiver->CreateMenuUI();
+					bIsMenuCreated = true;
+				}
+			}
 
 			ABTBaseCharacter* SpawnedCharacter = GetWorld()->SpawnActor<ABTBaseCharacter>(CharacterClass, Location, Rotation);
 			if (SpawnedCharacter != nullptr)

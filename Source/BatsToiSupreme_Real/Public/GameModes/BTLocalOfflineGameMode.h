@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Input/BTLocalInputReceiver.h"
 #include "BTLocalOfflineGameMode.generated.h"
 
 
@@ -34,6 +35,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	bool bIsLocal = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	bool bIsMenuCreated = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
+	TSubclassOf<ABTLocalInputReceiver> InputReceiverClass;
 
 private: // Default game setup
 	void GetMainCameraRef();
