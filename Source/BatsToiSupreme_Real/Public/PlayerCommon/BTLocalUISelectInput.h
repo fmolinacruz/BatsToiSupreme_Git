@@ -4,7 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "PlayerCommon/BTLocalPlayerInput.h"
 #include "BTLocalUISelectInput.generated.h"
+
+class ABTLocalInputReceiver;
+class UInputAction;
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -16,14 +20,67 @@ public:
 	// Sets default values for this component's properties
 	UBTLocalUISelectInput();
 
+	// Initialize input component with enhanced input actions
+	void InitializeInputComponent(UInputComponent* PlayerInputComponent);
+
+	// InitializeWithInputReceiver
+	void InitializeWithInputReceiver(ABTLocalInputReceiver* NewInputReceiver);
+
+public:
+	// InputReceiver
+	TObjectPtr<ABTLocalInputReceiver> InputReceiver;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	// Actions
+	void OnSelect(const FInputActionValue& Value);
 
-		
+	// MenuLeft
+	void OnMenuLeft(const FInputActionValue& Value);
+
+	// MenuRight
+	void OnMenuRight(const FInputActionValue& Value);
+
+	// Restore
+	void Restore(const FInputActionValue& Value);
+
+	// Input Actions
+	// SelectInput
+	// GamePad
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* SelectInputAction;
+	// Keyboard
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* SelectInputActionKB;
+
+	// MenuLeft
+	// GamePad
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* MenuLeftInputAction;
+	// Keyboard
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* MenuLeftInputActionKB;
+
+	// MenuRight
+	// GamePad
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* MenuRightInputAction;
+	// Keyboard
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* MenuRightInputActionKB;
+
+	// Restore
+	// GamePad
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* RestoreInputAction;
+	// Keyboard
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Batstoi|Actions")
+	UInputAction* RestoreInputActionKB;
+
+	// Mappable input configurations for the UI Selection
+	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UISelectionInput")
+	TArray<FLocalMappableConfig> MappableInputConfigs;
 	
 };
