@@ -137,11 +137,11 @@ void ABTLocalInputReceiver::Server_CharacterSelected()
 	BTLOG_DISPLAY("[ABTInputReceiver] - Server_CharacterSelected_Implementation");
 	CurrentPlayerController->PlayCharacterSelectedAnimation(CurrentPlayerIndex);
 
-	// Update UI of other clients
-	if (OtherPlayerController)
-	{
-		OtherPlayerController->PlayCharacterSelectedAnimation(CurrentPlayerIndex);
-	}
+	//// Update UI of other clients
+	//if (OtherPlayerController)
+	//{
+	//	OtherPlayerController->PlayCharacterSelectedAnimation(CurrentPlayerIndex);
+	//}
 }
 
 void ABTLocalInputReceiver::Server_CharacterDecided(int32 CharacterChoice)
@@ -149,11 +149,11 @@ void ABTLocalInputReceiver::Server_CharacterDecided(int32 CharacterChoice)
 	BTLOG_DISPLAY("[ABTInputReceiver] - Server_CharacterDecided_Implementation");
 	CurrentPlayerController->PlayCharacterDecidedAnimation(CurrentPlayerIndex);
 
-	// Update UI of other clients
-	if (OtherPlayerController)
-	{
-		OtherPlayerController->PlayCharacterDecidedAnimation(CurrentPlayerIndex);
-	}
+	//// Update UI of other clients
+	//if (OtherPlayerController)
+	//{
+	//	OtherPlayerController->PlayCharacterDecidedAnimation(CurrentPlayerIndex);
+	//}
 
 	ABTLocalOfflineGameMode* GameMode = GetWorld()->GetAuthGameMode<ABTLocalOfflineGameMode>();
 	if (!GameMode)
@@ -176,11 +176,11 @@ void ABTLocalInputReceiver::Server_CharacterRestore()
 {
 	CurrentPlayerController->PlayCharacterRestore(CurrentPlayerIndex);
 
-	// Update UI of other clients
-	if (OtherPlayerController)
-	{
-		OtherPlayerController->PlayCharacterRestore(CurrentPlayerIndex);
-	}
+	//// Update UI of other clients
+	//if (OtherPlayerController)
+	//{
+	//	OtherPlayerController->PlayCharacterRestore(CurrentPlayerIndex);
+	//}
 
 	ABTLocalOfflineGameMode* GameMode = GetWorld()->GetAuthGameMode<ABTLocalOfflineGameMode>();
 	if (!GameMode)
@@ -199,9 +199,9 @@ void ABTLocalInputReceiver::Server_CharacterChoiceChanged(int32 CharacterChoice)
 {
 	CurrentPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
 
-	// Update UI of other clients
-	if (OtherPlayerController)
-	{
-		OtherPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
-	}
+	//// Update UI of other clients
+	//if (OtherPlayerController)
+	//{
+	//	OtherPlayerController->ChangeCharacterSelectionTexture(CurrentPlayerIndex, CharacterChoice);
+	//}
 }

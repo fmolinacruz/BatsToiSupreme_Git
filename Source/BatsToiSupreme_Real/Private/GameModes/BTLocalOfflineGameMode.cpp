@@ -62,8 +62,17 @@ void ABTLocalOfflineGameMode::SpawnInputReceivers()
 			if (InputReceiver)
 			{
 				PC->Possess(InputReceiver);
+
+				// Initialize the InputReceiver with the player controller and current player index
+				InputReceivers.Add(InputReceiver);
 				InputReceiver->InitializeWithPlayerController(PC, Index);
 				InputReceiver->SetMenuWidget(MenuWidgetRefCPP);
+
+				if (InputReceivers.Num() >= 2)
+				{
+					InputReceivers[0]->OtherPlayerController = InputReceivers[1]->CurrentPlayerController;
+					InputReceivers[1]->OtherPlayerController = InputReceivers[0]->CurrentPlayerController;
+				}
 			}
 		}
 		Index++;

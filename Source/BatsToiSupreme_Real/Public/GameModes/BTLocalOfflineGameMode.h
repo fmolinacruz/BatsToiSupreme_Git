@@ -69,6 +69,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi")
 	TSubclassOf<ABTLocalInputReceiver> InputReceiverClass;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Batstoi|Players")
+	TArray<ABTLocalInputReceiver*> InputReceivers;
+
 private: // Default game setup
 	void GetMainCameraRef();
 	void GetStartSpots();
