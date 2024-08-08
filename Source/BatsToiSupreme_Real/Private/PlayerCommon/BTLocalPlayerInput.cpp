@@ -8,8 +8,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "PlayerMappableInputConfig.h"
 
-#include "Characters/BTPlayerCharacter.h"
-#include "PlayerCommon/BTPlayerController.h"
+#include "Characters/BTLocalPlayerCharacter.h"
+#include "PlayerCommon/BTLocalPlayerController.h"
 
 #include "Utilities/BTGameFunctionLibrary.h"
 
@@ -35,10 +35,10 @@ void UBTLocalPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputC
 	check(PlayerInputComponent);
 	if (!PlayerCharacter)
 	{
-		PlayerCharacter = CastChecked<ABTPlayerCharacter>(GetOwner());
+		PlayerCharacter = CastChecked<ABTLocalPlayerCharacter>(GetOwner());
 	}
 
-	const ABTPlayerController* PC = PlayerCharacter->GetController<ABTPlayerController>();
+	const ABTLocalPlayerController* PC = PlayerCharacter->GetController<ABTLocalPlayerController>();
 	check(PC);
 
 	const ULocalPlayer* LP = PC->GetLocalPlayer();

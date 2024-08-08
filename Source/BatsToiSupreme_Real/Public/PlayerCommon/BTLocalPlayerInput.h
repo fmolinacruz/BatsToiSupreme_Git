@@ -11,7 +11,7 @@
 struct FInputActionValue;
 
 class UInputAction;
-class ABTPlayerCharacter;
+class ABTLocalPlayerCharacter;
 class UPlayerMappableInputConfig;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -61,5 +61,5 @@ protected:
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Player")
-	TObjectPtr<ABTPlayerCharacter> PlayerCharacter;
+	TObjectPtr<ABTLocalPlayerCharacter> PlayerCharacter;
 };
