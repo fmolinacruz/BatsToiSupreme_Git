@@ -57,8 +57,7 @@ void ABTLocalOfflineGameMode::SpawnInputReceivers()
 			const FVector& Location = StartSpots[Index]->GetActorLocation();
 			const FRotator& Rotation = StartSpots[Index]->GetActorRotation();
 
-            // Spawn InputReceiver tr??c
-			// ABTInputReceiver* InputReceiver = GetWorld()->SpawnActor<ABTInputReceiver>(InputReceiverClass, Location, Rotation);
+            // Spawn InputReceiver
 			ABTLocalInputReceiver* InputReceiver = GetWorld()->SpawnActor<ABTLocalInputReceiver>(InputReceiverClass, Location, Rotation);
 			if (InputReceiver)
 			{

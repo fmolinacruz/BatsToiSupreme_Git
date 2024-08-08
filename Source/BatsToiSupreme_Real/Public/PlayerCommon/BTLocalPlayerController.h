@@ -24,8 +24,10 @@ public:
 	//UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
 	//UWBTMenu* CreateMenuWidget();
 
-	UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
-	UWBTMenu* GetMenuWidgetFromGameMode();
+	//UFUNCTION(BlueprintCallable, Category = "Batstoi|UI")
+	//UWBTMenu* GetMenuWidgetFromGameMode();
+
+	void SetCharacterSelectionWidgetRef(UWBTMenu* MenuWidget);
 
 	UFUNCTION(Category = "Batstoi|UI")
 	void PlayCharacterSelectedAnimation(const int PlayerIndex);

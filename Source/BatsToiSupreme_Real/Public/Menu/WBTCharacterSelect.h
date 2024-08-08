@@ -8,7 +8,6 @@
 #include "Components/TextBlock.h"
 #include "WBTCharacterSelect.generated.h"
 
-class ABTPlayerController;
 class UWBTMenu;
 
 

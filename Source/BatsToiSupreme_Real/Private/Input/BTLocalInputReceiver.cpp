@@ -23,24 +23,15 @@ ABTLocalInputReceiver::ABTLocalInputReceiver()
 void ABTLocalInputReceiver::BeginPlay()
 {
 	Super::BeginPlay();
-
-	CreateMenuUI();
 }
 
-void ABTLocalInputReceiver::CreateMenuUI()
+void ABTLocalInputReceiver::SetMenuWidget(UWBTMenu* MenuWidget)
 {
 	if (CurrentPlayerController)
 	{
-		MenuWidgetRefCPP = CurrentPlayerController->GetMenuWidgetFromGameMode();
+		MenuWidgetRefCPP = MenuWidget;
 
-		// MenuWidgetRefCPP is nullptr;
-		if (!MenuWidgetRefCPP)
-		{
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("MyMenuWidget is nullptr"));
-			}
-		}
+		CurrentPlayerController->SetCharacterSelectionWidgetRef(MenuWidget);
 	}
 }
 
@@ -139,11 +130,6 @@ void ABTLocalInputReceiver::OnRestore()
 		}
 		Server_CharacterRestore();
 	}
-}
-
-void ABTLocalInputReceiver::SetMenuWidget(UWBTMenu* MenuWidget)
-{
-	MenuWidgetRefCPP = MenuWidget;
 }
 
 void ABTLocalInputReceiver::Server_CharacterSelected()

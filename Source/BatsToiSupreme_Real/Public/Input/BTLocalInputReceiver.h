@@ -29,8 +29,8 @@ public:
 		return BTUISelectionInputComponent;
 	}
 
-	// Create IRCreateCharacterSelectWidget
-	void CreateMenuUI();
+	//// Create IRCreateCharacterSelectWidget
+	//void CreateMenuUI();
 
 	void SetMenuWidget(UWBTMenu* MenuWidget);
 

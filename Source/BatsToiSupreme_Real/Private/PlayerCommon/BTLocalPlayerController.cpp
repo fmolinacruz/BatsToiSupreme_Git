@@ -22,28 +22,9 @@ void ABTLocalPlayerController::BeginPlay()
 	Super::BeginPlay();
 }
 
-//UWBTMenu* ABTLocalPlayerController::CreateMenuWidget()
-//{
-//	if (IsLocalPlayerController() && MenuUIClass)
-//	{
-//		CharacterSelectionWidgetRef = CreateWidget<UWBTMenu>(this, MenuUIClass);
-//		if (CharacterSelectionWidgetRef)
-//		{
-//			CharacterSelectionWidgetRef->AddToViewport();
-//			return CharacterSelectionWidgetRef;
-//		}
-//	}
-//	return nullptr;
-//}
-
-UWBTMenu* ABTLocalPlayerController::GetMenuWidgetFromGameMode()
+void ABTLocalPlayerController::SetCharacterSelectionWidgetRef(UWBTMenu* MenuWidget)
 {
-	ABTLocalOfflineGameMode* GameMode = GetGameMode();
-	if (GameMode)
-	{
-		CharacterSelectionWidgetRef = GameMode->GetMenuWidgetRef();
-	}
-	return CharacterSelectionWidgetRef;
+	CharacterSelectionWidgetRef = MenuWidget;
 }
 
 void ABTLocalPlayerController::PlayCharacterSelectedAnimation(const int PlayerIndex)
