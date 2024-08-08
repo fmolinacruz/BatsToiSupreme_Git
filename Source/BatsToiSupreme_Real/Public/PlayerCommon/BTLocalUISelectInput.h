@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "PlayerCommon/BTLocalPlayerInput.h"
+#include "PlayerCommon/BTPlayerInput.h"
 #include "BTLocalUISelectInput.generated.h"
 
 class ABTLocalInputReceiver;
@@ -81,6 +81,6 @@ protected:
 
 	// Mappable input configurations for the UI Selection
 	UPROPERTY(EditDefaultsOnly, Category = "Batstoi|UISelectionInput")
-	TArray<FLocalMappableConfig> MappableInputConfigs;
+	TArray<FMappableConfig> MappableInputConfigs;
 	
 };

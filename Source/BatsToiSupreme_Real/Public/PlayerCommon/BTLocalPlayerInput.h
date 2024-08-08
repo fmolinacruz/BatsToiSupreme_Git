@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "CommonInputTypeEnum.h"
 #include "Components/ActorComponent.h"
+#include "PlayerCommon/BTPlayerInput.h"
 #include "BTLocalPlayerInput.generated.h"
 
 struct FInputActionValue;
@@ -12,32 +13,6 @@ struct FInputActionValue;
 class UInputAction;
 class ABTPlayerCharacter;
 class UPlayerMappableInputConfig;
-
-USTRUCT()
-struct FLocalMappableConfig
-{
-	GENERATED_BODY()
-
-	FLocalMappableConfig() = default;
-
-	UPROPERTY(EditAnywhere)
-	TSoftObjectPtr<UPlayerMappableInputConfig> Config;
-
-	/**
-	 * The type of config that this is. Useful for filtering out configs by the current input device
-	 * for things like the settings screen, or if you only want to apply this config when a certain
-	 * input type is being used.
-	 */
-	UPROPERTY(EditAnywhere)
-	ECommonInputType Type = ECommonInputType::Count;
-
-	/**
-	 * If true, then this input config will be activated when it's associated Game Feature is activated.
-	 * This is normally the desirable behavior
-	 */
-	UPROPERTY(EditAnywhere)
-	bool bShouldActivateAutomatically = true;
-};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BATSTOISUPREME_REAL_API UBTLocalPlayerInput : public UActorComponent
@@ -64,7 +39,7 @@ protected:
 	void RequestSprawlAction(const FInputActionValue& Value);
 
 	UPROPERTY(EditDefaultsOnly, Category = "PlayerInput")
-	TArray<FLocalMappableConfig> DefaultInputConfigs;
+	TArray<FMappableConfig> DefaultInputConfigs;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerInput|Actions")
 	UInputAction* MoveInputAction;

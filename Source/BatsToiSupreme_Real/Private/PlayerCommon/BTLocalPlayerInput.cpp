@@ -48,7 +48,7 @@ void UBTLocalPlayerInput::InitializeInputComponent(UInputComponent* PlayerInputC
 	check(Subsystem);
 
 	// Register any default input configs
-	for (const FLocalMappableConfig& InputConfig : DefaultInputConfigs)
+	for (const FMappableConfig& InputConfig : DefaultInputConfigs)
 	{
 		if (InputConfig.bShouldActivateAutomatically)
 		{

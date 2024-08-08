@@ -74,7 +74,7 @@ void UBTLocalUISelectInput::InitializeInputComponent(UInputComponent* PlayerInpu
 	}
 
 	// Register any default input configs
-	for (const FLocalMappableConfig& InputConfig : MappableInputConfigs)
+	for (const FMappableConfig& InputConfig : MappableInputConfigs)
 	{
 		if (InputConfig.bShouldActivateAutomatically)
 		{
