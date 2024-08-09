@@ -18,7 +18,8 @@ void GameLiftUtils::Init()
 {
 	BTLOG_DISPLAY("Initialize GameLift Server !");
 	ClientConnectTimeOut = 60;
-
+	GameLiftServerParams = new FServerParameters();
+	GameLiftProcessParams = new FProcessParameters();
 	GameLiftSDKModule = &FModuleManager::LoadModuleChecked<FGameLiftServerSDKModule>(FName("GameLiftServerSDK"));
 	if (GameLiftSDKModule == nullptr)
 	{
@@ -48,17 +49,16 @@ void GameLiftUtils::Init()
 	// it invokes the server SDK call ActivateGameSession().
 	auto onGameSession = [this](Aws::GameLift::Server::Model::GameSession gameSession) {
 		mGameSessionStarted = true;
-		FString gameSessionId = FString(gameSession.GetGameSessionId());
+		/*FString gameSessionId = FString(gameSession.GetGameSessionId());
 		BTLOG_DISPLAY("GameSession Initializing: %s", *gameSessionId);
-		GameLiftSDKModule->ActivateGameSession();
-		// StartServerTimeOut();
-		AsyncTask(ENamedThreads::GameThread, [this] {
+		GameLiftSDKModule->ActivateGameSession();*/
+		/*AsyncTask(ENamedThreads::GameThread, [this] {
 			StartServerTimeOut();
-		});
+		})*/;
 	};
-
-	GameLiftProcessParams.OnStartGameSession.BindLambda(onGameSession);
-
+	BTLOG_DISPLAY("Initialize GameLift Server 12!");
+	GameLiftProcessParams->OnStartGameSession.BindLambda(onGameSession);
+	BTLOG_DISPLAY("Initialize GameLift Server 13!");
 	// Implement callback function OnProcessTerminate
 	// GameLift invokes this callback before shutting down the instance hosting this game server.
 	// It gives the game server a chance to save its state, communicate with services, etc.,
@@ -66,11 +66,11 @@ void GameLiftUtils::Init()
 	// server SDK call ProcessEnding() to tell GameLift it is shutting down.
 	auto onProcessTerminate = [this]() {
 		BTLOG_DISPLAY("Game Server Process is terminating");
-		GameLiftSDKModule->ProcessEnding();
-		mGameSessionStarted = false;
+		/*GameLiftSDKModule->ProcessEnding();
+		mGameSessionStarted = false;*/
 	};
 
-	GameLiftProcessParams.OnTerminate.BindLambda(onProcessTerminate);
+	GameLiftProcessParams->OnTerminate.BindLambda(onProcessTerminate);
 
 	// Implement callback function OnHealthCheck
 	// GameLift invokes this callback approximately every 60 seconds.
@@ -83,7 +83,7 @@ void GameLiftUtils::Init()
 		return true;
 	};
 	BTLOG_DISPLAY("Initialize GameLift Server 2!");
-	GameLiftProcessParams.OnHealthCheck.BindLambda(onHealthCheck);
+	GameLiftProcessParams->OnHealthCheck.BindLambda(onHealthCheck);
 
 	FString logpath;
 	// Check Mode
@@ -98,11 +98,11 @@ void GameLiftUtils::Init()
 		BTLOG_DISPLAY("GameLift Server Port: %s", *port);
 	}
 
-	GameLiftProcessParams.port = FCString::Atoi(*port);
+	GameLiftProcessParams->port = FCString::Atoi(*port);
 	TArray<FString> Logfiles;
 	Logfiles.Add(logpath);
-	GameLiftProcessParams.logParameters = Logfiles;
-	GameLiftSDKModule->ProcessReady(GameLiftProcessParams);
+	GameLiftProcessParams->logParameters = Logfiles;
+	GameLiftSDKModule->ProcessReady(*GameLiftProcessParams);
 }
 
 void GameLiftUtils::InitSDKEC2()
@@ -115,59 +115,34 @@ void GameLiftUtils::InitSDKEC2()
 void GameLiftUtils::InitSDKAnyWhere()
 {
 	BTLOG_DISPLAY("InitSDKAnyWhere");
-
 	// AuthToken returned from the "aws gamelift get-compute-auth-token" API. Note this will expire and require a new call to the API after 15 minutes.
-	if (FParse::Value(FCommandLine::Get(), TEXT("-authtoken="), GameLiftServerParams.m_authToken))
+	if (FParse::Value(FCommandLine::Get(), TEXT("-authtoken="), GameLiftServerParams->m_authToken))
 	{
 	}
 
 	// The Host/compute-name of the GameLift Anywhere instance.
-	if (FParse::Value(FCommandLine::Get(), TEXT("-hostid="), GameLiftServerParams.m_hostId))
+	if (FParse::Value(FCommandLine::Get(), TEXT("-hostid="), GameLiftServerParams->m_hostId))
 	{
 	}
 
 	// The Anywhere Fleet ID.
-	if (FParse::Value(FCommandLine::Get(), TEXT("-fleetid="), GameLiftServerParams.m_fleetId))
+	if (FParse::Value(FCommandLine::Get(), TEXT("-fleetid="), GameLiftServerParams->m_fleetId))
 	{
 	}
 
 	// The WebSocket URL (GameLiftServiceSdkEndpoint).
-	if (FParse::Value(FCommandLine::Get(), TEXT("-websocketurl="), GameLiftServerParams.m_webSocketUrl))
+	if (FParse::Value(FCommandLine::Get(), TEXT("-websocketurl="), GameLiftServerParams->m_webSocketUrl))
 	{
 	}
+	BTLOG_DISPLAY("InitSDKAnyWhere 1");
 	// The PID of the running process
-	GameLiftServerParams.m_processId = FString::Printf(TEXT("%d"), FGenericPlatformProcess::GetCurrentProcessId());
-
+	GameLiftServerParams->m_processId = FString::Printf(TEXT("%d"), FGenericPlatformProcess::GetCurrentProcessId());
+	BTLOG_DISPLAY("InitSDKAnyWhere 2");
 	// InitSDK establishes a local connection with GameLift's agent to enable further communication.
 	// Use InitSDK(serverParameters) for a GameLift Anywhere fleet.
 	// Use InitSDK() for a GameLift managed EC2 fleet.
-	GameLiftSDKModule->InitSDK(GameLiftServerParams);
+	GameLiftSDKModule->InitSDK(*GameLiftServerParams);
 	BTLOG_DISPLAY("InitSDKAnyWhere DONE");
-}
-
-void GameLiftUtils::OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession)
-{
-	const FString GameSessionId = FString(ActivatedSession.GetGameSessionId());
-	BTLOG_DISPLAY("OnGameLiftSessionStart: %s", *GameSessionId);
-
-	GameLiftSDKModule->ActivateGameSession();
-}
-
-void GameLiftUtils::OnGameLiftSessionUpdate(Aws::GameLift::Server::Model::UpdateGameSession UpdatedSession)
-{
-	BTLOG_DISPLAY("GameSession Updating!");
-}
-
-void GameLiftUtils::OnGameLiftProcessTerminate()
-{
-	BTLOG_DISPLAY("Game Server Process is terminating!");
-	GameLiftSDKModule->ProcessEnding();
-}
-
-bool GameLiftUtils::OnGameLiftServerHealthCheck()
-{
-	BTLOG_DISPLAY("Performing Health Check");
-	return true;
 }
 
 void GameLiftUtils::StartServerTimeOut()

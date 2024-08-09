@@ -18,18 +18,13 @@ public:
 	void InitSDKEC2();
 	void InitSDKAnyWhere();
 
-	void OnGameLiftSessionStart(Aws::GameLift::Server::Model::GameSession ActivatedSession);
-	void OnGameLiftSessionUpdate(Aws::GameLift::Server::Model::UpdateGameSession UpdatedSession);
-	void OnGameLiftProcessTerminate();
-	bool OnGameLiftServerHealthCheck();
-
 	void StartServerTimeOut();
 	void OnServerTimeOut();
 	bool HasGameSessionStarted() { return mGameSessionStarted; }
 
 	FGameLiftServerSDKModule* GameLiftSDKModule;
-	FServerParameters GameLiftServerParams;
-	FProcessParameters GameLiftProcessParams;
+	FServerParameters* GameLiftServerParams;
+	FProcessParameters* GameLiftProcessParams;
 	int ClientConnectTimeOut = 60; // in Seconds
 	bool HasClientConnected = false;
 	bool mGameSessionStarted;

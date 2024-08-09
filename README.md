@@ -49,3 +49,10 @@ Run
 - Play map LV_Lobby on PC1
 - Play map LV_Lobby on PC2
 - Play Game
+
+HOW TO TEST LINUX Server build local
+- Install wsl
+- Install Ubuntu 20
+- Build Linux Server
+- Get fleet param by command: .\command\anywhere-params.ps1 -Profile batstoi -Region ap-northeast-1 -EnvName duy
+- Run .\BatsToiSupreme_RealServer.sh with param abow

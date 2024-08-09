@@ -32,7 +32,8 @@ void ABTLobbyServerGM::BeginPlay()
 	BTLOG_WARNING("[ABTLobbyServerGM] -BeginPlay");
 
 	Super::BeginPlay();
-	InitGameLift();
+	//Disable gamelift. Change to FleetIq
+	//InitGameLift();
 }
 
 void ABTLobbyServerGM::PostLogin(APlayerController* NewPlayer)
